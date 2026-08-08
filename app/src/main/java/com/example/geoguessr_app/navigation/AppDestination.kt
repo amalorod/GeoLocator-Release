@@ -11,4 +11,6 @@ sealed class AppDestination(val route: String) {
     data object Home : AppDestination("home")
 
     data object Tutorial : AppDestination("tutorial")
+
+    data object Game : AppDestination("game")
 }

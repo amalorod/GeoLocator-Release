@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.geoguessr_app.ui.home.HomeScreen
 import com.example.geoguessr_app.ui.tutorial.TutorialScreen
+import com.example.geoguessr_app.ui.game.GameRoute
 
 /**
  * Zentrale Navigationskomponente der App.
@@ -28,7 +29,7 @@ fun GeoGuessrNavHost(
         composable(route = AppDestination.Home.route) {
             HomeScreen(
                 onStartGameClick = {
-                    // Die Spielroute ergänzen wir im nächsten Schritt.
+                    navController.navigate(AppDestination.Game.route)
                 },
                 onTutorialClick = {
                     navController.navigate(AppDestination.Tutorial.route)
@@ -43,5 +44,22 @@ fun GeoGuessrNavHost(
                 }
             )
         }
+
+
+        composable(route = AppDestination.Game.route) {
+            GameRoute(
+                onExitGame = {
+                    navController.popBackStack(
+                        route = AppDestination.Home.route,
+                        inclusive = false
+                    )
+                }
+            )
+        }
+
+
+
     }
 }
+
+
