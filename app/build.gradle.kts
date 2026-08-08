@@ -53,7 +53,10 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    //ergänzt
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.viewmodel.compose)
     ksp(libs.hilt.compiler)
+    implementation(libs.androidx.navigation.compose)
 }
