@@ -14,12 +14,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.geoguessr_app.domain.model.GeoCoordinate
 
 /**
- * Route verbindet das Hilt-ViewModel mit dem zustandslosen Screen.
+ * Verbindet das Hilt-ViewModel mit dem zustandslosen GameScreen.
  */
 @Composable
 fun GameRoute(
@@ -40,12 +42,15 @@ fun GameRoute(
 }
 
 /**
- * Zustandslose UI. Sämtliche Daten und Aktionen werden übergeben.
+ * Zustandslose Darstellung des Spiels.
+ *
+ * Bis zur Einbindung der Weltkarte wird ein fester Testtipp verwendet.
+ * Die UI enthält dabei selbst keine Distanz- oder Punkteberechnung.
  */
 @Composable
 private fun GameScreen(
     uiState: GameUiState,
-    onSubmitGuess: () -> Unit,
+    onSubmitGuess: (GeoCoordinate) -> Unit, // KORREKTUR: ":" statt "=" verwendet
     onNextRound: () -> Unit,
     onExitGame: () -> Unit,
     onRetryLoading: () -> Unit,
@@ -57,7 +62,7 @@ private fun GameScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(
-            space = 24.dp,
+            space = 20.dp,
             alignment = Alignment.CenterVertically
         )
     ) {
@@ -79,71 +84,50 @@ private fun GameScreen(
 
         when {
             uiState.isLoading -> {
-                Text("Standorte werden geladen …")
+                Text(
+                    text = "Standorte werden geladen...",
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
-
             uiState.errorMessage != null -> {
                 Text(
                     text = uiState.errorMessage,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center
                 )
-
                 Button(onClick = onRetryLoading) {
                     Text("Erneut versuchen")
                 }
             }
-
             uiState.isGameFinished -> {
                 Text(
-                    text = "Spiel beendet!",
+                    text = "Spiel beendet! Endstand: ${uiState.totalScore} Punkte",
                     style = MaterialTheme.typography.headlineSmall
                 )
-
-                Text("Endpunktzahl: ${uiState.totalScore}")
-
-                Button(
-                    onClick = onExitGame,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Zurück zum Start")
+                Button(onClick = onExitGame) {
+                    Text("Zum Hauptmenü")
                 }
             }
-
             uiState.isRoundFinished -> {
-                Text("Runde abgeschlossen")
-
-                Button(
-                    onClick = onNextRound,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        if (uiState.currentRound == uiState.totalRounds) {
-                            "Ergebnis anzeigen"
-                        } else {
-                            "Nächste Runde"
-                        }
-                    )
+                Text(
+                    text = uiState.roundScore?.let { "Punkte für diese Runde: $it" } ?: "Zeit abgelaufen!",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                uiState.roundDistanceKilometers?.let {
+                    Text(text = "Entfernung: %.2f km".format(it))
+                }
+                Button(onClick = onNextRound) {
+                    Text("Nächste Runde")
                 }
             }
-
             else -> {
-                Text("Zufälliger Standort wurde geladen.")
-
+                // Test-Tipp abgeben (wird später durch die Map-Auswahl ersetzt)
                 Button(
-                    onClick = onSubmitGuess,
+                    onClick = { onSubmitGuess(GeoCoordinate(0.0, 0.0)) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Tipp simulieren")
+                    Text("Test-Tipp abgeben (0.0, 0.0)")
                 }
-            }
-        }
-
-        if (!uiState.isGameFinished) {
-            OutlinedButton(
-                onClick = onExitGame,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Spiel verlassen")
             }
         }
     }
