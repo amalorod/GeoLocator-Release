@@ -6,8 +6,8 @@ import com.example.geoguessr_app.domain.model.GeoLocation
 /**
  * Beschreibt den vollständigen sichtbaren Zustand des Spiels.
  *
- * Der Zustand ist unveränderlich. Das ViewModel erzeugt bei jeder Änderung
- * mit copy() eine neue Instanz, die anschließend über StateFlow verteilt wird.
+ * Das ViewModel erzeugt bei jeder Änderung mit copy() eine neue Instanz.
+ * Dadurch bleibt der Zustand unveränderlich und nachvollziehbar.
  */
 data class GameUiState(
     val currentRound: Int = 1,
@@ -18,6 +18,7 @@ data class GameUiState(
     val guessedLocation: GeoCoordinate? = null,
     val roundDistanceKilometers: Double? = null,
     val roundScore: Int? = null,
+    val viewMode: GameViewMode = GameViewMode.STREET_VIEW,
     val isLoading: Boolean = true,
     val isRoundFinished: Boolean = false,
     val isGameFinished: Boolean = false,

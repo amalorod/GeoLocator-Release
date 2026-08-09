@@ -10,15 +10,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.geoguessr_app.domain.model.GeoCoordinate
+import com.example.geoguessr_app.domain.model.GeoLocation
+import com.google.android.gms.maps.StreetViewPanoramaView
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -27,12 +36,12 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import java.util.Locale
 
-// Konstanten für die Kartenkonfiguration
 private val WORLD_CENTER = LatLng(0.0, 0.0)
 private const val INITIAL_ZOOM = 1f
+private const val STREET_VIEW_SEARCH_RADIUS_METERS = 500
 
 /**
- * Verbindet das Hilt-ViewModel mit dem zustandslosen GameScreen.
+ * Verbindet das Hilt-ViewModel mit der zustandslosen Oberfläche.
  */
 @Composable
 fun GameRoute(
@@ -45,6 +54,8 @@ fun GameRoute(
     GameScreen(
         uiState = uiState,
         onGuessSelected = viewModel::selectGuess,
+        onShowGuessMap = viewModel::showGuessMap,
+        onShowStreetView = viewModel::showStreetView,
         onSubmitGuess = viewModel::submitGuess,
         onNextRound = viewModel::startNextRound,
         onExitGame = onExitGame,
@@ -54,15 +65,14 @@ fun GameRoute(
 }
 
 /**
- * Zustandslose Darstellung des Spielbildschirms.
- *
- * Der Screen zeigt ausschließlich den übergebenen Zustand und leitet
- * Benutzeraktionen über Callback-Funktionen an das ViewModel weiter.
+ * Zustandslose Darstellung des vollständigen Spielbildschirms.
  */
 @Composable
 private fun GameScreen(
     uiState: GameUiState,
     onGuessSelected: (GeoCoordinate) -> Unit,
+    onShowGuessMap: () -> Unit,
+    onShowStreetView: () -> Unit,
     onSubmitGuess: () -> Unit,
     onNextRound: () -> Unit,
     onExitGame: () -> Unit,
@@ -123,9 +133,35 @@ private fun GameScreen(
                     onNextRound = onNextRound,
                     modifier = Modifier.weight(1f)
                 )
+
+                Text(
+                    if (uiState.currentRound == uiState.totalRounds) {
+                        "Gesamtergebnis anzeigen"
+                    } else {
+                        "Nächste Runde"
+                    }
+                )
             }
 
-            else -> {
+            uiState.viewMode == GameViewMode.STREET_VIEW -> {
+                val currentLocation = uiState.currentLocation
+
+                if (currentLocation != null) {
+                    GameStreetView(
+                        location = currentLocation,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Button(
+                        onClick = onShowGuessMap,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Tipp auf der Weltkarte abgeben")
+                    }
+                }
+            }
+
+            uiState.viewMode == GameViewMode.GUESS_MAP -> {
                 GuessMap(
                     selectedCoordinate = uiState.guessedLocation,
                     onGuessSelected = onGuessSelected,
@@ -146,65 +182,20 @@ private fun GameScreen(
                 ) {
                     Text("Tipp abgeben")
                 }
-            }
-        }
 
-        if (!uiState.isGameFinished) {
-            OutlinedButton(
-                onClick = onExitGame,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Spiel verlassen")
+                OutlinedButton(
+                    onClick = onShowStreetView,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Zurück zu Street View")
+                }
             }
         }
     }
 }
 
 /**
- * Interaktive Weltkarte zur Auswahl des geschätzten Standorts.
- */
-@Composable
-private fun GuessMap(
-    selectedCoordinate: GeoCoordinate?,
-    onGuessSelected: (GeoCoordinate) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(
-            WORLD_CENTER,
-            INITIAL_ZOOM
-        )
-    }
-
-    GoogleMap(
-        modifier = modifier.fillMaxWidth(),
-        cameraPositionState = cameraPositionState,
-        onMapClick = { selectedPosition ->
-            onGuessSelected(
-                GeoCoordinate(
-                    latitude = selectedPosition.latitude,
-                    longitude = selectedPosition.longitude
-                )
-            )
-        }
-    ) {
-        selectedCoordinate?.let { coordinate ->
-            Marker(
-                state = rememberUpdatedMarkerState(
-                    position = LatLng(
-                        coordinate.latitude,
-                        coordinate.longitude
-                    )
-                ),
-                title = "Dein Tipp",
-                snippet = formatCoordinates(coordinate)
-            )
-        }
-    }
-}
-
-/**
- * Zeigt das Ergebnis einer abgeschlossenen Runde.
+ * Zeigt das Ergebnis einer einzelnen Runde an.
  */
 @Composable
 private fun RoundResult(
@@ -212,59 +203,46 @@ private fun RoundResult(
     onNextRound: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val actualLocation = uiState.currentLocation
-    val distance = uiState.roundDistanceKilometers
-    val score = uiState.roundScore ?: 0
-
     Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(
-            space = 12.dp,
-            alignment = Alignment.CenterVertically
-        )
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Runde abgeschlossen",
-            style = MaterialTheme.typography.headlineSmall
+            text = "Runde abgeschlossen!",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary
         )
-
-        if (actualLocation != null) {
-            Text(
-                text = "Gesuchter Ort: ${actualLocation.name}, " +
-                        actualLocation.country,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        if (distance != null) {
-            Text("Entfernung: ${formatDistance(distance)} km")
-        } else {
-            Text("Kein Tipp innerhalb des Zeitlimits")
-        }
 
         Text(
-            text = "Rundenpunkte: $score",
-            fontWeight = FontWeight.SemiBold
+            text = "Entfernung: ${uiState.roundDistanceKilometers?.let { "%.2f".format(Locale.US, it) } ?: "0"} km",
+            style = MaterialTheme.typography.bodyLarge
         )
+
+        Text(
+            text = "Punkte in dieser Runde: ${uiState.roundScore ?: 0}",
+            style = MaterialTheme.typography.bodyLarge
+        )
+
+        uiState.currentLocation?.let { location ->
+            Text(
+                text = "Der Ort war: ${location.name}, ${location.country}",
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
 
         Button(
             onClick = onNextRound,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.padding(top = 16.dp)
         ) {
-            Text(
-                if (uiState.currentRound == uiState.totalRounds) {
-                    "Gesamtergebnis anzeigen"
-                } else {
-                    "Nächste Runde"
-                }
-            )
+            Text("Nächste Runde")
         }
     }
 }
 
 /**
- * Zeigt das Gesamtergebnis nach fünf Runden.
+ * Zeigt das Endergebnis des Spiels an.
  */
 @Composable
 private fun GameResult(
@@ -273,36 +251,116 @@ private fun GameResult(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(
-            space = 16.dp,
-            alignment = Alignment.CenterVertically
-        )
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "Spiel beendet!",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
+
         Text(
-            text = "Dein Endergebnis: $totalScore Punkte",
-            style = MaterialTheme.typography.titleLarge
+            text = "Deine Gesamtpunktzahl: $totalScore",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(vertical = 16.dp)
         )
-        Button(
-            onClick = onExitGame,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Zum Hauptmenü")
+
+        Button(onClick = onExitGame) {
+            Text("Zurück zum Hauptmenü")
         }
     }
 }
 
-// Hilfsfunktionen für die Textformatierung
-private fun formatCoordinates(coordinate: GeoCoordinate): String {
-    return String.format(Locale.getDefault(), "Lat: %.4f, Lon: %.4f", coordinate.latitude, coordinate.longitude)
+/**
+ * Zeigt die Google Street View Panorama-Ansicht.
+ */
+@Composable
+private fun GameStreetView(
+    location: GeoLocation,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val streetViewPanoramaView = remember {
+        StreetViewPanoramaView(context)
+    }
+
+    // Lifecycle-Management für die StreetView-View
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_CREATE -> streetViewPanoramaView.onCreate(null)
+                Lifecycle.Event.ON_START -> streetViewPanoramaView.onStart()
+                Lifecycle.Event.ON_RESUME -> streetViewPanoramaView.onResume()
+                Lifecycle.Event.ON_PAUSE -> streetViewPanoramaView.onPause()
+                Lifecycle.Event.ON_STOP -> streetViewPanoramaView.onStop()
+                Lifecycle.Event.ON_DESTROY -> streetViewPanoramaView.onDestroy()
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    AndroidView(
+        factory = { streetViewPanoramaView },
+        modifier = modifier.fillMaxSize()
+    ) { view ->
+        view.getStreetViewPanoramaAsync { panorama ->
+            panorama.isPanningGesturesEnabled = true
+            panorama.isZoomGesturesEnabled = true
+            panorama.isUserNavigationEnabled = true
+            panorama.isStreetNamesEnabled = false
+            panorama.setPosition(
+                LatLng(location.latitude, location.longitude),
+                STREET_VIEW_SEARCH_RADIUS_METERS
+            )
+        }
+    }
 }
 
-private fun formatDistance(distance: Double): String {
-    return String.format(Locale.getDefault(), "%.2f", distance)
+/**
+ * Zeigt eine Weltkarte an, auf der der Nutzer seinen Tipp abgeben kann.
+ */
+@Composable
+private fun GuessMap(
+    selectedCoordinate: GeoCoordinate?,
+    onGuessSelected: (GeoCoordinate) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(WORLD_CENTER, INITIAL_ZOOM)
+    }
+
+    GoogleMap(
+        modifier = modifier.fillMaxSize(),
+        cameraPositionState = cameraPositionState,
+        onMapClick = { latLng ->
+            onGuessSelected(GeoCoordinate(latLng.latitude, latLng.longitude))
+        }
+    ) {
+        selectedCoordinate?.let {
+            Marker(
+                state = rememberUpdatedMarkerState(LatLng(it.latitude, it.longitude)),
+                title = "Dein Tipp"
+            )
+        }
+    }
+}
+
+/**
+ * Formatiert Koordinaten für die Anzeige.
+ */
+private fun formatCoordinates(coordinate: GeoCoordinate): String {
+    return String.format(
+        Locale.US,
+        "Lat: %.4f, Lng: %.4f",
+        coordinate.latitude,
+        coordinate.longitude
+    )
 }

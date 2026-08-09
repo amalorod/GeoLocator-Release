@@ -128,6 +128,47 @@ class GameViewModel @Inject constructor(
         }
     }
 
+
+    /**
+     * Öffnet die Weltkarte, auf der ein Tipp abgegeben werden kann.
+     */
+    fun showGuessMap() {
+        val state = _uiState.value
+
+        if (
+            state.isLoading ||
+            state.isRoundFinished ||
+            state.isGameFinished
+        ) {
+            return
+        }
+
+        _uiState.value = state.copy(
+            viewMode = GameViewMode.GUESS_MAP
+        )
+    }
+
+    /**
+     * Wechselt von der Tippkarte zurück zur Street-View-Ansicht.
+     *
+     * Ein bereits gesetzter Kartenmarker bleibt dabei erhalten.
+     */
+    fun showStreetView() {
+        val state = _uiState.value
+
+        if (
+            state.isLoading ||
+            state.isRoundFinished ||
+            state.isGameFinished
+        ) {
+            return
+        }
+
+        _uiState.value = state.copy(
+            viewMode = GameViewMode.STREET_VIEW
+        )
+    }
+
     /**
      * Wertet den zuvor auf der Karte ausgewählten Tipp aus.
      */
@@ -194,6 +235,7 @@ class GameViewModel @Inject constructor(
 
         if (state.currentRound >= state.totalRounds) {
             _uiState.value = state.copy(
+
                 isGameFinished = true
             )
             return
@@ -210,12 +252,14 @@ class GameViewModel @Inject constructor(
         }
 
         _uiState.value = state.copy(
+
             currentRound = nextRound,
             remainingSeconds = 60,
             currentLocation = nextLocation,
             guessedLocation = null,
             roundDistanceKilometers = null,
             roundScore = null,
+            viewMode = GameViewMode.STREET_VIEW,
             isRoundFinished = false,
             errorMessage = null
         )
