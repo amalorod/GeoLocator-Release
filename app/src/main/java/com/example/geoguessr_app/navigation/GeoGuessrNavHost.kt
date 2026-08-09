@@ -13,8 +13,8 @@ import com.example.geoguessr_app.ui.tutorial.TutorialScreen
 /**
  * Zentrale Navigationskomponente der App.
  *
- * Während des isolierten Kartentests ist MapTest vorübergehend
- * das Startziel. Nach erfolgreichem Test wird wieder Home verwendet.
+ * Der HomeScreen ist wieder das reguläre Startziel. Die isolierte
+ * Karten-Testansicht bleibt vorläufig als Route im Projekt erhalten.
  */
 @Composable
 fun GeoGuessrNavHost(
@@ -24,7 +24,7 @@ fun GeoGuessrNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = AppDestination.MapTest.route,
+        startDestination = AppDestination.Home.route,
         modifier = modifier
     ) {
         composable(route = AppDestination.Home.route) {
@@ -60,11 +60,7 @@ fun GeoGuessrNavHost(
         composable(route = AppDestination.MapTest.route) {
             MapTestScreen(
                 onBackClick = {
-                    navController.navigate(AppDestination.Home.route) {
-                        popUpTo(AppDestination.MapTest.route) {
-                            inclusive = true
-                        }
-                    }
+                    navController.popBackStack()
                 }
             )
         }

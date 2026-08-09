@@ -17,11 +17,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Verwaltet Zustand und Ablauf einer vollständigen Partie.
+ * Verwaltet den Zustand und Ablauf einer vollständigen Partie.
  *
- * Das ViewModel erhält seine Anwendungslogik als Use Cases über Hilt.
- * Dadurch bleiben Distanzberechnung, Punkteberechnung und Standortauswahl
- * unabhängig von Compose und der Benutzeroberfläche testbar.
+ * Das ViewModel erhält die Geschäftslogik über Hilt-injizierte Use Cases.
+ * Compose, Google Maps und konkrete Repository-Implementierungen sind
+ * dadurch von der Spiellogik getrennt.
  */
 @HiltViewModel
 class GameViewModel @Inject constructor(
@@ -31,6 +31,9 @@ class GameViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameUiState())
+    /**
+     * Öffentlich ausschließlich lesbarer Spielzustand.
+     */
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
     private var gameLocations: List<GeoLocation> = emptyList()
@@ -45,7 +48,6 @@ class GameViewModel @Inject constructor(
      */
     private fun loadGame() {
         timerJob?.cancel()
-
         _uiState.value = GameUiState()
 
         viewModelScope.launch {
@@ -81,6 +83,28 @@ class GameViewModel @Inject constructor(
     }
 
     /**
+     * Speichert den aktuell auf der Weltkarte ausgewählten Tipp.
+     *
+     * Die Auswahl liegt im ViewModel und bleibt deshalb bei einer
+     * Neukomposition oder Gerätdrehung erhalten.
+     */
+    fun selectGuess(guessedLocation: GeoCoordinate) {
+        val state = _uiState.value
+
+        if (
+            state.isLoading ||
+            state.isRoundFinished ||
+            state.isGameFinished
+        ) {
+            return
+        }
+
+        _uiState.value = state.copy(
+            guessedLocation = guessedLocation
+        )
+    }
+
+    /**
      * Startet den Countdown der aktuellen Runde.
      */
     private fun startTimer() {
@@ -105,14 +129,12 @@ class GameViewModel @Inject constructor(
     }
 
     /**
-     * Wertet einen geografischen Tipp aus.
-     *
-     * Die tatsächliche Position wird aus dem aktuellen Spielstandort
-     * übernommen. Entfernung und Punktzahl liefern die Domain-Use-Cases.
+     * Wertet den zuvor auf der Karte ausgewählten Tipp aus.
      */
-    fun submitGuess(guessedLocation: GeoCoordinate) {
+    fun submitGuess() {
         val state = _uiState.value
         val actualLocation = state.currentLocation ?: return
+        val guessedLocation = state.guessedLocation ?: return
 
         if (
             state.isLoading ||
@@ -139,7 +161,6 @@ class GameViewModel @Inject constructor(
         )
 
         _uiState.value = state.copy(
-            guessedLocation = guessedLocation,
             roundDistanceKilometers = distance,
             roundScore = score,
             totalScore = state.totalScore + score,
@@ -148,12 +169,13 @@ class GameViewModel @Inject constructor(
     }
 
     /**
-     * Beendet eine Runde ohne Tipp, wenn der Countdown abläuft.
+     * Beendet eine Runde ohne Punkte, wenn das Zeitlimit abläuft.
      */
     private fun finishRoundWithoutGuess() {
         timerJob?.cancel()
 
         _uiState.value = _uiState.value.copy(
+            guessedLocation = null,
             roundDistanceKilometers = null,
             roundScore = 0,
             isRoundFinished = true
@@ -166,7 +188,9 @@ class GameViewModel @Inject constructor(
     fun startNextRound() {
         val state = _uiState.value
 
-        if (!state.isRoundFinished) return
+        if (!state.isRoundFinished) {
+            return
+        }
 
         if (state.currentRound >= state.totalRounds) {
             _uiState.value = state.copy(
@@ -200,7 +224,7 @@ class GameViewModel @Inject constructor(
     }
 
     /**
-     * Startet nach einem Ladefehler eine vollständig neue Partie.
+     * Startet nach einem Ladefehler eine neue Partie.
      */
     fun retryLoading() {
         loadGame()

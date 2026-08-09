@@ -4,10 +4,10 @@ import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
 
 /**
- * Vollständiger sichtbarer Zustand des Spielbildschirms.
+ * Beschreibt den vollständigen sichtbaren Zustand des Spiels.
  *
- * Das ViewModel verändert keine einzelnen Eigenschaften direkt,
- * sondern erzeugt mit copy() jeweils einen neuen Zustand.
+ * Der Zustand ist unveränderlich. Das ViewModel erzeugt bei jeder Änderung
+ * mit copy() eine neue Instanz, die anschließend über StateFlow verteilt wird.
  */
 data class GameUiState(
     val currentRound: Int = 1,
