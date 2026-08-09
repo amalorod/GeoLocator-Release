@@ -1,37 +1,72 @@
 package com.example.geoguessr_app.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.geoguessr_app.ui.game.GameRoute
+import com.example.geoguessr_app.ui.game.GameViewModel
 import com.example.geoguessr_app.ui.home.HomeScreen
 import com.example.geoguessr_app.ui.maptest.MapTestScreen
 import com.example.geoguessr_app.ui.streetviewtest.StreetViewTestScreen
+import com.example.geoguessr_app.ui.theme.AppThemeMode
 import com.example.geoguessr_app.ui.tutorial.TutorialScreen
 
 /**
  * Zentrale Navigation der App.
  *
- * Während des isolierten Tests ist StreetViewTest vorübergehend
- * das Startziel.
+ * Das GameViewModel wird oberhalb der einzelnen Ziele erzeugt.
+ * Dadurch bleibt die aktive Partie beim Wechsel zum Hauptmenü erhalten.
  */
 @Composable
 fun GeoGuessrNavHost(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    currentThemeName: String,
+    onExitAppClick: () -> Unit,
+    currentTheme: AppThemeMode,
+    onThemeSelected: (AppThemeMode) -> Unit,
 ) {
     val navController = rememberNavController()
+    val gameViewModel: GameViewModel = hiltViewModel()
+
+    var isGameInBackground by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     NavHost(
         navController = navController,
-        startDestination = AppDestination.StreetViewTest.route,
+        startDestination = AppDestination.Home.route,
         modifier = modifier
     ) {
         composable(route = AppDestination.Home.route) {
             HomeScreen(
+                currentThemeName = currentThemeName,
+                onExitAppClick = onExitAppClick,
+                onThemeClick = { onThemeSelected(currentTheme.next()) },
+                hasActiveGame = isGameInBackground,
                 onStartGameClick = {
-                    navController.navigate(AppDestination.Game.route)
+                    isGameInBackground = false
+                    gameViewModel.startNewGame()
+
+                    navController.navigate(AppDestination.Game.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onResumeGameClick = {
+                    gameViewModel.resumeGame()
+                    isGameInBackground = false
+
+                    /*
+                     * Entfernt das vorübergehend geöffnete Hauptmenü
+                     * und zeigt wieder denselben Game-Eintrag.
+                     */
+                    navController.popBackStack()
                 },
                 onTutorialClick = {
                     navController.navigate(AppDestination.Tutorial.route)
@@ -47,11 +82,26 @@ fun GeoGuessrNavHost(
 
         composable(route = AppDestination.Game.route) {
             GameRoute(
+                currentThemeName = currentThemeName,
+                currentTheme = currentTheme,
+                onThemeSelected = onThemeSelected,
+                viewModel = gameViewModel,
+                onHomeClick = {
+                    isGameInBackground = true
+
+                    navController.navigate(AppDestination.Home.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onExitGame = {
-                    navController.popBackStack(
-                        route = AppDestination.Home.route,
-                        inclusive = false
-                    )
+                    isGameInBackground = false
+
+                    navController.navigate(AppDestination.Home.route) {
+                        popUpTo(AppDestination.Home.route) {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -64,13 +114,7 @@ fun GeoGuessrNavHost(
 
         composable(route = AppDestination.StreetViewTest.route) {
             StreetViewTestScreen(
-                onBackClick = {
-                    navController.navigate(AppDestination.Home.route) {
-                        popUpTo(AppDestination.StreetViewTest.route) {
-                            inclusive = true
-                        }
-                    }
-                }
+                onBackClick = navController::popBackStack
             )
         }
     }

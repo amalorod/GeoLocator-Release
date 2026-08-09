@@ -19,6 +19,7 @@ data class GameUiState(
     val roundDistanceKilometers: Double? = null,
     val roundScore: Int? = null,
     val viewMode: GameViewMode = GameViewMode.STREET_VIEW,
+    val isPaused: Boolean = false,
     val isLoading: Boolean = true,
     val isRoundFinished: Boolean = false,
     val isGameFinished: Boolean = false,

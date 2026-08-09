@@ -1,5 +1,6 @@
 package com.example.geoguessr_app.ui.game
 
+import android.telecom.VideoProfile.isPaused
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.geoguessr_app.domain.model.GeoCoordinate
@@ -40,13 +41,13 @@ class GameViewModel @Inject constructor(
     private var timerJob: Job? = null
 
     init {
-        loadGame()
+        startNewGame()
     }
 
     /**
      * Lädt asynchron fünf unterschiedliche Standorte für eine Partie.
      */
-    private fun loadGame() {
+    fun startNewGame() {
         timerJob?.cancel()
         _uiState.value = GameUiState()
 
@@ -93,6 +94,7 @@ class GameViewModel @Inject constructor(
 
         if (
             state.isLoading ||
+            state.isPaused ||
             state.isRoundFinished ||
             state.isGameFinished
         ) {
@@ -106,6 +108,9 @@ class GameViewModel @Inject constructor(
 
     /**
      * Startet den Countdown der aktuellen Runde.
+     *
+     * Während einer Pause bleibt die Coroutine aktiv, verändert den
+     * Countdown aber nicht. Nach dem Fortsetzen läuft derselbe Timer weiter.
      */
     private fun startTimer() {
         timerJob?.cancel()
@@ -117,16 +122,61 @@ class GameViewModel @Inject constructor(
             ) {
                 delay(1_000)
 
-                _uiState.value = _uiState.value.copy(
-                    remainingSeconds = _uiState.value.remainingSeconds - 1
-                )
+                val state = _uiState.value
+
+                if (!state.isPaused && !state.isRoundFinished) {
+                    _uiState.value = state.copy(
+                        remainingSeconds = state.remainingSeconds - 1
+                    )
+                }
             }
 
-            if (_uiState.value.remainingSeconds == 0) {
+            if (
+                _uiState.value.remainingSeconds == 0 &&
+                !_uiState.value.isRoundFinished
+            ) {
                 finishRoundWithoutGuess()
             }
         }
     }
+
+    /**
+     * Pausiert die aktuelle Partie.
+     *
+     * Spielfortschritt, Kartenmarker und verbleibende Zeit bleiben erhalten.
+     */
+    fun pauseGame() {
+        val state = _uiState.value
+
+        if (
+            state.isLoading ||
+            state.isRoundFinished ||
+            state.isGameFinished ||
+            state.isPaused
+        ) {
+            return
+        }
+
+        _uiState.value = state.copy(
+            isPaused = true
+        )
+    }
+
+    /**
+     * Setzt eine pausierte Partie fort.
+     */
+    fun resumeGame() {
+        val state = _uiState.value
+
+        if (!state.isPaused || state.isGameFinished) {
+            return
+        }
+
+        _uiState.value = state.copy(
+            isPaused = false
+        )
+    }
+
 
 
     /**
@@ -137,6 +187,7 @@ class GameViewModel @Inject constructor(
 
         if (
             state.isLoading ||
+            state.isPaused ||
             state.isRoundFinished ||
             state.isGameFinished
         ) {
@@ -246,6 +297,7 @@ class GameViewModel @Inject constructor(
 
         if (nextLocation == null) {
             _uiState.value = state.copy(
+
                 errorMessage = "Der nächste Standort konnte nicht geladen werden."
             )
             return
@@ -256,6 +308,7 @@ class GameViewModel @Inject constructor(
             currentRound = nextRound,
             remainingSeconds = 60,
             currentLocation = nextLocation,
+            isPaused= false,
             guessedLocation = null,
             roundDistanceKilometers = null,
             roundScore = null,
@@ -271,6 +324,6 @@ class GameViewModel @Inject constructor(
      * Startet nach einem Ladefehler eine neue Partie.
      */
     fun retryLoading() {
-        loadGame()
+        startNewGame()
     }
 }
