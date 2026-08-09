@@ -7,13 +7,18 @@ package com.example.geoguessr_app.navigation
  * in verschiedenen UI-Dateien.
  */
 sealed class AppDestination(
-    val route: String
-) {
-    data object Home : AppDestination("home")
+
+val route: String
+
+) { data object Home : AppDestination("home")
+
 
     data object Tutorial : AppDestination("tutorial")
 
     data object Game : AppDestination("game")
 
     data object MapTest : AppDestination("map_test")
+
+    data object StreetViewTest : AppDestination("street_view_test")
+
 }
