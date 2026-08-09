@@ -1,7 +1,19 @@
 package com.example.geoguessr_app.ui.home
 
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandIn
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -13,23 +25,22 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.animation.expandIn
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkOut
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -39,6 +50,7 @@ import kotlin.math.sin
  */
 @Composable
 fun EuropeMenuMap(
+    @DrawableRes backgroundImageId: Int,
     hasActiveGame: Boolean,
     currentThemeName: String,
     onStartGameClick: () -> Unit,
@@ -51,9 +63,25 @@ fun EuropeMenuMap(
     Box(
         modifier = modifier.height(430.dp)
     ) {
-        EuropeSilhouette(
-            modifier = Modifier.fillMaxSize()
-        )
+        val europeShape = remember { EuropeShape() }
+
+        // KORREKTUR: Crossfade sorgt für den weichen Bildwechsel
+        Crossfade(
+            targetState = backgroundImageId,
+            animationSpec = tween(durationMillis = 1_200), // Dauer des Übergangs in Millisekunden
+            label = "europeImageCrossfade",
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(europeShape) // Clippt die Form direkt für den gesamten Animationsbereich
+        ) { targetImageId ->
+            Image(
+                painter = painterResource(targetImageId),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                alpha = 0.42f,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         AnimatedVisibility(
             enter = fadeIn() + expandIn(),
@@ -213,31 +241,28 @@ private fun Modifier.countryMotion(
 /**
  * Dekorativer, vereinfachter Umriss Europas.
  */
-@Composable
-private fun EuropeSilhouette(
-    modifier: Modifier = Modifier
-) {
-    val color = MaterialTheme.colorScheme.secondaryContainer
+private class EuropeShape : Shape {
 
-    Canvas(modifier = modifier) {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
         val path = Path().apply {
             moveTo(size.width * 0.18f, size.height * 0.18f)
             lineTo(size.width * 0.42f, size.height * 0.08f)
             lineTo(size.width * 0.66f, size.height * 0.15f)
-            lineTo(size.width * 0.82f, size.height * 0.35f)
+            lineTo(size.width * 0.82f, size.height * 0.30f)
             lineTo(size.width * 0.72f, size.height * 0.50f)
             lineTo(size.width * 0.88f, size.height * 0.68f)
             lineTo(size.width * 0.62f, size.height * 0.82f)
             lineTo(size.width * 0.47f, size.height * 0.95f)
             lineTo(size.width * 0.36f, size.height * 0.72f)
             lineTo(size.width * 0.13f, size.height * 0.62f)
-            lineTo(size.width * 0.25f, size.height * 0.45f)
+            lineTo(size.width * 0.25f, size.height * 0.42f)
             close()
         }
 
-        drawPath(
-            path = path,
-            color = color.copy(alpha = 0.38f)
-        )
+        return Outline.Generic(path)
     }
 }
