@@ -3,14 +3,17 @@ package com.example.geoguessr_app.navigation
 /**
  * Enthält alle Navigationsziele der App.
  *
- * Die Routen werden zentral definiert, damit keine frei geschriebenen
- * Strings über verschiedene Screens verteilt werden.
+ * Zentrale Routen vermeiden frei geschriebene Routennamen
+ * in verschiedenen UI-Dateien.
  */
-sealed class AppDestination(val route: String) {
-
+sealed class AppDestination(
+    val route: String
+) {
     data object Home : AppDestination("home")
 
     data object Tutorial : AppDestination("tutorial")
 
     data object Game : AppDestination("game")
+
+    data object MapTest : AppDestination("map_test")
 }

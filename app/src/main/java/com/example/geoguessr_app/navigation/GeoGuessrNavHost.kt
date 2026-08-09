@@ -5,15 +5,16 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.geoguessr_app.ui.home.HomeScreen
-import com.example.geoguessr_app.ui.tutorial.TutorialScreen
 import com.example.geoguessr_app.ui.game.GameRoute
+import com.example.geoguessr_app.ui.home.HomeScreen
+import com.example.geoguessr_app.ui.maptest.MapTestScreen
+import com.example.geoguessr_app.ui.tutorial.TutorialScreen
 
 /**
  * Zentrale Navigationskomponente der App.
  *
- * Der NavController verwaltet den Back Stack. Die einzelnen Screens
- * erhalten nur Callback-Funktionen und kennen den NavController nicht.
+ * Während des isolierten Kartentests ist MapTest vorübergehend
+ * das Startziel. Nach erfolgreichem Test wird wieder Home verwendet.
  */
 @Composable
 fun GeoGuessrNavHost(
@@ -23,7 +24,7 @@ fun GeoGuessrNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = AppDestination.Home.route,
+        startDestination = AppDestination.MapTest.route,
         modifier = modifier
     ) {
         composable(route = AppDestination.Home.route) {
@@ -45,7 +46,6 @@ fun GeoGuessrNavHost(
             )
         }
 
-
         composable(route = AppDestination.Game.route) {
             GameRoute(
                 onExitGame = {
@@ -57,9 +57,16 @@ fun GeoGuessrNavHost(
             )
         }
 
-
-
+        composable(route = AppDestination.MapTest.route) {
+            MapTestScreen(
+                onBackClick = {
+                    navController.navigate(AppDestination.Home.route) {
+                        popUpTo(AppDestination.MapTest.route) {
+                            inclusive = true
+                        }
+                    }
+                }
+            )
+        }
     }
 }
-
-
