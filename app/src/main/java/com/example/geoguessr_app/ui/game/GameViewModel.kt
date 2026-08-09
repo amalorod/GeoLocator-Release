@@ -2,6 +2,8 @@ package com.example.geoguessr_app.ui.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.geoguessr_app.domain.model.GeoLocation
+import com.example.geoguessr_app.domain.usecase.GetRandomLocationsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -12,38 +14,63 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Verwaltet die Spiellogik unabhängig von der Benutzeroberfläche.
+ * Verwaltet den Zustand und Ablauf einer vollständigen Partie.
  *
- * Hilt erstellt das ViewModel. StateFlow liefert den aktuellen Zustand
- * reaktiv an die Compose-Oberfläche.
+ * Das ViewModel kennt weder Compose-Komponenten noch die konkrete
+ * Repository-Implementierung. Zufällige Standorte erhält es über
+ * einen Use Case der Domain-Schicht.
  */
 @HiltViewModel
-class GameViewModel @Inject constructor() : ViewModel() {
+class GameViewModel @Inject constructor(
+    private val getRandomLocations: GetRandomLocationsUseCase
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameUiState())
-
-    /**
-     * Von außen nur lesbarer Zustand.
-     */
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
+    private var gameLocations: List<GeoLocation> = emptyList()
     private var timerJob: Job? = null
 
     init {
-        startTimer()
+        loadGame()
     }
 
     /**
-     * Startet einen Coroutine-basierten Countdown.
-     *
-     * viewModelScope beendet die Coroutine automatisch,
-     * sobald das ViewModel endgültig zerstört wird.
+     * Lädt asynchron fünf unterschiedliche Zufallsstandorte.
      */
+    private fun loadGame() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                errorMessage = null
+            )
+
+            runCatching {
+                getRandomLocations(count = _uiState.value.totalRounds)
+            }.onSuccess { locations ->
+                gameLocations = locations
+
+                _uiState.value = _uiState.value.copy(
+                    currentLocation = locations.firstOrNull(),
+                    isLoading = false
+                )
+
+                startTimer()
+            }.onFailure { exception ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = exception.message
+                        ?: "Die Standorte konnten nicht geladen werden."
+                )
+            }
+        }
+    }
+
     private fun startTimer() {
         timerJob?.cancel()
 
         timerJob = viewModelScope.launch {
-            while (_uiState.value.remainingSeconds > 0) {
+            while (_uiState.value.remainingSeconds > 0 && !_uiState.value.isRoundFinished) {
                 delay(1_000)
 
                 _uiState.value = _uiState.value.copy(
@@ -51,21 +78,32 @@ class GameViewModel @Inject constructor() : ViewModel() {
                 )
             }
 
-            finishRound()
+            if (_uiState.value.remainingSeconds == 0) {
+                finishRound()
+            }
         }
     }
 
     /**
-     * Simuliert vorerst die Abgabe eines Tipps.
+     * Simuliert weiterhin einen Tipp mit 1.000 Punkten.
      *
-     * Später wird die feste Punktzahl durch die echte
-     * Entfernungs- und Punkteberechnung ersetzt.
+     * Im nächsten Entwicklungsschritt ersetzen wir dies durch
+     * Koordinatenauswahl, Distanz- und Punkteberechnung.
      */
     fun submitGuess() {
-        if (_uiState.value.isRoundFinished) return
+        val state = _uiState.value
 
-        _uiState.value = _uiState.value.copy(
-            totalScore = _uiState.value.totalScore + 1_000
+        if (
+            state.isLoading ||
+            state.isRoundFinished ||
+            state.isGameFinished ||
+            state.currentLocation == null
+        ) {
+            return
+        }
+
+        _uiState.value = state.copy(
+            totalScore = state.totalScore + 1_000
         )
 
         finishRound()
@@ -80,11 +118,13 @@ class GameViewModel @Inject constructor() : ViewModel() {
     }
 
     /**
-     * Beginnt die nächste Runde oder beendet das Spiel
-     * nach der fünften Runde.
+     * Wählt anhand der Rundennummer den nächsten zuvor
+     * zufällig bestimmten Standort aus.
      */
     fun startNextRound() {
         val state = _uiState.value
+
+        if (!state.isRoundFinished) return
 
         if (state.currentRound >= state.totalRounds) {
             _uiState.value = state.copy(
@@ -93,12 +133,21 @@ class GameViewModel @Inject constructor() : ViewModel() {
             return
         }
 
+        val nextRound = state.currentRound + 1
+        val nextLocation = gameLocations.getOrNull(nextRound - 1)
+
         _uiState.value = state.copy(
-            currentRound = state.currentRound + 1,
+            currentRound = nextRound,
             remainingSeconds = 60,
+            currentLocation = nextLocation,
             isRoundFinished = false
         )
 
         startTimer()
+    }
+
+    fun retryLoading() {
+        timerJob?.cancel()
+        loadGame()
     }
 }

@@ -34,6 +34,7 @@ fun GameRoute(
         onSubmitGuess = viewModel::submitGuess,
         onNextRound = viewModel::startNextRound,
         onExitGame = onExitGame,
+        onRetryLoading = viewModel::retryLoading,
         modifier = modifier
     )
 }
@@ -47,6 +48,7 @@ private fun GameScreen(
     onSubmitGuess: () -> Unit,
     onNextRound: () -> Unit,
     onExitGame: () -> Unit,
+    onRetryLoading: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -76,11 +78,28 @@ private fun GameScreen(
         )
 
         when {
+            uiState.isLoading -> {
+                Text("Standorte werden geladen …")
+            }
+
+            uiState.errorMessage != null -> {
+                Text(
+                    text = uiState.errorMessage,
+                    color = MaterialTheme.colorScheme.error
+                )
+
+                Button(onClick = onRetryLoading) {
+                    Text("Erneut versuchen")
+                }
+            }
+
             uiState.isGameFinished -> {
                 Text(
                     text = "Spiel beendet!",
                     style = MaterialTheme.typography.headlineSmall
                 )
+
+                Text("Endpunktzahl: ${uiState.totalScore}")
 
                 Button(
                     onClick = onExitGame,
@@ -108,6 +127,8 @@ private fun GameScreen(
             }
 
             else -> {
+                Text("Zufälliger Standort wurde geladen.")
+
                 Button(
                     onClick = onSubmitGuess,
                     modifier = Modifier.fillMaxWidth()
