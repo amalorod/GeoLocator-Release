@@ -23,6 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.graphics.Color
+import com.google.maps.android.compose.Polyline
 
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -244,6 +247,20 @@ private fun RoundResult(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
+        val actualLocation = uiState.currentLocation
+        val guessedLocation = uiState.guessedLocation
+
+        if (actualLocation != null && guessedLocation != null) {
+            RoundResultMap(
+                actualLocation = actualLocation,
+                guessedLocation = guessedLocation,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+            )
+        }
+
         Text(
             text = "Runde abgeschlossen!",
             style = MaterialTheme.typography.headlineMedium,
@@ -388,6 +405,60 @@ private fun GuessMap(
         }
     }
 }
+
+@Composable
+private fun RoundResultMap(
+    actualLocation: GeoLocation,
+    guessedLocation: GeoCoordinate,
+    modifier: Modifier = Modifier
+) {
+    val actualPosition = LatLng(
+        actualLocation.latitude,
+        actualLocation.longitude
+    )
+
+    val guessedPosition = LatLng(
+        guessedLocation.latitude,
+        guessedLocation.longitude
+    )
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(
+            WORLD_CENTER,
+            INITIAL_ZOOM
+        )
+    }
+
+    GoogleMap(
+        modifier = modifier,
+        cameraPositionState = cameraPositionState
+    ) {
+        Marker(
+            state = rememberUpdatedMarkerState(actualPosition),
+            title = "Tatsächlicher Standort"
+        )
+
+        Marker(
+            state = rememberUpdatedMarkerState(guessedPosition),
+            title = "Dein Tipp"
+        )
+
+        Polyline(
+            points = listOf(
+                actualPosition,
+                guessedPosition
+            ),
+            color = Color.Red,
+            width = 8f,
+            geodesic = true
+        )
+    }
+}
+
+
+
+
+
 
 /**
  * Formatiert Koordinaten für die Anzeige.
