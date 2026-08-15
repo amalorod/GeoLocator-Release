@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">GeoGuessr_App</string>
+    <string name="app_logo_description">App Logo</string>
+    <string name="geo_guessr_title">GEO\nGUESSR</string>
 </resources>

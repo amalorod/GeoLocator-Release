@@ -58,7 +58,8 @@ fun EuropeMenuMap(
     onTutorialClick: () -> Unit,
     onThemeClick: () -> Unit,
     onExitAppClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+
 ) {
     Box(
         modifier = modifier.height(430.dp)
@@ -174,6 +175,8 @@ fun EuropeMenuMap(
                 bottomStartPercent = 45
             )
         )
+
+
     }
 }
 

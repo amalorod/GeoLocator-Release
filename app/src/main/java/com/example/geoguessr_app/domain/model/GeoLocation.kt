@@ -11,5 +11,6 @@ data class GeoLocation(
     val name: String,
     val country: String,
     val latitude: Double,
+    val hint: String,
     val longitude: Double
 )

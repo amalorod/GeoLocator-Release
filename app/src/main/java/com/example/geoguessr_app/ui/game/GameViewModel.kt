@@ -1,6 +1,5 @@
 package com.example.geoguessr_app.ui.game
 
-import android.telecom.VideoProfile.isPaused
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.geoguessr_app.domain.model.GeoCoordinate
@@ -41,15 +40,23 @@ class GameViewModel @Inject constructor(
     private var timerJob: Job? = null
 
     init {
-        startNewGame()
+        startNewGame(GameMode.NORMAL)
     }
 
     /**
      * Lädt asynchron fünf unterschiedliche Standorte für eine Partie.
      */
-    fun startNewGame() {
+    fun startNewGame(gameMode: GameMode) {
+
+        loadGame(gameMode)
+    }
+
+    private fun loadGame(gameMode: GameMode = _uiState.value.gameMode) {
         timerJob?.cancel()
-        _uiState.value = GameUiState()
+        _uiState.value = GameUiState(
+            gameMode = gameMode,
+            remainingSeconds = gameMode.roundDurationSeconds
+        )
 
         viewModelScope.launch {
             runCatching {
@@ -286,7 +293,6 @@ class GameViewModel @Inject constructor(
 
         if (state.currentRound >= state.totalRounds) {
             _uiState.value = state.copy(
-
                 isGameFinished = true
             )
             return
@@ -297,16 +303,14 @@ class GameViewModel @Inject constructor(
 
         if (nextLocation == null) {
             _uiState.value = state.copy(
-
                 errorMessage = "Der nächste Standort konnte nicht geladen werden."
             )
             return
         }
 
         _uiState.value = state.copy(
-
             currentRound = nextRound,
-            remainingSeconds = 60,
+            remainingSeconds = state.gameMode.roundDurationSeconds,
             currentLocation = nextLocation,
             isPaused= false,
             guessedLocation = null,
@@ -324,6 +328,6 @@ class GameViewModel @Inject constructor(
      * Startet nach einem Ladefehler eine neue Partie.
      */
     fun retryLoading() {
-        startNewGame()
+        loadGame(_uiState.value.gameMode)
     }
 }

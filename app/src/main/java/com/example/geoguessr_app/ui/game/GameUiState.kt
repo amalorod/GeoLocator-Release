@@ -23,5 +23,6 @@ data class GameUiState(
     val isLoading: Boolean = true,
     val isRoundFinished: Boolean = false,
     val isGameFinished: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val gameMode: GameMode = GameMode.NORMAL,
 )

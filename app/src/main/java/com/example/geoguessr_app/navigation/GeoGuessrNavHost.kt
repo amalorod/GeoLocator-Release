@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.geoguessr_app.ui.game.GameRoute
 import com.example.geoguessr_app.ui.game.GameViewModel
+import com.example.geoguessr_app.ui.game.GameMode
 import com.example.geoguessr_app.ui.home.HomeScreen
 import com.example.geoguessr_app.ui.maptest.MapTestScreen
 import com.example.geoguessr_app.ui.streetviewtest.StreetViewTestScreen
@@ -26,6 +27,9 @@ import com.example.geoguessr_app.ui.tutorial.TutorialScreen
  */
 @Composable
 fun GeoGuessrNavHost(
+
+    selectedGameMode: GameMode,
+    onGameModeSelected: (GameMode) -> Unit,
     modifier: Modifier = Modifier,
     currentThemeName: String,
     onExitAppClick: () -> Unit,
@@ -40,9 +44,10 @@ fun GeoGuessrNavHost(
     }
 
     NavHost(
+
         navController = navController,
         startDestination = AppDestination.Home.route,
-        modifier = modifier
+        modifier = modifier,
     ) {
         composable(route = AppDestination.Home.route) {
             HomeScreen(
@@ -52,12 +57,14 @@ fun GeoGuessrNavHost(
                 hasActiveGame = isGameInBackground,
                 onStartGameClick = {
                     isGameInBackground = false
-                    gameViewModel.startNewGame()
+                    gameViewModel.startNewGame(selectedGameMode)
 
                     navController.navigate(AppDestination.Game.route) {
                         launchSingleTop = true
                     }
                 },
+
+
                 onResumeGameClick = {
                     gameViewModel.resumeGame()
                     isGameInBackground = false
@@ -70,7 +77,9 @@ fun GeoGuessrNavHost(
                 },
                 onTutorialClick = {
                     navController.navigate(AppDestination.Tutorial.route)
-                }
+                },
+                selectedGameMode = selectedGameMode,
+                onGameModeSelected = onGameModeSelected,
             )
         }
 

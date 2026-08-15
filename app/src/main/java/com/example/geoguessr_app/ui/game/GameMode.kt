@@ -1,0 +1,49 @@
+package com.example.geoguessr_app.ui.game
+
+/**
+ * Konfiguration der verfügbaren Spielmodi.
+ *
+ * Noch nicht implementierte Modi werden bereits im Auswahlmenü angezeigt,
+ * bleiben dort aber deaktiviert.
+ */
+enum class GameMode(
+    val displayName: String,
+    val roundDurationSeconds: Int,
+    val streetViewNavigationEnabled: Boolean,
+    val isAvailable: Boolean
+) {
+    NORMAL(
+        displayName = "Normal",
+        roundDurationSeconds = 60,
+        streetViewNavigationEnabled = true,
+        isAvailable = true
+    ),
+
+    PRO(
+        displayName = "Pro",
+        roundDurationSeconds = 10,
+        streetViewNavigationEnabled = false,
+        isAvailable = true
+    ),
+
+    MULTIPLAYER(
+        displayName = "Multiplayer",
+        roundDurationSeconds = 60,
+        streetViewNavigationEnabled = true,
+        isAvailable = false
+    ),
+
+    DAILY_QUEST(
+        displayName = "Daily Quest",
+        roundDurationSeconds = 60,
+        streetViewNavigationEnabled = true,
+        isAvailable = false
+    ),
+
+    CUSTOM(
+        displayName = "Individuell",
+        roundDurationSeconds = 60,
+        streetViewNavigationEnabled = true,
+        isAvailable = false
+    )
+}

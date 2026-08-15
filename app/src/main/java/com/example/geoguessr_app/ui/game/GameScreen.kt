@@ -1,50 +1,59 @@
 package com.example.geoguessr_app.ui.game
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
-import com.example.geoguessr_app.ui.components.PauseOverlay
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import com.example.geoguessr_app.ui.components.AppTopBar
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.foundation.layout.height
-import androidx.compose.ui.graphics.Color
-import com.google.maps.android.compose.Polyline
-
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
+import com.example.geoguessr_app.ui.components.AppTopBar
+import com.example.geoguessr_app.ui.components.HintPanel
+import com.example.geoguessr_app.ui.components.PauseOverlay
 import com.example.geoguessr_app.ui.theme.AppThemeMode
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.StreetViewPanoramaView
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import java.util.Locale
 
-private val WORLD_CENTER = LatLng(0.0, 0.0)
-private const val INITIAL_ZOOM = 1f
+private val EUROPE_CENTER = LatLng(54.0, 15.0)
+private const val INITIAL_ZOOM = 3.5f
 private const val STREET_VIEW_SEARCH_RADIUS_METERS = 500
 
 /**
@@ -79,6 +88,22 @@ fun GameRoute(
             onRetryLoading = viewModel::retryLoading,
             modifier = Modifier.fillMaxSize()
         )
+
+        val currentHint = uiState.currentLocation?.hint
+
+        if (
+            currentHint != null &&
+            !uiState.isLoading &&
+            !uiState.isRoundFinished &&
+            !uiState.isGameFinished
+        ) {
+            HintPanel(
+                hint = currentHint,
+                roundNumber = uiState.currentRound,
+                modifier = Modifier.align(Alignment.CenterStart)
+            )
+        }
+
 
         if (uiState.isPaused) {
             PauseOverlay(
@@ -125,21 +150,15 @@ private fun GameScreen(
             isPauseEnabled = !uiState.isLoading && !uiState.isRoundFinished && !uiState.isGameFinished && !uiState.isPaused,
         )
 
-        Text(
-            text = "Runde ${uiState.currentRound} von ${uiState.totalRounds}",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+        GameStatusHeader(
+            score = uiState.totalScore,
+            currentRound = uiState.currentRound,
+            totalRounds = uiState.totalRounds,
+            remainingSeconds = uiState.remainingSeconds,
+            gameModeName = uiState.gameMode.displayName
         )
 
-        Text(
-            text = "Zeit: ${uiState.remainingSeconds} Sekunden",
-            style = MaterialTheme.typography.titleMedium
-        )
 
-        Text(
-            text = "Gesamtpunkte: ${uiState.totalScore}",
-            style = MaterialTheme.typography.titleMedium
-        )
 
         when {
             uiState.isLoading -> {
@@ -188,6 +207,7 @@ private fun GameScreen(
                 if (currentLocation != null) {
                     GameStreetView(
                         location = currentLocation,
+                        isUserNavigationEnabled = uiState.gameMode.streetViewNavigationEnabled,
                         modifier = Modifier.weight(1f)
                     )
 
@@ -257,7 +277,8 @@ private fun RoundResult(
                 guessedLocation = guessedLocation,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(220.dp)
+                    // Karte nimmt den gesamten verfügbaren Ergebnisbereich an
+                    .weight(1f)
             )
         }
 
@@ -332,6 +353,7 @@ private fun GameResult(
 @Composable
 private fun GameStreetView(
     location: GeoLocation,
+    isUserNavigationEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -367,7 +389,7 @@ private fun GameStreetView(
         view.getStreetViewPanoramaAsync { panorama ->
             panorama.isPanningGesturesEnabled = true
             panorama.isZoomGesturesEnabled = true
-            panorama.isUserNavigationEnabled = true
+            panorama.isUserNavigationEnabled = isUserNavigationEnabled
             panorama.isStreetNamesEnabled = false
             panorama.setPosition(
                 LatLng(location.latitude, location.longitude),
@@ -387,7 +409,7 @@ private fun GuessMap(
     modifier: Modifier = Modifier
 ) {
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(WORLD_CENTER, INITIAL_ZOOM)
+        position = CameraPosition.fromLatLngZoom(EUROPE_CENTER, INITIAL_ZOOM)
     }
 
     GoogleMap(
@@ -424,12 +446,45 @@ private fun RoundResultMap(
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
-            WORLD_CENTER,
+            EUROPE_CENTER,
             INITIAL_ZOOM
         )
     }
 
+    var isMapLoaded by remember {
+        mutableStateOf(false)
+    }
+
+    val bounds = remember(
+        actualPosition,
+        guessedPosition
+    ) {
+        LatLngBounds.Builder()
+            .include(actualPosition)
+            .include(guessedPosition)
+            .build()
+    }
+
+    val boundsPaddingPixels = with(LocalDensity.current) {
+        48.dp.roundToPx()
+    }
+
+    LaunchedEffect(isMapLoaded, bounds) {
+        if (isMapLoaded) {
+            cameraPositionState.animate(
+                update = CameraUpdateFactory.newLatLngBounds(
+                    bounds,
+                    boundsPaddingPixels
+                ),
+                durationMs = 800
+            )
+        }
+    }
+
     GoogleMap(
+        onMapLoaded = {
+            isMapLoaded = true
+        },
         modifier = modifier,
         cameraPositionState = cameraPositionState
     ) {
@@ -457,6 +512,56 @@ private fun RoundResultMap(
 
 
 
+    @Composable
+    private fun GameStatusHeader(
+        score: Int,
+        currentRound: Int,
+        totalRounds: Int,
+        remainingSeconds: Int,
+        gameModeName: String
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Surface(
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(50)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 14.dp,
+                            vertical = 7.dp
+                        ),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Score: $score")
+                    Text("Runde: $currentRound/$totalRounds")
+                    Text("$remainingSeconds Sek.")
+                }
+            }
+
+            Surface(
+                color = Color(0xFFD4AF37),
+                contentColor = Color(0xFF2B2100),
+                shape = RoundedCornerShape(50)
+            ) {
+                Text(
+                    text = gameModeName,
+                    modifier = Modifier.padding(
+                        horizontal = 14.dp,
+                        vertical = 3.dp
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
 
 
 

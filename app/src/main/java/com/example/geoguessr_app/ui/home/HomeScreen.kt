@@ -14,22 +14,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.geoguessr_app.R
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import com.example.geoguessr_app.ui.game.GameMode
 import kotlinx.coroutines.delay
+
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 
 @Composable
 fun HomeScreen(
+    selectedGameMode: GameMode,
+    onGameModeSelected: (GameMode) -> Unit,
     currentThemeName: String,
     onThemeClick: () -> Unit,
     onStartGameClick: () -> Unit,
@@ -46,6 +60,10 @@ fun HomeScreen(
         R.drawable.home_header_france,
         R.drawable.home_header_italy
     )
+    var isModeDialogVisible by remember {
+        mutableStateOf(false)
+    }
+
 
     var currentImageIndex by rememberSaveable {
         mutableIntStateOf(0)
@@ -87,7 +105,7 @@ fun HomeScreen(
                 )
 
                 Text(
-                    text = "Entdecke Europa und errate deinen Standort.",
+                    text = "Entdecke Europa und errate deinen Standort!",
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -95,6 +113,7 @@ fun HomeScreen(
             }
 
             EuropeMenuMap(
+
                 backgroundImageId = headerImages[currentImageIndex],
                 hasActiveGame = hasActiveGame,
                 currentThemeName = currentThemeName,
@@ -105,8 +124,31 @@ fun HomeScreen(
                 onExitAppClick = onExitAppClick,
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = 20.dp),
+
             )
+
+            Button(
+                onClick = {
+                    isModeDialogVisible = true
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 52.dp)
+                    .fillMaxWidth(0.72f)
+                    .height(58.dp),
+                shape = CompassBannerShape(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Text(
+                    text = "MODUS: ${selectedGameMode.displayName.uppercase()}",
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
 
             Text(
                 text = "Entwickelt von: Alic Malorodow",
@@ -116,5 +158,40 @@ fun HomeScreen(
                     .padding(bottom = 20.dp)
             )
         }
+    }
+
+    if (isModeDialogVisible) {
+        GameModeDialog(
+            selectedMode = selectedGameMode,
+            onModeSelected = onGameModeSelected,
+            onDismiss = {
+                isModeDialogVisible = false
+            }
+        )
+    }
+
+}
+
+/**
+ * Langgezogene Wegweiserform mit Spitzen an beiden Seiten.
+ */
+private class CompassBannerShape : Shape {
+
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val path = Path().apply {
+            moveTo(size.width * 0.08f, 0f)
+            lineTo(size.width * 0.92f, 0f)
+            lineTo(size.width, size.height * 0.50f)
+            lineTo(size.width * 0.92f, size.height)
+            lineTo(size.width * 0.08f, size.height)
+            lineTo(0f, size.height * 0.50f)
+            close()
+        }
+
+        return Outline.Generic(path)
     }
 }

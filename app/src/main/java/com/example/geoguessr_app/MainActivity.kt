@@ -17,6 +17,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.example.geoguessr_app.ui.theme.AppThemeMode
+import com.example.geoguessr_app.ui.game.GameMode
+
+
+
 
 /**
  * Einziger Activity-Einstiegspunkt der Anwendung.
@@ -37,10 +41,15 @@ class MainActivity : ComponentActivity() {
             var themeMode by rememberSaveable {
                 mutableStateOf(AppThemeMode.LIGHT)
             }
+            var selectedGameMode by rememberSaveable {
+                mutableStateOf(GameMode.NORMAL)
+            }
             GeoGuessr_AppTheme(themeMode = themeMode) {
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     GeoGuessrNavHost(
+                        selectedGameMode = selectedGameMode,
+                        onGameModeSelected = { mode -> selectedGameMode = mode },
                         onExitAppClick = {
                             finishAffinity()
                         },
