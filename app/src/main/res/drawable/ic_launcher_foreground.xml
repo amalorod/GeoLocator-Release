@@ -4,74 +4,91 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Symmetrisches Geografie-Dashboard -->
+    <!-- Lückenlose Mosaik-Landkarte im Hintergrund (Grid von X=16 bis X=92, Y=40 bis Y=91) -->
 
-    <!-- Obere Reihe -->
+    <!-- OBERE REIHE (Y: 40 bis 57) -->
+    <!-- Block Links Außen (Blau) -->
     <path
         android:fillColor="#29B6F6"
-        android:pathData="M24,48 H36 V60 H24 Z" />
-
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M16,40 H35 V57 H16 Z" />
+    <!-- Block Mitte Links (Hellgrün) -->
     <path
         android:fillColor="#66BB6A"
-        android:pathData="M39,43 H52 V60 H39 Z" />
-
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M35,40 H54 V57 H35 Z" />
+    <!-- Block Mitte Rechts (Dunkelgrün) -->
     <path
         android:fillColor="#43A047"
-        android:pathData="M56,43 H69 V60 H56 Z" />
-
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M54,40 H73 V57 H54 Z" />
+    <!-- Block Rechts Außen (Blau) -->
     <path
         android:fillColor="#29B6F6"
-        android:pathData="M72,48 H84 V60 H72 Z" />
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M73,40 H92 V57 H73 Z" />
 
-    <!-- Mittlere Reihe -->
+    <!-- MITTLERE REIHE (Y: 57 bis 74) -->
+    <!-- Block Links Außen (Gelb) -->
     <path
         android:fillColor="#FDD835"
-        android:pathData="M20,63 H36 V76 H20 Z" />
-
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M16,57 H35 V74 H16 Z" />
+    <!-- Block Mitte Links (Türkis) -->
     <path
         android:fillColor="#26A69A"
-        android:pathData="M39,63 H52 V76 H39 Z" />
-
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M35,57 H54 V74 H35 Z" />
+    <!-- Block Mitte Rechts (Dunkelblau) -->
     <path
         android:fillColor="#1E88E5"
-        android:pathData="M56,63 H69 V76 H56 Z" />
-
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M54,57 H73 V74 H54 Z" />
+    <!-- Block Rechts Außen (Gelb) -->
     <path
         android:fillColor="#FDD835"
-        android:pathData="M72,63 H88 V76 H72 Z" />
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M73,57 H92 V74 H73 Z" />
 
-    <!-- Untere Reihe -->
+    <!-- UNTERE REIHE (Y: 74 bis 91) -->
+    <!-- Block Links (Hellgrün-Gelb) -->
     <path
         android:fillColor="#8BC34A"
-        android:pathData="M27,79 H42 V90 H27 Z" />
-
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M16,74 H41 V91 H16 Z" />
+    <!-- Block Mitte (Hellblau) -->
     <path
         android:fillColor="#4FC3F7"
-        android:pathData="M45,79 H63 V90 H45 Z" />
-
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M41,74 H67 V91 H41 Z" />
+    <!-- Block Rechts (Hellgrün-Gelb) -->
     <path
         android:fillColor="#8BC34A"
-        android:pathData="M66,79 H81 V90 H66 Z" />
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M67,74 H92 V91 H67 Z" />
 
-    <!-- Kleine Akzentpixel -->
+    <!-- Der neue dunkelblaue PIN mit integriertem Fragezeichen -->
+    <!-- PIN-Körper (Dunkelblau mit passender dunkler Kontur) -->
     <path
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.75"
-        android:pathData="M20,48 H24 V52 H20 Z" />
-
-    <path
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.75"
-        android:pathData="M84,48 H88 V52 H84 Z" />
-
-    <!-- PIN -->
-    <path
-        android:fillColor="#EF5350"
-        android:strokeColor="#8E2020"
+        android:fillColor="#1E88E5"
+        android:strokeColor="#0D47A1"
         android:strokeWidth="1.8"
         android:pathData="M54,18 C42,18 33,27 33,39 C33,52 54,70 54,70 C54,70 75,52 75,39 C75,27 66,18 54,18 Z" />
 
+    <!-- Symmetrisches Fragezeichen (Weiß, perfekt im oberen Kreis des PINs zentriert) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,39 m-6.5,0 a6.5,6.5 0,1 1,13 0 a6.5,6.5 0,1 1,-13 0" />
+        android:pathData="M54,29 C50.5,29 48,31.5 48,35 H51 C51,33.5 52,32 54,32 C56,32 57,33 57,34.5 C57,36.5 54.5,37.5 53.5,39.5 C52.5,41.5 52.5,43.5 52.5,45 H55.5 C55.5,44 55.5,42.5 56.5,41 C57.5,39.5 60,38 60,34.5 C60,31.5 57.5,29 54,29 Z M52.5,48 H55.5 V51 H52.5 Z" />
+
 </vector>
