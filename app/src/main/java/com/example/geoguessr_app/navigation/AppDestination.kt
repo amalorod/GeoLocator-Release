@@ -14,7 +14,8 @@ val route: String
 
     data object Statistics : AppDestination("statistics")
 
-
+    data object MultiplayerLobby : AppDestination  ("multiplayerLobby")
+    data object Profile : AppDestination("profile")
     data object Tutorial : AppDestination("tutorial")
 
     data object Game : AppDestination("game")

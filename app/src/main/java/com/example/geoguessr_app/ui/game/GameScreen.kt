@@ -57,6 +57,7 @@ private val EUROPE_CENTER = LatLng(54.0, 15.0)
 private const val INITIAL_ZOOM = 3.5f
 private const val STREET_VIEW_SEARCH_RADIUS_METERS = 500
 
+
 /**
  * Verbindet das Hilt-ViewModel mit der zustandslosen Oberfläche.
  */
@@ -90,12 +91,10 @@ fun GameRoute(
             modifier = Modifier.fillMaxSize()
         )
 
-        if (
-            uiState.isGameFinished &&
-            uiState.gameStatistics != null
-        ) {
+        val gameStatistics = uiState.gameStatistics
+        if (uiState.isGameFinished && gameStatistics != null) {
             MatchSummaryDialog(
-                statistics = uiState.gameStatistics,
+                statistics = gameStatistics,
                 onDetailsClick = {
                     // kommt im nächsten Schritt
                 },

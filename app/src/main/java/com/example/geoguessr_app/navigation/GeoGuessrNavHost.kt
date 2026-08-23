@@ -16,10 +16,13 @@ import com.example.geoguessr_app.ui.game.GameViewModel
 import com.example.geoguessr_app.ui.game.GameMode
 import com.example.geoguessr_app.ui.home.HomeScreen
 import com.example.geoguessr_app.ui.maptest.MapTestScreen
-import com.example.geoguessr_app.ui.statistics.StatisticsScreen
 import com.example.geoguessr_app.ui.streetviewtest.StreetViewTestScreen
 import com.example.geoguessr_app.ui.theme.AppThemeMode
 import com.example.geoguessr_app.ui.tutorial.TutorialScreen
+import com.example.geoguessr_app.data.statistics.StatisticsRepository
+import com.example.geoguessr_app.ui.statistics.LifetimeStatisticsScreen
+import com.example.geoguessr_app.data.profile.ProfileRepository
+import com.example.geoguessr_app.ui.profile.ProfileScreen
 
 /**
  * Zentrale Navigation der App.
@@ -54,7 +57,11 @@ fun GeoGuessrNavHost(
         composable(route = AppDestination.Home.route) {
             HomeScreen(
                 currentThemeName = currentThemeName,
-                onProfileClick = {},
+                onProfileClick = {
+                    navController.navigate(
+                        AppDestination.Profile.route
+                    )
+                },
                 onStatisticsClick = {
                     navController.navigate(
                         AppDestination.Statistics.route
@@ -91,6 +98,22 @@ fun GeoGuessrNavHost(
             )
         }
 
+        composable(
+            route = AppDestination.Profile.route
+        ) {
+
+            val profile =
+                ProfileRepository.profile
+                    .collectAsState()
+
+            ProfileScreen(
+                profile = profile.value,
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
         composable(route = AppDestination.Tutorial.route) {
             TutorialScreen(
                 onBackClick = navController::popBackStack
@@ -102,16 +125,12 @@ fun GeoGuessrNavHost(
         ) {
 
             val statistics =
-                gameViewModel.uiState.collectAsState().value
+                StatisticsRepository
+                    .statistics
+                    .collectAsState()
 
-            StatisticsScreen(
-                totalScore =
-                    statistics.gameStatistics?.totalScore ?: 0,
-
-                statistics =
-                    statistics.gameStatistics?.rounds
-                        ?: emptyList(),
-
+            LifetimeStatisticsScreen(
+                statistics = statistics.value,
                 onBackClick = {
                     navController.popBackStack()
                 }

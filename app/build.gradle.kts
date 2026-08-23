@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.google.maps.secrets)
+    id("com.google.gms.google-services") version "4.5.0"
 }
 
 android {
@@ -68,4 +69,18 @@ dependencies {
 
     //ergänzt
     implementation(libs.google.maps.compose)
+    implementation(
+        "androidx.datastore:datastore-preferences:1.1.1"
+    )
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:34.18.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-analytics")
+    implementation(
+        "com.google.firebase:firebase-database"
+    )
+
+
+    // Add the dependencies for any other desired Firebase products
+    // https://firebase.google.com/docs/android/setup#available-libraries
 }

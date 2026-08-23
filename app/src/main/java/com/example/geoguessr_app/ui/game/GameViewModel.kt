@@ -2,6 +2,7 @@ package com.example.geoguessr_app.ui.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.geoguessr_app.data.datastore.StatisticsDataStoreRepository
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
 import com.example.geoguessr_app.domain.usecase.CalculateDistanceUseCase
@@ -17,6 +18,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.example.geoguessr_app.domain.model.statistics.RoundStatistics
 import com.example.geoguessr_app.domain.model.statistics.GameStatistics
+import com.example.geoguessr_app.data.statistics.StatisticsRepository
+
+
 
 
 /**
@@ -28,6 +32,8 @@ import com.example.geoguessr_app.domain.model.statistics.GameStatistics
  */
 @HiltViewModel
 class GameViewModel @Inject constructor(
+    private val statisticsRepository:
+    StatisticsDataStoreRepository,
     private val getRandomLocations: GetRandomLocationsUseCase,
     private val calculateDistance: CalculateDistanceUseCase,
     private val calculateScore: CalculateScoreUseCase
@@ -313,6 +319,42 @@ class GameViewModel @Inject constructor(
         }
 
         if (state.currentRound >= state.totalRounds) {
+
+            val currentLifetime =
+                StatisticsRepository.statistics.value
+
+            val updatedLifetime =
+                currentLifetime.copy(
+                    gamesPlayed =
+                        currentLifetime.gamesPlayed + 1,
+
+                    roundsPlayed =
+                        currentLifetime.roundsPlayed +
+                                state.roundStatistics.size,
+
+                    totalScore =
+                        currentLifetime.totalScore +
+                                state.totalScore,
+
+                    bestGameScore =
+                        maxOf(
+                            currentLifetime.bestGameScore,
+                            state.totalScore
+                        ),
+
+                    totalDistanceKm =
+                        currentLifetime.totalDistanceKm +
+                                state.roundStatistics.sumOf {
+                                    it.distanceKm
+                                }
+                )
+
+            viewModelScope.launch {
+
+                statisticsRepository.saveStatistics(
+                    updatedLifetime
+                )
+            }
             _uiState.value = state.copy(
                 isGameFinished = true,
                 gameStatistics = GameStatistics(
