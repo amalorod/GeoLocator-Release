@@ -40,7 +40,16 @@ class LobbyViewModel @Inject constructor(
     }
 
     fun selectMode(mode: MultiplayerMode) {
+        val lobbyCode = _uiState.value.lobbyCode
+        val isHost = _uiState.value.players.find { it.uid == _uiState.value.currentUserUid }?.host ?: false
+        
+        if (!isHost) return
+
         _uiState.update { it.copy(selectedMode = mode, errorMessage = null) }
+        
+        viewModelScope.launch {
+            multiplayerRepository.updateLobbyMode(lobbyCode, mode.name)
+        }
     }
 
     fun createLobby() {
@@ -174,12 +183,19 @@ class LobbyViewModel @Inject constructor(
                 .collect { lobby ->
                     Log.d("MULTIPLAYER", "Observed Lobby: $lobby")
                     if (lobby != null) {
+                        val remoteMode = try {
+                            MultiplayerMode.valueOf(lobby.mode)
+                        } catch (e: Exception) {
+                            MultiplayerMode.FREEPLAY
+                        }
+
                         _uiState.update {
                             it.copy(
                                 lobbyCode = lobby.lobbyCode.ifEmpty { lobbyCode },
                                 players = lobby.players,
                                 started = lobby.started,
-                                sessionId = lobby.sessionId
+                                sessionId = lobby.sessionId,
+                                selectedMode = remoteMode
                             )
                         }
                     }
@@ -188,57 +204,69 @@ class LobbyViewModel @Inject constructor(
     }
 
     fun startLobby() {
+        Log.e("MULTIPLAYER", "startLobby() aufgerufen")
         val players = _uiState.value.players
         if (players.size < 2) {
+            Log.e("MULTIPLAYER", "Zu wenige Spieler: ${players.size}")
             _uiState.update { it.copy(errorMessage = "Zu wenige Spieler! Mindestens 2 Spieler benötigt") }
             return
         }
 
         if (!players.all { it.ready }) {
+            Log.e("MULTIPLAYER", "Nicht alle ready")
             _uiState.update { it.copy(errorMessage = "Nicht alle Spieler sind bereit!") }
             return
         }
 
         viewModelScope.launch {
-            val code = _uiState.value.lobbyCode
-            val sessionId = SessionIdGenerator.generate()
-            
-            // 1. Standorte für alle Spieler festlegen
-            val locations = getRandomLocations(count = 5)
-            val locationIds = locations.map { it.id }
+            try {
+                val code = _uiState.value.lobbyCode
+                val sessionId = SessionIdGenerator.generate()
+                Log.e("MULTIPLAYER", "Generiere Session: $sessionId")
+                
+                // 1. Standorte für alle Spieler festlegen
+                val locations = getRandomLocations(count = 5)
+                val locationIds = locations.map { it.id }
 
-            // 2. Session Objekt erstellen
-            val session = MatchSession(
-                sessionId = sessionId,
-                hostUid = firebaseAuthRepository.currentUid() ?: "",
-                lobbyCode = code,
-                mode = _uiState.value.selectedMode.name,
-                locationIds = locationIds,
-                totalRounds = 5,
-                currentLocationId = locationIds.firstOrNull() ?: ""
-            )
-
-            // 3. Session in Firebase anlegen
-            sessionRepository.createSession(session)
-
-            // 4. Spieler initialisieren
-            _uiState.value.players.forEach { player ->
-                sessionRepository.updatePlayerState(
+                // 2. Session Objekt erstellen
+                val session = MatchSession(
                     sessionId = sessionId,
-                    playerState = MultiplayerPlayerState(
-                        uid = player.uid,
-                        playerName = player.name,
-                        score = 0,
-                        round = 1
-                    )
+                    hostUid = firebaseAuthRepository.currentUid() ?: "",
+                    lobbyCode = code,
+                    mode = _uiState.value.selectedMode.name,
+                    locationIds = locationIds,
+                    totalRounds = 5,
+                    currentLocationId = locationIds.firstOrNull() ?: ""
                 )
-            }
 
-            // 5. Lobby starten
-            multiplayerRepository.startLobby(
-                lobbyCode = code,
-                sessionId = sessionId
-            )
+                // 3. Session in Firebase anlegen
+                Log.e("MULTIPLAYER", "Erstelle Session in Firebase...")
+                sessionRepository.createSession(session)
+                Log.e("MULTIPLAYER", "Session erfolgreich erstellt")
+
+                // 4. Spieler initialisieren
+                _uiState.value.players.forEach { player ->
+                    sessionRepository.updatePlayerState(
+                        sessionId = sessionId,
+                        playerState = MultiplayerPlayerState(
+                            uid = player.uid,
+                            playerName = player.name,
+                            score = 0,
+                            round = 1
+                        )
+                    )
+                }
+
+                // 5. Lobby starten
+                Log.e("MULTIPLAYER", "Setze Lobby auf started=true...")
+                multiplayerRepository.startLobby(
+                    lobbyCode = code,
+                    sessionId = sessionId
+                )
+                Log.e("MULTIPLAYER", "startLobby() abgeschlossen")
+            } catch (e: Exception) {
+                Log.e("MULTIPLAYER", "FEHLER in startLobby", e)
+            }
         }
     }
 

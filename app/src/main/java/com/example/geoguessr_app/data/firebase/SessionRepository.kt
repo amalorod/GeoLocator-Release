@@ -1,5 +1,10 @@
+
+
+
 package com.example.geoguessr_app.data.firebase
 
+import android.util.Log
+import android.util.Log.e
 import com.example.geoguessr_app.domain.model.multiplayer.MatchSession
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
 import com.google.firebase.database.DataSnapshot
@@ -14,6 +19,7 @@ import kotlinx.coroutines.flow.Flow
 
 
 class SessionRepository {
+
 
     private val database =
         FirebaseDatabase.getInstance()
@@ -34,16 +40,31 @@ class SessionRepository {
         )
     }
 
-    suspend fun createSession(
-        session: MatchSession
-    ) {
+
+
+    suspend fun createSession(session: MatchSession) {
+        Log.e("MULTIPLAYER", "SESSION REPOSITORY START")
+
+        try {
+            Log.e("MULTIPLAYER", "SESSION VOR SETVALUE")
+
+
 
         database.reference
             .child("sessions")
             .child(session.sessionId)
             .setValue(session)
             .await()
-    }
+
+            Log.e("MULTIPLAYER", "SESSION GESPEICHERT") }
+
+            catch (e: Exception) {
+                // Fängt Fehler ab, falls Firebase das Schreiben blockiert (z.B. wegen Rules)
+                Log.e("MULTIPLAYER", "SESSION FEHLER", e)
+            }
+        }
+
+
 
     suspend fun updatePlayerState(
         sessionId: String,
@@ -132,6 +153,7 @@ class SessionRepository {
                 )
             }
         }
+
 
     fun observeSession(
         sessionId: String

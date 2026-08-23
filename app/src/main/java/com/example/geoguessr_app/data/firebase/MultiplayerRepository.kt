@@ -170,6 +170,7 @@ class MultiplayerRepository {
         lobbyCode: String,
         sessionId: String
     ) {
+        Log.e("MULTIPLAYER", "Repo: startLobby($lobbyCode, $sessionId)")
         try {
             val updates = mapOf(
                 "started" to true,
@@ -182,9 +183,25 @@ class MultiplayerRepository {
                 .updateChildren(updates)
                 .await()
             
-            Log.e("MULTIPLAYER", "LOBBY GESTARTET")
+            Log.e("MULTIPLAYER", "LOBBY GESTARTET (Repo Erfolg)")
         } catch (e: Exception) {
             Log.e("MULTIPLAYER", "FIREBASE FEHLER BEIM STARTEN", e)
+        }
+    }
+
+    suspend fun updateLobbyMode(
+        lobbyCode: String,
+        mode: String
+    ) {
+        try {
+            database.reference
+                .child("lobbies")
+                .child(lobbyCode)
+                .child("mode")
+                .setValue(mode)
+                .await()
+        } catch (e: Exception) {
+            Log.e("MULTIPLAYER", "Fehler beim Modus-Update", e)
         }
     }
 }
