@@ -1,5 +1,6 @@
 package com.example.geoguessr_app.ui.multiplayer
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -52,7 +53,10 @@ fun MultiplayerHomeScreen(
         )
 
         Button(
-            onClick = onCreateLobbyClick,
+            onClick = {
+                Log.e("MULTIPLAYER", "KLICK: Lobby erstellen")
+                onCreateLobbyClick()
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Lobby erstellen")

@@ -32,6 +32,7 @@ import com.example.geoguessr_app.ui.game.GameMode
 import kotlinx.coroutines.delay
 
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,8 +45,12 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.foundation.layout.Row
 
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 
 @Composable
 fun HomeScreen(
@@ -73,6 +78,9 @@ fun HomeScreen(
         mutableStateOf(false)
     }
 
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp >= 600
+
 
     var currentImageIndex by rememberSaveable {
         mutableIntStateOf(0)
@@ -87,115 +95,129 @@ fun HomeScreen(
         modifier = modifier.fillMaxSize()
     ) {
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
         ) {
-            RotatingTornHeader(
-                imageId = headerImages[currentImageIndex],
-                height = 230.dp,
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
-
             Column(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(
-                        top = 42.dp,
-                        start = 20.dp,
-                        end = 20.dp
-                    ),
+                    .fillMaxWidth()
+                    .widthIn(max = 700.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "GeoGuessr",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer // Ensure readability over images
-                )
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    RotatingTornHeader(
+                        imageId = headerImages[currentImageIndex],
+                        height = 230.dp,
+                        modifier = Modifier.align(Alignment.TopCenter)
+                    )
 
-                Text(
-                    text = "Entdecke Europa und errate deinen Standort!",
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(
+                                top = 42.dp,
+                                start = 20.dp,
+                                end = 20.dp
+                            ),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "GeoGuessr",
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer // Ensure readability over images
+                        )
+
+                        Text(
+                            text = "Entdecke Europa und errate deinen Standort!",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+
+                    EuropeMenuMap(
+                        backgroundImageId = headerImages[currentImageIndex],
+                        hasActiveGame = hasActiveGame,
+                        currentThemeName = currentThemeName,
+                        onStartGameClick = onStartGameClick,
+                        onResumeGameClick = onResumeGameClick,
+                        onTutorialClick = onTutorialClick,
+                        onThemeClick = onThemeClick,
+                        onExitAppClick = onExitAppClick,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .offset(y = if (isTablet) 40.dp else 0.dp)
+                            .widthIn(max = 600.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                    )
+
+                    Button(
+                        onClick = {
+                            isModeDialogVisible = true
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 52.dp)
+                            .width(350.dp)
+                            .height(58.dp),
+                        shape = CompassBannerShape(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Text(
+                            text = "MODUS: ${selectedGameMode.displayName.uppercase()}",
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 130.dp),
+                        horizontalArrangement = Arrangement.spacedBy(32.dp)
+                    ) {
+                        HomeShortcutButton(
+                            icon = "👤",
+                            onClick = onProfileClick
+                        )
+
+                        HomeShortcutButton(
+                            icon = "📊",
+                            onClick = onStatisticsClick
+                        )
+                    }
+
+                    Text(
+                        text = "Entwickelt von: Alic Malorodow",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 20.dp)
+                    )
+                }
             }
-
-            EuropeMenuMap(
-
-                backgroundImageId = headerImages[currentImageIndex],
-                hasActiveGame = hasActiveGame,
-                currentThemeName = currentThemeName,
-                onStartGameClick = onStartGameClick,
-                onResumeGameClick = onResumeGameClick,
-                onTutorialClick = onTutorialClick,
-                onThemeClick = onThemeClick,
-                onExitAppClick = onExitAppClick,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 20.dp),
-
-            )
-
-            Button(
-                onClick = {
-                    isModeDialogVisible = true
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 52.dp)
-                    .fillMaxWidth(0.72f)
-                    .height(58.dp),
-                shape = CompassBannerShape(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Text(
-                    text = "MODUS: ${selectedGameMode.displayName.uppercase()}",
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 130.dp),
-                horizontalArrangement = Arrangement.spacedBy(32.dp)
-            ) {
-                HomeShortcutButton(
-                    icon = "👤",
-                    onClick = onProfileClick
-                )
-
-                HomeShortcutButton(
-                    icon = "📊",
-                    onClick = onStatisticsClick
-                )
-            }
-
-            Text(
-                text = "Entwickelt von: Alic Malorodow",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 20.dp)
-            )
         }
     }
 
-    if (isModeDialogVisible) {
-        GameModeDialog(
-            selectedMode = selectedGameMode,
-            onModeSelected = onGameModeSelected,
-            onDismiss = {
-                isModeDialogVisible = false
-            }
-        )
-    }
 
+if (isModeDialogVisible) {
+    GameModeDialog(
+        selectedMode = selectedGameMode,
+        onModeSelected = onGameModeSelected,
+        onDismiss = {
+            isModeDialogVisible = false
+        }
+    )
+}
 }
 
 /**

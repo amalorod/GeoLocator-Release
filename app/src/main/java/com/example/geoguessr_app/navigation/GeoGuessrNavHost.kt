@@ -1,5 +1,6 @@
 package com.example.geoguessr_app.navigation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -162,10 +163,29 @@ fun GeoGuessrNavHost(
             val lobbyViewModel: LobbyViewModel = hiltViewModel()
             val uiState by lobbyViewModel.uiState.collectAsStateWithLifecycle()
 
-            LaunchedEffect(lobbyCodeArg) {
+            Log.e(
+                "MULTIPLAYER",
+                "ROUTE ERREICHT | lobbyCodeArg=$lobbyCodeArg"
+            )
+
+            LaunchedEffect(Unit) {
+
+                Log.e(
+                    "MULTIPLAYER",
+                    "LaunchedEffect (Unit) ausgeführt"
+                )
+
                 if (lobbyCodeArg == null) {
+                    Log.e(
+                        "MULTIPLAYER",
+                        "NavHost -> createLobby"
+                    )
                     lobbyViewModel.createLobby()
                 } else {
+                    Log.e(
+                        "MULTIPLAYER",
+                        "NavHost -> joinLobby($lobbyCodeArg)"
+                    )
                     lobbyViewModel.joinLobby(lobbyCodeArg)
                 }
             }
