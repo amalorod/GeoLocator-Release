@@ -15,6 +15,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.geoguessr_app.R
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +41,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.foundation.layout.Row
+
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun HomeScreen(
@@ -52,6 +59,8 @@ fun HomeScreen(
     onResumeGameClick: () -> Unit,
     onExitAppClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onProfileClick: () -> Unit,
+    onStatisticsClick: () -> Unit,
 ) {
 
 
@@ -150,6 +159,23 @@ fun HomeScreen(
                 )
             }
 
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 130.dp),
+                horizontalArrangement = Arrangement.spacedBy(32.dp)
+            ) {
+                HomeShortcutButton(
+                    icon = "👤",
+                    onClick = onProfileClick
+                )
+
+                HomeShortcutButton(
+                    icon = "📊",
+                    onClick = onStatisticsClick
+                )
+            }
+
             Text(
                 text = "Entwickelt von: Alic Malorodow",
                 style = MaterialTheme.typography.bodySmall,
@@ -193,5 +219,36 @@ private class CompassBannerShape : Shape {
         }
 
         return Outline.Generic(path)
+    }
+}
+
+
+@Composable
+private fun HomeShortcutButton(
+    icon: String,
+    onClick: () -> Unit
+) {
+    Box(
+        contentAlignment = Alignment.Center
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier.size(64.dp),
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = icon,
+                    fontSize = 24.sp
+                )
+            }
+        }
     }
 }

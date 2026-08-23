@@ -2,6 +2,8 @@ package com.example.geoguessr_app.ui.game
 
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
+import com.example.geoguessr_app.domain.model.statistics.RoundStatistics
+import com.example.geoguessr_app.domain.model.statistics.GameStatistics
 
 /**
  * Beschreibt den vollständigen sichtbaren Zustand des Spiels.
@@ -25,4 +27,6 @@ data class GameUiState(
     val isGameFinished: Boolean = false,
     val errorMessage: String? = null,
     val gameMode: GameMode = GameMode.NORMAL,
+    val roundStatistics: List<RoundStatistics> = emptyList(),
+    val gameStatistics: GameStatistics? = null,
 )

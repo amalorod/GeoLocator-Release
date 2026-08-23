@@ -52,6 +52,8 @@ fun GeoGuessrNavHost(
         composable(route = AppDestination.Home.route) {
             HomeScreen(
                 currentThemeName = currentThemeName,
+                onProfileClick = {},
+                onStatisticsClick = {},
                 onExitAppClick = onExitAppClick,
                 onThemeClick = { onThemeSelected(currentTheme.next()) },
                 hasActiveGame = isGameInBackground,

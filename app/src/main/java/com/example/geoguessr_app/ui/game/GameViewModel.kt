@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.example.geoguessr_app.domain.model.statistics.RoundStatistics
+import com.example.geoguessr_app.domain.model.statistics.GameStatistics
+
 
 /**
  * Verwaltet den Zustand und Ablauf einer vollständigen Partie.
@@ -259,11 +262,19 @@ class GameViewModel @Inject constructor(
             distanceKilometers = distance
         )
 
+        val roundStatisticsEntry = RoundStatistics(
+            roundNumber = state.currentRound,
+            score = score,
+            distanceKm = distance
+        )
+
         _uiState.value = state.copy(
             roundDistanceKilometers = distance,
             roundScore = score,
             totalScore = state.totalScore + score,
-            isRoundFinished = true
+            isRoundFinished = true,
+            roundStatistics =
+                state.roundStatistics + roundStatisticsEntry,
         )
     }
 
@@ -273,11 +284,21 @@ class GameViewModel @Inject constructor(
     private fun finishRoundWithoutGuess() {
         timerJob?.cancel()
 
+        val state = _uiState.value
+
+        val roundStatisticsEntry = RoundStatistics(
+            roundNumber = state.currentRound,
+            score = 0,
+            distanceKm = 0.0
+        )
+
         _uiState.value = _uiState.value.copy(
             guessedLocation = null,
             roundDistanceKilometers = null,
             roundScore = 0,
-            isRoundFinished = true
+            isRoundFinished = true,
+            roundStatistics =
+                state.roundStatistics + roundStatisticsEntry,
         )
     }
 
@@ -293,7 +314,11 @@ class GameViewModel @Inject constructor(
 
         if (state.currentRound >= state.totalRounds) {
             _uiState.value = state.copy(
-                isGameFinished = true
+                isGameFinished = true,
+                gameStatistics = GameStatistics(
+                    totalScore = state.totalScore,
+                    rounds = state.roundStatistics
+                )
             )
             return
         }
