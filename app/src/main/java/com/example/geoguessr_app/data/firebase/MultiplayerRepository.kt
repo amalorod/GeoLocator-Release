@@ -13,7 +13,10 @@ import kotlinx.coroutines.flow.callbackFlow
 
 class MultiplayerRepository {
 
-    private val database = FirebaseDatabase.getInstance()
+    // BITTE PRÜFE DIESE URL IN DER FIREBASE CONSOLE!
+    private val DB_URL = "https://bsi-geoguessr-app-63b7f-default-rtdb.europe-west1.firebasedatabase.app/"
+
+    private val database = FirebaseDatabase.getInstance(DB_URL)
 
     suspend fun createLobby(
         lobbyCode: String,
@@ -27,16 +30,25 @@ class MultiplayerRepository {
                 players = listOf(hostPlayer)
             )
 
+            Log.e("MULTIPLAYER", "Versuche Schreibvorgang an: ${database.reference.child("lobbies").child(lobbyCode)}")
+
             database.reference
                 .child("lobbies")
                 .child(lobbyCode)
                 .setValue(lobby)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        Log.e("MULTIPLAYER", "Schreibvorgang ERFOLGREICH")
+                    } else {
+                        Log.e("MULTIPLAYER", "Schreibvorgang FEHLGESCHLAGEN: ${task.exception?.message}")
+                    }
+                }
                 .await()
 
-            Log.e("MULTIPLAYER", "LOBBY GESPEICHERT")
+            Log.e("MULTIPLAYER", "LOBBY GESPEICHERT (await beendet)")
 
         } catch (e: Exception) {
-            Log.e("MULTIPLAYER", "FIREBASE FEHLER", e)
+            Log.e("MULTIPLAYER", "EXCEPTION", e)
         }
     }
 
