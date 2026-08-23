@@ -14,11 +14,17 @@ val route: String
 
     data object Statistics : AppDestination("statistics")
 
+    data object MultiplayerHome : AppDestination("multiplayerHome")
+
+    data object JoinLobby : AppDestination("joinLobby")
+
     data object MultiplayerLobby : AppDestination  ("multiplayerLobby")
     data object Profile : AppDestination("profile")
     data object Tutorial : AppDestination("tutorial")
 
     data object Game : AppDestination("game")
+
+    data object MultiplayerGame : AppDestination("multiplayerGame")
 
     data object MapTest : AppDestination("map_test")
 

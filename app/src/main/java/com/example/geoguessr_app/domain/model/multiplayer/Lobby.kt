@@ -5,5 +5,6 @@ data class Lobby(
     val hostUid: String = "",
     val mode: String = "FREEPLAY",
     val players: List<LobbyPlayer> = emptyList(),
-    val started: Boolean = false
+    val started: Boolean = false,
+    val sessionId: String = ""
 )

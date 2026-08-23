@@ -13,7 +13,15 @@ import javax.inject.Inject
 class LocalLocationRepository @Inject constructor() : LocationRepository {
 
     override suspend fun getLocations(): List<GeoLocation> {
-        return listOf(
+        return ALL_LOCATIONS
+    }
+
+    override suspend fun getLocationsByIds(ids: List<String>): List<GeoLocation> {
+        return ALL_LOCATIONS.filter { it.id in ids }
+    }
+
+    companion object {
+        private val ALL_LOCATIONS = listOf(
             GeoLocation(
                 id = "berlin",
                 name = "Berlin",

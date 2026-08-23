@@ -11,4 +11,6 @@ import com.example.geoguessr_app.domain.model.GeoLocation
 interface LocationRepository {
 
     suspend fun getLocations(): List<GeoLocation>
+
+    suspend fun getLocationsByIds(ids: List<String>): List<GeoLocation>
 }

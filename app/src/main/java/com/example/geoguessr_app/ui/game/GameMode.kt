@@ -30,7 +30,7 @@ enum class GameMode(
         displayName = "Multiplayer",
         roundDurationSeconds = 60,
         streetViewNavigationEnabled = true,
-        isAvailable = false
+        isAvailable = true
     ),
 
     DAILY_QUEST(

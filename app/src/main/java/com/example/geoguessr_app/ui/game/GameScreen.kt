@@ -4,12 +4,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -30,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -39,6 +43,10 @@ import com.example.geoguessr_app.domain.model.GeoLocation
 import com.example.geoguessr_app.ui.components.AppTopBar
 import com.example.geoguessr_app.ui.components.HintPanel
 import com.example.geoguessr_app.ui.components.PauseOverlay
+import com.example.geoguessr_app.ui.multiplayer.MultiplayerGameViewModel
+import com.example.geoguessr_app.ui.multiplayer.MultiplayerScoreboard
+import com.example.geoguessr_app.ui.multiplayer.SessionUiState
+import com.example.geoguessr_app.ui.multiplayer.SessionViewModel
 import com.example.geoguessr_app.ui.statistics.MatchSummaryDialog
 import com.example.geoguessr_app.ui.theme.AppThemeMode
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -69,13 +77,16 @@ fun GameRoute(
     onHomeClick: () -> Unit,
     onExitGame: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: GameViewModel
+    viewModel: GameViewModel,
+    sessionViewModel: SessionViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val sessionUiState by sessionViewModel.uiState.collectAsStateWithLifecycle()
 
     Box(modifier = modifier.fillMaxSize()) {
         GameScreen(
             uiState = uiState,
+            sessionUiState = sessionUiState,
             currentThemeName = currentThemeName,
             currentTheme = currentTheme,
             onThemeSelected = onThemeSelected,
@@ -122,12 +133,56 @@ fun GameRoute(
             )
         }
 
+        if (uiState.waitingForPlayers) {
+            WaitingForPlayersOverlay()
+        }
 
         if (uiState.isPaused) {
             PauseOverlay(
                 onResume = viewModel::resumeGame
             )
         }
+    }
+}
+
+@Composable
+fun MultiplayerGameRoute(
+    sessionId: String,
+    currentThemeName: String,
+    currentTheme: AppThemeMode,
+    onThemeSelected: (AppThemeMode) -> Unit,
+    onHomeClick: () -> Unit,
+    onExitGame: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: MultiplayerGameViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val sessionViewModel: SessionViewModel = hiltViewModel()
+    val sessionUiState by sessionViewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(sessionId) {
+        viewModel.loadSessionLocations(sessionId)
+        sessionViewModel.observeSession(sessionId)
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        GameScreen(
+            uiState = uiState,
+            sessionUiState = sessionUiState,
+            currentThemeName = currentThemeName,
+            currentTheme = currentTheme,
+            onThemeSelected = onThemeSelected,
+            onGuessSelected = viewModel::selectGuess,
+            onShowGuessMap = viewModel::showGuessMap,
+            onShowStreetView = viewModel::showStreetView,
+            onHomeClick = onHomeClick,
+            onPauseGame = { /* Pause im MP evtl. anders */ },
+            onSubmitGuess = viewModel::submitGuess,
+            onNextRound = viewModel::startNextRound,
+            onExitGame = onExitGame,
+            onRetryLoading = { viewModel.loadSessionLocations(sessionId) },
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
@@ -138,6 +193,7 @@ fun GameRoute(
 @Composable
 private fun GameScreen(
     uiState: GameUiState,
+    sessionUiState: SessionUiState,
     currentThemeName: String,
     currentTheme: AppThemeMode,
     onThemeSelected: (AppThemeMode) -> Unit,
@@ -173,8 +229,16 @@ private fun GameScreen(
             currentRound = uiState.currentRound,
             totalRounds = uiState.totalRounds,
             remainingSeconds = uiState.remainingSeconds,
-            gameModeName = uiState.gameMode.displayName
+            gameModeName = uiState.gameMode.displayName,
+
         )
+
+        if (uiState.isMultiplayer) {
+            MultiplayerScoreboard(
+                players = sessionUiState.players,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
 
 
@@ -581,6 +645,29 @@ private fun RoundResultMap(
         }
     }
 
+
+
+/**
+ * Overlay, das angezeigt wird, wenn man auf andere Spieler wartet.
+ */
+@Composable
+fun WaitingForPlayersOverlay() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        ElevatedCard {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator()
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Warten auf Spieler...")
+            }
+        }
+    }
+}
 
 
 /**

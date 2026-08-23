@@ -278,7 +278,13 @@ class GameViewModel @Inject constructor(
             roundDistanceKilometers = distance,
             roundScore = score,
             totalScore = state.totalScore + score,
-            isRoundFinished = true,
+
+            isRoundFinished =
+                !state.isMultiplayer,
+
+            waitingForPlayers =
+                state.isMultiplayer,
+
             roundStatistics =
                 state.roundStatistics + roundStatisticsEntry,
         )

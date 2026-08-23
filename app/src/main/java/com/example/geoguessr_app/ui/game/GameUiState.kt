@@ -2,6 +2,7 @@ package com.example.geoguessr_app.ui.game
 
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
+import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
 import com.example.geoguessr_app.domain.model.statistics.RoundStatistics
 import com.example.geoguessr_app.domain.model.statistics.GameStatistics
 
@@ -29,4 +30,11 @@ data class GameUiState(
     val gameMode: GameMode = GameMode.NORMAL,
     val roundStatistics: List<RoundStatistics> = emptyList(),
     val gameStatistics: GameStatistics? = null,
+    val isMultiplayer: Boolean = false,
+    val sessionId: String? = null,
+    val waitingForPlayers: Boolean = false,
+
+    val multiplayerPlayers:
+    List<MultiplayerPlayerState> =
+        emptyList()
 )
