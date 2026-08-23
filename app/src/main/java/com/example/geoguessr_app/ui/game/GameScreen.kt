@@ -39,6 +39,7 @@ import com.example.geoguessr_app.domain.model.GeoLocation
 import com.example.geoguessr_app.ui.components.AppTopBar
 import com.example.geoguessr_app.ui.components.HintPanel
 import com.example.geoguessr_app.ui.components.PauseOverlay
+import com.example.geoguessr_app.ui.statistics.MatchSummaryDialog
 import com.example.geoguessr_app.ui.theme.AppThemeMode
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.StreetViewPanoramaView
@@ -88,6 +89,24 @@ fun GameRoute(
             onRetryLoading = viewModel::retryLoading,
             modifier = Modifier.fillMaxSize()
         )
+
+        if (
+            uiState.isGameFinished &&
+            uiState.gameStatistics != null
+        ) {
+            MatchSummaryDialog(
+                statistics = uiState.gameStatistics,
+                onDetailsClick = {
+                    // kommt im nächsten Schritt
+                },
+                onNewGameClick = {
+                    viewModel.startNewGame(
+                        uiState.gameMode
+                    )
+                },
+                onHomeClick = onHomeClick
+            )
+        }
 
         val currentHint = uiState.currentLocation?.hint
 

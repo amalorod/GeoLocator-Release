@@ -1,6 +1,7 @@
 package com.example.geoguessr_app.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -15,6 +16,7 @@ import com.example.geoguessr_app.ui.game.GameViewModel
 import com.example.geoguessr_app.ui.game.GameMode
 import com.example.geoguessr_app.ui.home.HomeScreen
 import com.example.geoguessr_app.ui.maptest.MapTestScreen
+import com.example.geoguessr_app.ui.statistics.StatisticsScreen
 import com.example.geoguessr_app.ui.streetviewtest.StreetViewTestScreen
 import com.example.geoguessr_app.ui.theme.AppThemeMode
 import com.example.geoguessr_app.ui.tutorial.TutorialScreen
@@ -53,7 +55,11 @@ fun GeoGuessrNavHost(
             HomeScreen(
                 currentThemeName = currentThemeName,
                 onProfileClick = {},
-                onStatisticsClick = {},
+                onStatisticsClick = {
+                    navController.navigate(
+                        AppDestination.Statistics.route
+                    )
+                },
                 onExitAppClick = onExitAppClick,
                 onThemeClick = { onThemeSelected(currentTheme.next()) },
                 hasActiveGame = isGameInBackground,
@@ -88,6 +94,27 @@ fun GeoGuessrNavHost(
         composable(route = AppDestination.Tutorial.route) {
             TutorialScreen(
                 onBackClick = navController::popBackStack
+            )
+        }
+
+        composable(
+            route = AppDestination.Statistics.route
+        ) {
+
+            val statistics =
+                gameViewModel.uiState.collectAsState().value
+
+            StatisticsScreen(
+                totalScore =
+                    statistics.gameStatistics?.totalScore ?: 0,
+
+                statistics =
+                    statistics.gameStatistics?.rounds
+                        ?: emptyList(),
+
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
         }
 

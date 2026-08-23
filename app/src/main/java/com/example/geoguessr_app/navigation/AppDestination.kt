@@ -12,6 +12,8 @@ val route: String
 
 ) { data object Home : AppDestination("home")
 
+    data object Statistics : AppDestination("statistics")
+
 
     data object Tutorial : AppDestination("tutorial")
 
