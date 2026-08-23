@@ -67,9 +67,18 @@ class LobbyViewModel @Inject constructor(
                 val hostPlayer = LobbyPlayer(
                     uid = uid,
                     name = "Alic",
-                    isReady = true,
-                    isHost = true
+                    ready = true,
+                    host = true
                 )
+
+                _uiState.update { 
+                    it.copy(
+                        lobbyCode = code,
+                        isLoading = true,
+                        currentUserUid = uid,
+                        errorMessage = null
+                    ) 
+                }
 
                 // 3. In Firebase speichern
                 multiplayerRepository.createLobby(
@@ -101,16 +110,31 @@ class LobbyViewModel @Inject constructor(
             try {
                 _uiState.update { it.copy(isLoading = true, lobbyCode = lobbyCode, errorMessage = null) }
 
+                // 1. Prüfen, ob Lobby existiert
+                if (!multiplayerRepository.lobbyExists(lobbyCode)) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "Lobby '$lobbyCode' wurde nicht gefunden."
+                        )
+                    }
+                    return@launch
+                }
+
+                // 2. Auth sicherstellen
                 val uid = firebaseAuthRepository.currentUid()
                     ?: firebaseAuthRepository.signInAnonymously()
 
+                _uiState.update { it.copy(currentUserUid = uid) }
+
+                // 3. Beitreten
                 multiplayerRepository.joinLobby(
                     lobbyCode = lobbyCode,
                     player = LobbyPlayer(
                         uid = uid,
                         name = "Spieler",
-                        isReady = true,
-                        isHost = false
+                        ready = false,
+                        host = false
                     )
                 )
 
@@ -118,8 +142,28 @@ class LobbyViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
                 Log.e("MULTIPLAYER", "Error joining lobby", e)
-                _uiState.update { it.copy(isLoading = false) }
+                _uiState.update { it.copy(isLoading = false, errorMessage = "Fehler beim Beitreten.") }
             }
+        }
+    }
+
+    fun leaveLobby() {
+        val code = _uiState.value.lobbyCode
+        val uid = _uiState.value.currentUserUid
+        if (code.isEmpty() || uid.isEmpty()) return
+
+        viewModelScope.launch {
+            multiplayerRepository.leaveLobby(code, uid)
+        }
+    }
+
+    fun toggleReady() {
+        val code = _uiState.value.lobbyCode
+        val uid = _uiState.value.currentUserUid
+        if (code.isEmpty() || uid.isEmpty()) return
+
+        viewModelScope.launch {
+            multiplayerRepository.toggleReadyStatus(code, uid)
         }
     }
 
@@ -144,8 +188,14 @@ class LobbyViewModel @Inject constructor(
     }
 
     fun startLobby() {
-        if (_uiState.value.players.size < 2) {
+        val players = _uiState.value.players
+        if (players.size < 2) {
             _uiState.update { it.copy(errorMessage = "Zu wenige Spieler! Mindestens 2 Spieler benötigt") }
+            return
+        }
+
+        if (!players.all { it.ready }) {
+            _uiState.update { it.copy(errorMessage = "Nicht alle Spieler sind bereit!") }
             return
         }
 

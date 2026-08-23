@@ -62,15 +62,71 @@ class MultiplayerRepository {
             .child(lobbyCode)
 
         val snapshot = lobbyRef.get().await()
-
         val lobby = snapshot.getValue(Lobby::class.java) ?: return
 
-        val updatedPlayers = lobby.players + player
+        // Nur hinzufügen, wenn noch nicht drin
+        if (lobby.players.none { it.uid == player.uid }) {
+            val updatedPlayers = lobby.players + player
+            lobbyRef.child("players").setValue(updatedPlayers).await()
+        }
+    }
 
-        lobbyRef
-            .child("players")
-            .setValue(updatedPlayers)
-            .await()
+    suspend fun leaveLobby(
+        lobbyCode: String,
+        uid: String
+    ) {
+        val lobbyRef = database.reference
+            .child("lobbies")
+            .child(lobbyCode)
+
+        val snapshot = lobbyRef.get().await()
+        val lobby = snapshot.getValue(Lobby::class.java) ?: return
+
+        val updatedPlayers = lobby.players.filter { it.uid != uid }
+
+        if (updatedPlayers.isEmpty()) {
+            // Letzter Spieler geht -> Lobby löschen
+            lobbyRef.removeValue().await()
+        } else {
+            // Wenn der Host geht, neuen Host ernennen (den ersten in der Liste)
+            val finalPlayers = if (lobby.hostUid == uid) {
+                updatedPlayers.mapIndexed { index, p ->
+                    if (index == 0) p.copy(host = true) else p
+                }
+            } else {
+                updatedPlayers
+            }
+
+            val newHostUid = if (lobby.hostUid == uid) finalPlayers.first().uid else lobby.hostUid
+
+            val updates = mapOf(
+                "players" to finalPlayers,
+                "hostUid" to newHostUid
+            )
+            lobbyRef.updateChildren(updates).await()
+        }
+    }
+
+    suspend fun toggleReadyStatus(
+        lobbyCode: String,
+        uid: String
+    ) {
+        val lobbyRef = database.reference
+            .child("lobbies")
+            .child(lobbyCode)
+
+        val snapshot = lobbyRef.get().await()
+        val lobby = snapshot.getValue(Lobby::class.java) ?: return
+
+        val updatedPlayers = lobby.players.map { player ->
+            if (player.uid == uid) {
+                player.copy(ready = !player.ready)
+            } else {
+                player
+            }
+        }
+
+        lobbyRef.child("players").setValue(updatedPlayers).await()
     }
 
     suspend fun lobbyExists(

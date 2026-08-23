@@ -201,11 +201,19 @@ fun GeoGuessrNavHost(
             MultiplayerLobbyScreen(
                 lobbyCode = uiState.lobbyCode,
                 players = uiState.players,
+                currentUserUid = uiState.currentUserUid,
                 selectedMode = uiState.selectedMode,
                 errorMessage = uiState.errorMessage,
                 onModeSelected = { lobbyViewModel.selectMode(it) },
                 onBackClick = {
                     navController.popBackStack()
+                },
+                onLeaveClick = {
+                    lobbyViewModel.leaveLobby()
+                    navController.popBackStack()
+                },
+                onReadyClick = {
+                    lobbyViewModel.toggleReady()
                 },
                 onStartGameClick = {
                     lobbyViewModel.startLobby()

@@ -6,6 +6,7 @@ import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerMode
 data class LobbyUiState(
     val lobbyCode: String = "",
     val isLoading: Boolean = false,
+    val currentUserUid: String = "",
     val players: List<LobbyPlayer> = emptyList(),
     val selectedMode: MultiplayerMode =
         MultiplayerMode.FREEPLAY,

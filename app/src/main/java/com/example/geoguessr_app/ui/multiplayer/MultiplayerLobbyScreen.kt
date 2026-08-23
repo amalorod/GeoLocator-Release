@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,13 +34,18 @@ import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerMode
 fun MultiplayerLobbyScreen(
     lobbyCode: String,
     players: List<LobbyPlayer>,
+    currentUserUid: String,
     selectedMode: MultiplayerMode,
     errorMessage: String? = null,
     onModeSelected: (MultiplayerMode) -> Unit,
     onBackClick: () -> Unit,
+    onLeaveClick: () -> Unit,
+    onReadyClick: () -> Unit,
     onStartGameClick: () -> Unit
 ) {
     val clipboardManager = LocalClipboardManager.current
+    val isHost = players.find { it.uid == currentUserUid }?.host ?: false
+    val isReady = players.find { it.uid == currentUserUid }?.ready ?: false
 
     Column(
         modifier = Modifier
@@ -47,10 +53,26 @@ fun MultiplayerLobbyScreen(
             .padding(20.dp)
     ) {
 
-        Button(
-            onClick = onBackClick
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Zurück")
+            Button(
+                onClick = onBackClick
+            ) {
+                Text("Zurück")
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Button(
+                onClick = onLeaveClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Gray
+                )
+            ) {
+                Text("Verlassen")
+            }
         }
 
         Spacer(
@@ -83,85 +105,137 @@ fun MultiplayerLobbyScreen(
         )
 
         if (errorMessage != null) {
-            Text(
-                text = errorMessage,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-
-        Spacer(
-            modifier = Modifier.height(24.dp)
-        )
-
-        Text(
-            text = "${players.size} / 4 Spieler"
-        )
-
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
-
-        players.forEach { player ->
-
+            Spacer(modifier = Modifier.height(32.dp))
             ElevatedCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
             ) {
-
                 Text(
-                    text =
-                        if (player.isHost)
-                            "${player.name} 👑"
-                        else
-                            player.name,
-                    modifier = Modifier.padding(16.dp)
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyLarge
                 )
             }
-        }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Button(
+                onClick = onBackClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Zurück zum Hauptmenü")
+            }
+        } else {
+            // Normaler Lobby-Inhalt (nur anzeigen wenn kein Fehler)
+            Spacer(modifier = Modifier.height(24.dp))
 
-        Spacer(
-            modifier = Modifier.height(24.dp)
-        )
+            Text(
+                text = "${players.size} / 4 Spieler"
+            )
 
-        Text(
-            text = "Spielmodus"
-        )
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
 
-        Spacer(
-            modifier = Modifier.height(12.dp)
-        )
-
-        MultiplayerMode.entries
-            .forEach { mode ->
-
-                ModeButton(
-                    mode = mode,
-                    selected =
-                        mode == selectedMode,
-                    onClick = {
-                        onModeSelected(mode)
-                    }
-                )
-
-                Spacer(
+            players.forEach { player ->
+                ElevatedCard(
                     modifier = Modifier
-                        .height(8.dp)
-                )
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text =
+                            if (player.host)
+                                "${player.name} 👑"
+                            else
+                                player.name,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        Text(
+                            text = if (player.ready) "BEREIT ✅" else "Warten... ⏳",
+                            color = if (player.ready) Color.Green else Color.Gray,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                }
             }
 
-        Spacer(
-            modifier = Modifier.weight(1f)
-        )
+            Spacer(
+                modifier = Modifier.height(24.dp)
+            )
 
-        Button(
-            onClick = onStartGameClick,
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Text("Spiel starten")
+            Text(
+                text = "Spielmodus"
+            )
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+            MultiplayerMode.entries
+                .forEach { mode ->
+
+                    ModeButton(
+                        mode = mode,
+                        selected =
+                        mode == selectedMode,
+                        onClick = {
+                            if (isHost) onModeSelected(mode)
+                        }
+                    )
+
+                    Spacer(
+                        modifier = Modifier
+                            .height(8.dp)
+                    )
+                }
+
+            Spacer(
+                modifier = Modifier.weight(1f)
+            )
+
+            Button(
+                onClick = onReadyClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isReady) Color.DarkGray else Color.Blue
+                )
+            ) {
+                Text(if (isReady) "Nicht bereit" else "Bereit")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (isHost) {
+                val allReady = players.size >= 2 && players.all { it.ready }
+
+                Button(
+                    onClick = onStartGameClick,
+                    enabled = allReady,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (allReady) Color.Red else Color.Gray
+                    )
+                ) {
+                    Text("Spiel starten")
+                }
+            } else {
+                Text(
+                    text = "Warte auf Host...",
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
     }
 }
