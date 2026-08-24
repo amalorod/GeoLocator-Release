@@ -1,5 +1,7 @@
 package com.example.geoguessr_app.domain.model
 
+import com.example.geoguessr_app.domain.model.custom.Region
+
 /**
  * Repräsentiert einen spielbaren Standort.
  *
@@ -10,6 +12,7 @@ data class GeoLocation(
     val id: String,
     val name: String,
     val country: String,
+    val region: Region,
     val latitude: Double,
     val hint: String,
     val longitude: Double

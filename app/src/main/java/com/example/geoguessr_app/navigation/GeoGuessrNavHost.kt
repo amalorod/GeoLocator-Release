@@ -19,9 +19,12 @@ import androidx.navigation.navArgument
 import com.example.geoguessr_app.data.dailyquest.DailyQuestRepository
 import com.example.geoguessr_app.data.profile.ProfileRepository
 import com.example.geoguessr_app.data.statistics.StatisticsRepository
+import com.example.geoguessr_app.domain.model.custom.CustomGameSettings
 import com.example.geoguessr_app.ui.game.GameMode
 import com.example.geoguessr_app.ui.game.GameRoute
+import com.example.geoguessr_app.ui.game.IndividualSettingsScreen
 import com.example.geoguessr_app.ui.game.GameViewModel
+import com.example.geoguessr_app.ui.game.IndividualSettingsScreen
 import com.example.geoguessr_app.ui.game.MultiplayerGameRoute
 import com.example.geoguessr_app.ui.home.HomeScreen
 import com.example.geoguessr_app.ui.dailyquest.DailyQuestScreen
@@ -98,6 +101,10 @@ fun GeoGuessrNavHost(
                     if (selectedGameMode == GameMode.MULTIPLAYER) {
                         navController.navigate(
                             AppDestination.MultiplayerHome.route
+                        )
+                    } else if (selectedGameMode == GameMode.CUSTOM) {
+                        navController.navigate(
+                            AppDestination.IndividualSettings.route
                         )
                     } else {
                         gameViewModel.startNewGame(selectedGameMode)
@@ -301,6 +308,9 @@ fun GeoGuessrNavHost(
                         launchSingleTop = true
                     }
                 },
+                onStatisticsClick = {
+                    navController.navigate(AppDestination.Statistics.route)
+                },
                 onExitGame = {
                     isGameInBackground = false
                     navController.navigate(AppDestination.Home.route) {
@@ -309,6 +319,16 @@ fun GeoGuessrNavHost(
                         }
                         launchSingleTop = true
                     }
+                }
+            )
+        }
+
+        composable(route = AppDestination.IndividualSettings.route) {
+            IndividualSettingsScreen(
+                onBackClick = { navController.popBackStack() },
+                onStartGame = { settings: CustomGameSettings ->
+                    gameViewModel.startCustomGame(settings)
+                    navController.navigate(AppDestination.Game.route)
                 }
             )
         }

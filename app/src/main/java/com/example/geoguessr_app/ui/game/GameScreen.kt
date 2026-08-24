@@ -77,6 +77,7 @@ fun GameRoute(
     currentTheme: AppThemeMode,
     onThemeSelected: (AppThemeMode) -> Unit,
     onHomeClick: () -> Unit,
+    onStatisticsClick: () -> Unit,
     onExitGame: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: GameViewModel,
@@ -109,9 +110,7 @@ fun GameRoute(
         if (uiState.isGameFinished && gameStatistics != null) {
             MatchSummaryDialog(
                 statistics = gameStatistics,
-                onDetailsClick = {
-                    // kommt im nächsten Schritt
-                },
+                onDetailsClick = onStatisticsClick,
                 onNewGameClick = {
                     viewModel.startNewGame(
                         uiState.gameMode
@@ -259,7 +258,7 @@ private fun GameScreen(
             totalRounds = uiState.totalRounds,
             remainingSeconds = uiState.remainingSeconds,
             gameModeName = uiState.gameMode.displayName,
-
+            lives = uiState.lives
         )
 
         if (uiState.isMultiplayer) {
@@ -310,7 +309,7 @@ private fun GameScreen(
                 if (currentLocation != null) {
                     GameStreetView(
                         location = currentLocation,
-                        isUserNavigationEnabled = uiState.gameMode.streetViewNavigationEnabled,
+                        isUserNavigationEnabled = uiState.isStreetViewNavigationEnabled,
                         modifier = Modifier.weight(1f)
                     )
 
@@ -636,7 +635,8 @@ private fun RoundResultMap(
         currentRound: Int,
         totalRounds: Int,
         remainingSeconds: Int,
-        gameModeName: String
+        gameModeName: String,
+        lives: Int = Int.MAX_VALUE
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -658,6 +658,12 @@ private fun RoundResultMap(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Score: $score")
+                    
+                    val showLives = (gameModeName == "Battle Royale" || lives < 100)
+                    if (showLives) { 
+                        Text("❤️ $lives")
+                    }
+                    
                     Text("Runde: $currentRound/$totalRounds")
                     Text("$remainingSeconds Sek.")
                 }

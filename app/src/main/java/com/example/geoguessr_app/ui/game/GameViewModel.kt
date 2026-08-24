@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.geoguessr_app.data.datastore.StatisticsDataStoreRepository
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
+import com.example.geoguessr_app.domain.model.custom.CustomDifficulty
+import com.example.geoguessr_app.domain.model.custom.CustomGameSettings
+import com.example.geoguessr_app.domain.model.custom.Region
 import com.example.geoguessr_app.domain.usecase.CalculateDistanceUseCase
 import com.example.geoguessr_app.domain.usecase.CalculateScoreUseCase
 import com.example.geoguessr_app.domain.usecase.GetRandomLocationsUseCase
@@ -49,29 +52,60 @@ class GameViewModel @Inject constructor(
 
     private var gameLocations: List<GeoLocation> = emptyList()
     private var timerJob: Job? = null
+    private var customSettings: CustomGameSettings? = null
 
     init {
         startNewGame(GameMode.NORMAL)
     }
 
     /**
+     * Startet eine Partie mit individuellen Einstellungen.
+     */
+    fun startCustomGame(settings: CustomGameSettings) {
+        this.customSettings = settings
+        loadGame(GameMode.CUSTOM)
+    }
+
+    /**
      * Lädt asynchron fünf unterschiedliche Standorte für eine Partie.
      */
     fun startNewGame(gameMode: GameMode) {
-
+        this.customSettings = null
         loadGame(gameMode)
     }
 
     private fun loadGame(gameMode: GameMode = _uiState.value.gameMode) {
         timerJob?.cancel()
+        
+        val duration = customSettings?.timeLimitSeconds ?: gameMode.roundDurationSeconds
+        
+        val initialLives = when (customSettings?.difficulty) {
+            CustomDifficulty.EASY -> Int.MAX_VALUE
+            CustomDifficulty.MEDIUM -> 5
+            CustomDifficulty.HARD -> 3
+            null -> {
+                if (gameMode == GameMode.BATTLE_ROYALE) 3 else Int.MAX_VALUE
+            }
+        }
+
+        val navEnabled = when (customSettings?.difficulty) {
+            CustomDifficulty.HARD -> false
+            else -> gameMode.streetViewNavigationEnabled
+        }
+
         _uiState.value = GameUiState(
             gameMode = gameMode,
-            remainingSeconds = gameMode.roundDurationSeconds
+            remainingSeconds = duration,
+            lives = initialLives,
+            isStreetViewNavigationEnabled = navEnabled
         )
 
         viewModelScope.launch {
             runCatching {
-                getRandomLocations(count = _uiState.value.totalRounds)
+                getRandomLocations(
+                    count = _uiState.value.totalRounds,
+                    region = customSettings?.region ?: Region.WORLD
+                )
             }.onSuccess { locations ->
                 gameLocations = locations
 
@@ -276,10 +310,16 @@ class GameViewModel @Inject constructor(
             distanceKm = distance
         )
 
+        var newLives = state.lives
+        if (state.gameMode == GameMode.CUSTOM && distance > 500.0 && state.lives < 100) {
+            newLives = (state.lives - 1).coerceAtLeast(0)
+        }
+
         _uiState.value = state.copy(
             roundDistanceKilometers = distance,
             roundScore = score,
             totalScore = state.totalScore + score,
+            lives = newLives,
 
             isRoundFinished =
                 !state.isMultiplayer,
@@ -290,6 +330,10 @@ class GameViewModel @Inject constructor(
             roundStatistics =
                 state.roundStatistics + roundStatisticsEntry,
         )
+
+        if (newLives <= 0 && state.gameMode == GameMode.CUSTOM) {
+            _uiState.value = _uiState.value.copy(isGameFinished = true)
+        }
 
         checkDailyQuests(distance, score, state.gameMode)
     }
@@ -419,9 +463,11 @@ class GameViewModel @Inject constructor(
             return
         }
 
+        val duration = customSettings?.timeLimitSeconds ?: state.gameMode.roundDurationSeconds
+
         _uiState.value = state.copy(
             currentRound = nextRound,
-            remainingSeconds = state.gameMode.roundDurationSeconds,
+            remainingSeconds = duration,
             currentLocation = nextLocation,
             isPaused= false,
             guessedLocation = null,

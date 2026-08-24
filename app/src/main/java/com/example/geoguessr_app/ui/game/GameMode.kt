@@ -51,6 +51,6 @@ enum class GameMode(
         displayName = "Individuell",
         roundDurationSeconds = 60,
         streetViewNavigationEnabled = true,
-        isAvailable = false
+        isAvailable = true
     )
 }

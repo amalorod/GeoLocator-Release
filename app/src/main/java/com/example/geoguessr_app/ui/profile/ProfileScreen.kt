@@ -70,14 +70,13 @@ fun ProfileScreen(
         ) {
             Row(
                 modifier = Modifier
-                    .statusBarsPadding()
                     .padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBackClick) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                Button(onClick = onBackClick) {
+                    Text("Zurück")
                 }
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     text = "Profil",
                     style = MaterialTheme.typography.titleLarge,
