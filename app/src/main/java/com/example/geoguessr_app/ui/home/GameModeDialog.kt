@@ -28,7 +28,9 @@ fun GameModeDialog(
         },
         text = {
             Column {
-                GameMode.entries.forEach { mode ->
+                GameMode.entries
+                    .filter { it != GameMode.BATTLE_ROYALE }
+                    .forEach { mode ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

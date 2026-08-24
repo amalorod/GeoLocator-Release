@@ -18,7 +18,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.example.geoguessr_app.domain.model.statistics.RoundStatistics
 import com.example.geoguessr_app.domain.model.statistics.GameStatistics
+import com.example.geoguessr_app.data.dailyquest.DailyQuestRepository
 import com.example.geoguessr_app.data.statistics.StatisticsRepository
+import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 
 
 
@@ -288,6 +290,34 @@ class GameViewModel @Inject constructor(
             roundStatistics =
                 state.roundStatistics + roundStatisticsEntry,
         )
+
+        checkDailyQuests(distance, score, state.gameMode)
+    }
+
+    private fun checkDailyQuests(distance: Double, score: Int, mode: GameMode) {
+        viewModelScope.launch {
+            // Quest: Präzision (< 25km)
+            if (distance < 25.0) {
+                val completed = DailyQuestRepository.updateQuestProgress("perfect_guess")
+                if (completed != null) _uiState.value = _uiState.value.copy(newlyCompletedQuest = completed)
+            }
+            
+            // Quest: Europa Experte (< 100km)
+            if (distance < 100.0) {
+                val completed = DailyQuestRepository.updateQuestProgress("europe_explorer")
+                if (completed != null) _uiState.value = _uiState.value.copy(newlyCompletedQuest = completed)
+            }
+            
+            // Quest: Pro-Modus
+            if (mode == GameMode.PRO) {
+                val completed = DailyQuestRepository.updateQuestProgress("pro_mode_guess")
+                if (completed != null) _uiState.value = _uiState.value.copy(newlyCompletedQuest = completed)
+            }
+        }
+    }
+
+    fun dismissCompletedQuest() {
+        _uiState.value = _uiState.value.copy(newlyCompletedQuest = null)
     }
 
     /**
@@ -356,10 +386,18 @@ class GameViewModel @Inject constructor(
                 )
 
             viewModelScope.launch {
-
-                statisticsRepository.saveStatistics(
-                    updatedLifetime
+                statisticsRepository.saveStatistics(updatedLifetime)
+                
+                // New: Save detailed match statistics to Firebase
+                val match = MatchStatistic(
+                    timestamp = System.currentTimeMillis(),
+                    gameMode = state.gameMode.name,
+                    score = state.totalScore,
+                    rounds = state.roundStatistics.size,
+                    won = false, // In Singleplayer gibt es kein "won" in dem Sinne, evtl. Score-basiert
+                    multiplayer = false
                 )
+                StatisticsRepository.saveMatch(match)
             }
             _uiState.value = state.copy(
                 isGameFinished = true,

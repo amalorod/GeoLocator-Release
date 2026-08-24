@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
@@ -32,6 +33,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -97,6 +99,7 @@ fun GameRoute(
             onPauseGame = viewModel::pauseGame,
             onSubmitGuess = viewModel::submitGuess,
             onNextRound = viewModel::startNextRound,
+            onDismissQuest = viewModel::dismissCompletedQuest,
             onExitGame = onExitGame,
             onRetryLoading = viewModel::retryLoading,
             modifier = Modifier.fillMaxSize()
@@ -179,7 +182,11 @@ fun MultiplayerGameRoute(
             onPauseGame = { /* Pause im MP evtl. anders */ },
             onSubmitGuess = viewModel::submitGuess,
             onNextRound = viewModel::startNextRound,
-            onExitGame = onExitGame,
+            onDismissQuest = viewModel::dismissCompletedQuest,
+            onExitGame = {
+                viewModel.leaveGame()
+                onExitGame()
+            },
             onRetryLoading = { viewModel.loadSessionLocations(sessionId) },
             modifier = Modifier.fillMaxSize()
         )
@@ -206,6 +213,7 @@ private fun GameScreen(
     onNextRound: () -> Unit,
     onExitGame: () -> Unit,
     onRetryLoading: () -> Unit,
+    onDismissQuest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -215,6 +223,27 @@ private fun GameScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Quest Completion Modal
+        if (uiState.newlyCompletedQuest != null) {
+            AlertDialog(
+                onDismissRequest = onDismissQuest,
+                title = { Text("✅ Quest erfüllt!") },
+                text = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(uiState.newlyCompletedQuest.icon, fontSize = 48.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(uiState.newlyCompletedQuest.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text(uiState.newlyCompletedQuest.description, textAlign = TextAlign.Center)
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = onDismissQuest) {
+                        Text("Super!")
+                    }
+                }
+            )
+        }
+
         AppTopBar(
             currentThemeName = currentThemeName,
             currentTheme = currentTheme,
@@ -272,14 +301,6 @@ private fun GameScreen(
                     uiState = uiState,
                     onNextRound = onNextRound,
                     modifier = Modifier.weight(1f)
-                )
-
-                Text(
-                    if (uiState.currentRound == uiState.totalRounds) {
-                        "Gesamtergebnis anzeigen"
-                    } else {
-                        "Nächste Runde"
-                    }
                 )
             }
 
@@ -388,11 +409,26 @@ private fun RoundResult(
             )
         }
 
-        Button(
-            onClick = onNextRound,
-            modifier = Modifier.padding(top = 16.dp)
-        ) {
-            Text("Nächste Runde")
+        if (uiState.isMultiplayer) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "⏳ Warte auf Mitspieler...",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.secondary
+            )
+        } else {
+            Button(
+                onClick = onNextRound,
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                Text(
+                    if (uiState.currentRound == uiState.totalRounds) {
+                        "Gesamtergebnis anzeigen"
+                    } else {
+                        "Nächste Runde"
+                    }
+                )
+            }
         }
     }
 }

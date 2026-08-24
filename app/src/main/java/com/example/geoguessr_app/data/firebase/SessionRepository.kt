@@ -20,9 +20,9 @@ import kotlinx.coroutines.flow.Flow
 
 class SessionRepository {
 
+    private val DB_URL = "https://bsi-geoguessr-app-63b7f-default-rtdb.europe-west1.firebasedatabase.app/"
 
-    private val database =
-        FirebaseDatabase.getInstance()
+    private val database = FirebaseDatabase.getInstance(DB_URL)
 
     suspend fun loadSession(
         sessionId: String
@@ -48,17 +48,21 @@ class SessionRepository {
         try {
             Log.e("MULTIPLAYER", "SESSION VOR SETVALUE")
 
+            database.reference
+                .child("sessions")
+                .child(session.sessionId)
+                .setValue(session)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        Log.e("MULTIPLAYER", "SESSION SCHREIBVORGANG ERFOLGREICH")
+                    } else {
+                        Log.e("MULTIPLAYER", "SESSION SCHREIBVORGANG FEHLGESCHLAGEN: ${task.exception?.message}")
+                    }
+                }
+                .await()
 
-
-        database.reference
-            .child("sessions")
-            .child(session.sessionId)
-            .setValue(session)
-            .await()
-
-            Log.e("MULTIPLAYER", "SESSION GESPEICHERT") }
-
-            catch (e: Exception) {
+            Log.e("MULTIPLAYER", "SESSION GESPEICHERT")
+        } catch (e: Exception) {
                 // Fängt Fehler ab, falls Firebase das Schreiben blockiert (z.B. wegen Rules)
                 Log.e("MULTIPLAYER", "SESSION FEHLER", e)
             }
@@ -77,6 +81,28 @@ class SessionRepository {
             .child("players")
             .child(playerState.uid)
             .setValue(playerState)
+            .await()
+    }
+
+    suspend fun removePlayerFromSession(
+        sessionId: String,
+        uid: String
+    ) {
+        database.reference
+            .child("sessions")
+            .child(sessionId)
+            .child("players")
+            .child(uid)
+            .removeValue()
+            .await()
+    }
+
+    suspend fun finishSession(sessionId: String) {
+        database.reference
+            .child("sessions")
+            .child(sessionId)
+            .child("finished")
+            .setValue(true)
             .await()
     }
 

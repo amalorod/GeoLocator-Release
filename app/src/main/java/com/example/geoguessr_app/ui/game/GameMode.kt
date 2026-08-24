@@ -26,6 +26,13 @@ enum class GameMode(
         isAvailable = true
     ),
 
+    BATTLE_ROYALE(
+        displayName = "Battle Royale",
+        roundDurationSeconds = 30,
+        streetViewNavigationEnabled = true,
+        isAvailable = false
+    ),
+
     MULTIPLAYER(
         displayName = "Multiplayer",
         roundDurationSeconds = 60,

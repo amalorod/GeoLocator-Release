@@ -42,11 +42,12 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.width
@@ -57,6 +58,7 @@ fun HomeScreen(
     selectedGameMode: GameMode,
     onGameModeSelected: (GameMode) -> Unit,
     currentThemeName: String,
+    isProfileSetup: Boolean,
     onThemeClick: () -> Unit,
     onStartGameClick: () -> Unit,
     onTutorialClick: () -> Unit,
@@ -66,6 +68,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onProfileClick: () -> Unit,
     onStatisticsClick: () -> Unit,
+    onDailyQuestClick: () -> Unit,
 ) {
 
 
@@ -183,16 +186,22 @@ fun HomeScreen(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(bottom = 130.dp),
-                        horizontalArrangement = Arrangement.spacedBy(32.dp)
+                        horizontalArrangement = Arrangement.spacedBy(24.dp)
                     ) {
                         HomeShortcutButton(
                             icon = "👤",
-                            onClick = onProfileClick
+                            onClick = onProfileClick,
+                            statusColor = if (isProfileSetup) Color.Green else Color.Red
                         )
 
                         HomeShortcutButton(
                             icon = "📊",
                             onClick = onStatisticsClick
+                        )
+
+                        HomeShortcutButton(
+                            icon = "📅",
+                            onClick = onDailyQuestClick
                         )
                     }
 
@@ -201,7 +210,7 @@ fun HomeScreen(
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = 20.dp)
+                            .padding(bottom = 15.dp)
                     )
                 }
             }
@@ -248,15 +257,18 @@ private class CompassBannerShape : Shape {
 @Composable
 private fun HomeShortcutButton(
     icon: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    statusColor: Color? = null
 ) {
     Box(
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(72.dp)
     ) {
         Button(
             onClick = onClick,
             modifier = Modifier.size(64.dp),
             shape = CircleShape,
+            contentPadding = PaddingValues(0.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
@@ -268,9 +280,22 @@ private fun HomeShortcutButton(
             ) {
                 Text(
                     text = icon,
-                    fontSize = 24.sp
+                    fontSize = 28.sp,
+                    textAlign = TextAlign.Center
                 )
             }
+        }
+        
+        if (statusColor != null) {
+            Surface(
+                modifier = Modifier
+                    .size(16.dp)
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-4).dp, y = 4.dp),
+                shape = CircleShape,
+                color = statusColor,
+                border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.surface)
+            ) {}
         }
     }
 }

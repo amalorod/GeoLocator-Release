@@ -36,5 +36,6 @@ data class GameUiState(
 
     val multiplayerPlayers:
     List<MultiplayerPlayerState> =
-        emptyList()
+        emptyList(),
+    val newlyCompletedQuest: com.example.geoguessr_app.domain.model.dailyquest.DailyQuest? = null
 )

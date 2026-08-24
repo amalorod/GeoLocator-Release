@@ -16,6 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.geoguessr_app.data.dailyquest.DailyQuestRepository
 import com.example.geoguessr_app.data.profile.ProfileRepository
 import com.example.geoguessr_app.data.statistics.StatisticsRepository
 import com.example.geoguessr_app.ui.game.GameMode
@@ -23,6 +24,7 @@ import com.example.geoguessr_app.ui.game.GameRoute
 import com.example.geoguessr_app.ui.game.GameViewModel
 import com.example.geoguessr_app.ui.game.MultiplayerGameRoute
 import com.example.geoguessr_app.ui.home.HomeScreen
+import com.example.geoguessr_app.ui.dailyquest.DailyQuestScreen
 import com.example.geoguessr_app.ui.maptest.MapTestScreen
 import com.example.geoguessr_app.ui.multiplayer.JoinLobbyScreen
 import com.example.geoguessr_app.ui.multiplayer.LobbyViewModel
@@ -52,9 +54,16 @@ fun GeoGuessrNavHost(
 ) {
     val navController = rememberNavController()
     val gameViewModel: GameViewModel = hiltViewModel()
+    val userProfile by ProfileRepository.profile.collectAsStateWithLifecycle()
 
     var isGameInBackground by rememberSaveable {
         mutableStateOf(false)
+    }
+
+    LaunchedEffect(Unit) {
+        StatisticsRepository.loadStatistics()
+        ProfileRepository.loadProfile()
+        DailyQuestRepository.loadQuests()
     }
 
     NavHost(
@@ -65,6 +74,7 @@ fun GeoGuessrNavHost(
         composable(route = AppDestination.Home.route) {
             HomeScreen(
                 currentThemeName = currentThemeName,
+                isProfileSetup = userProfile != null,
                 onProfileClick = {
                     navController.navigate(
                         AppDestination.Profile.route
@@ -73,6 +83,11 @@ fun GeoGuessrNavHost(
                 onStatisticsClick = {
                     navController.navigate(
                         AppDestination.Statistics.route
+                    )
+                },
+                onDailyQuestClick = {
+                    navController.navigate(
+                        AppDestination.DailyQuest.route
                     )
                 },
                 onExitAppClick = onExitAppClick,
@@ -103,11 +118,21 @@ fun GeoGuessrNavHost(
         }
 
         composable(
+            route = AppDestination.DailyQuest.route
+        ) {
+            DailyQuestScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
             route = AppDestination.Profile.route
         ) {
-            val profile = ProfileRepository.profile.collectAsState()
+            val profile by ProfileRepository.profile.collectAsStateWithLifecycle()
             ProfileScreen(
-                profile = profile.value,
+                profile = profile ?: com.example.geoguessr_app.domain.model.profile.PlayerProfile(),
                 onBackClick = {
                     navController.popBackStack()
                 }

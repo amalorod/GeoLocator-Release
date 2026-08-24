@@ -19,7 +19,9 @@ val route: String
     data object JoinLobby : AppDestination("joinLobby")
 
     data object MultiplayerLobby : AppDestination  ("multiplayerLobby")
+    data object DailyQuest : AppDestination("dailyQuest")
     data object Profile : AppDestination("profile")
+    data object ProfileSetup : AppDestination("profileSetup")
     data object Tutorial : AppDestination("tutorial")
 
     data object Game : AppDestination("game")

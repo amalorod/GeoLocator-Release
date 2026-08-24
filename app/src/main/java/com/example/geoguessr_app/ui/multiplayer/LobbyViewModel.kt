@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.geoguessr_app.data.firebase.FirebaseAuthRepository
 import com.example.geoguessr_app.data.firebase.MultiplayerRepository
 import com.example.geoguessr_app.data.firebase.SessionRepository
+import com.example.geoguessr_app.data.profile.ProfileRepository
 import com.example.geoguessr_app.domain.model.multiplayer.LobbyPlayer
 import com.example.geoguessr_app.domain.model.multiplayer.MatchSession
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerMode
@@ -73,9 +74,10 @@ class LobbyViewModel @Inject constructor(
                     ?: firebaseAuthRepository.signInAnonymously()
                 Log.e("MULTIPLAYER", "UID = $uid")
 
+                val profile = ProfileRepository.profile.value
                 val hostPlayer = LobbyPlayer(
                     uid = uid,
-                    name = "Alic",
+                    name = profile?.playerName ?: "Host",
                     ready = true,
                     host = true
                 )
@@ -136,12 +138,13 @@ class LobbyViewModel @Inject constructor(
 
                 _uiState.update { it.copy(currentUserUid = uid) }
 
+                val profile = ProfileRepository.profile.value
                 // 3. Beitreten
                 multiplayerRepository.joinLobby(
                     lobbyCode = lobbyCode,
                     player = LobbyPlayer(
                         uid = uid,
-                        name = "Spieler",
+                        name = profile?.playerName ?: "Spieler",
                         ready = false,
                         host = false
                     )
@@ -245,6 +248,8 @@ class LobbyViewModel @Inject constructor(
                 Log.e("MULTIPLAYER", "Session erfolgreich erstellt")
 
                 // 4. Spieler initialisieren
+                val initialLives = if (_uiState.value.selectedMode == MultiplayerMode.BATTLE_ROYALE) 3 else 5
+                
                 _uiState.value.players.forEach { player ->
                     sessionRepository.updatePlayerState(
                         sessionId = sessionId,
@@ -252,7 +257,8 @@ class LobbyViewModel @Inject constructor(
                             uid = player.uid,
                             playerName = player.name,
                             score = 0,
-                            round = 1
+                            round = 1,
+                            lives = initialLives
                         )
                     )
                 }

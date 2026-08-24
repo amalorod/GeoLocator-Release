@@ -79,6 +79,8 @@ dependencies {
     implementation(
         "com.google.firebase:firebase-database"
     )
+    implementation("com.google.firebase:firebase-storage")
+    implementation("io.coil-kt:coil-compose:2.6.0")
 
 
     // Add the dependencies for any other desired Firebase products
