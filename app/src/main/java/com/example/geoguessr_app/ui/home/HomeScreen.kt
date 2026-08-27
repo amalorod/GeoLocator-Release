@@ -136,7 +136,7 @@ fun HomeScreen(
                         )
 
                         Text(
-                            text = "Entdecke Europa und errate deinen Standort!",
+                            text = "Entdecke die Welt und errate den Standort!",
                             style = MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onPrimaryContainer

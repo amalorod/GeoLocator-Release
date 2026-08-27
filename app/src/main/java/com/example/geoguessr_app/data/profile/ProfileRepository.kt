@@ -1,5 +1,6 @@
 package com.example.geoguessr_app.data.profile
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import com.example.geoguessr_app.data.statistics.StatisticsRepository
@@ -26,8 +27,24 @@ object ProfileRepository {
     private val _isLoaded = MutableStateFlow(false)
     val isLoaded: StateFlow<Boolean> = _isLoaded.asStateFlow()
 
+    private var appContext: Context? = null
+
+    fun initialize(context: Context) {
+        appContext = context.applicationContext
+    }
+
+    private fun getSavedUid(): String? {
+        return appContext?.getSharedPreferences("prefs", Context.MODE_PRIVATE)
+            ?.getString("active_uid", null)
+    }
+
+    private fun saveUidLocally(uid: String?) {
+        appContext?.getSharedPreferences("prefs", Context.MODE_PRIVATE)
+            ?.edit()?.putString("active_uid", uid)?.apply()
+    }
+
     suspend fun saveProfile(profile: PlayerProfile) {
-        val uid = auth.currentUser?.uid ?: return
+        val uid = profile.playerId.ifEmpty { auth.currentUser?.uid } ?: return
         try {
             database.reference
                 .child("users")
@@ -38,15 +55,20 @@ object ProfileRepository {
             
             _profile.value = profile
             _isLoaded.value = true
-            Log.d("PROFILE", "Profil erfolgreich gespeichert")
+            saveUidLocally(uid)
+            Log.d("PROFILE", "Profil erfolgreich gespeichert für UID: $uid")
         } catch (e: Exception) {
             Log.e("PROFILE", "Fehler beim Speichern des Profils", e)
         }
     }
 
     suspend fun loadProfile() {
-        val uid = auth.currentUser?.uid ?: return
         try {
+            val uid = getSavedUid() ?: auth.currentUser?.uid ?: run {
+                val result = auth.signInAnonymously().await()
+                result.user?.uid
+            } ?: return
+
             val snapshot = database.reference
                 .child("users")
                 .child(uid)
@@ -55,34 +77,48 @@ object ProfileRepository {
                 .await()
             
             val profile = snapshot.getValue(PlayerProfile::class.java)
-            _profile.value = profile
+            if (profile != null) {
+                _profile.value = profile
+                StatisticsRepository.loadStatistics(uid)
+                Log.d("PROFILE", "Profil geladen: ${profile.playerName}")
+            }
             _isLoaded.value = true
-            Log.d("PROFILE", "Profil geladen: ${profile?.playerName}")
         } catch (e: Exception) {
             Log.e("PROFILE", "Fehler beim Laden des Profils", e)
-            _isLoaded.value = true // Auch bei Fehler als "versucht zu laden" markieren
+            _isLoaded.value = true 
         }
     }
 
     suspend fun loginWithUsername(userName: String): Boolean {
+        Log.d("PROFILE", "Login Versuch mit: $userName")
         try {
+            // Erstmal sicherstellen, dass wir eine UID haben
+            if (auth.currentUser == null) {
+                auth.signInAnonymously().await()
+            }
+
             val snapshot = database.reference.child("users").get().await()
             
             var foundUid: String? = null
             var foundProfile: PlayerProfile? = null
             
             for (userSnapshot in snapshot.children) {
-                val profile = userSnapshot.child("profile").getValue(PlayerProfile::class.java)
-                if (profile?.playerName?.equals(userName, ignoreCase = true) == true) {
+                val profileData = userSnapshot.child("profile")
+                val name = profileData.child("playerName").getValue(String::class.java)
+                
+                if (name?.trim()?.equals(userName.trim(), ignoreCase = true) == true) {
                     foundUid = userSnapshot.key
-                    foundProfile = profile
+                    // Wichtig: Explizites Mapping um Felder wie profileImageUrl sicher zu laden
+                    foundProfile = profileData.getValue(PlayerProfile::class.java)
                     break
                 }
             }
             
             if (foundUid != null && foundProfile != null) {
+                Log.d("PROFILE", "Nutzer gefunden: $foundUid, Bild: ${foundProfile.profileImageUrl}")
                 _profile.value = foundProfile
                 _isLoaded.value = true
+                saveUidLocally(foundUid)
                 StatisticsRepository.loadStatistics(foundUid)
                 return true
             }
@@ -91,6 +127,12 @@ object ProfileRepository {
             Log.e("PROFILE", "Login Fehler", e)
             return false
         }
+    }
+
+    suspend fun logout() {
+        saveUidLocally(null)
+        _profile.value = null
+        // Wir bleiben in Firebase anonym angemeldet, aber löschen die Profil-Verknüpfung
     }
 
     suspend fun createAndLogin(userName: String): Boolean {
@@ -105,20 +147,26 @@ object ProfileRepository {
     }
 
     suspend fun uploadProfilePicture(uri: Uri): String? {
-        val uid = auth.currentUser?.uid ?: return null
+        val currentProfile = _profile.value
+        val uid = currentProfile?.playerId ?: auth.currentUser?.uid ?: return null
+        
+        Log.d("PROFILE", "Upload gestartet für UID: $uid")
         try {
+            // 1. Lokales Profil sofort mit URI aktualisieren
+            if (currentProfile != null) {
+                _profile.value = currentProfile.copy(profileImageUrl = uri.toString())
+            }
+
+            // 2. Upload zu Firebase
             val ref = storage.reference.child("profile_pictures/$uid.jpg")
-            
-            // Datei hochladen
             ref.putFile(uri).await()
             
-            // Download URL abrufen
             val downloadUrl = ref.downloadUrl.await().toString()
+            Log.d("PROFILE", "Upload erfolgreich, URL: $downloadUrl")
             
-            // Profil aktualisieren
-            val current = _profile.value
-            if (current != null) {
-                val updated = current.copy(profileImageUrl = downloadUrl)
+            // 3. Finale URL in DB speichern (immer am richtigen Ort!)
+            if (currentProfile != null) {
+                val updated = currentProfile.copy(profileImageUrl = downloadUrl)
                 saveProfile(updated)
             }
             return downloadUrl

@@ -33,6 +33,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        com.example.geoguessr_app.data.profile.ProfileRepository.initialize(this)
 
         enableEdgeToEdge()
 

@@ -44,7 +44,7 @@ enum class GameMode(
         displayName = "Daily Quest",
         roundDurationSeconds = 60,
         streetViewNavigationEnabled = true,
-        isAvailable = false
+        isAvailable = true
     ),
 
     CUSTOM(

@@ -1,6 +1,7 @@
 package com.example.geoguessr_app.data.statistics
 
 import android.util.Log
+import com.example.geoguessr_app.data.profile.ProfileRepository
 import com.example.geoguessr_app.domain.model.statistics.LifetimeStatistics
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 import com.google.firebase.auth.FirebaseAuth
@@ -23,7 +24,7 @@ object StatisticsRepository {
     val recentMatches: StateFlow<List<MatchStatistic>> = _recentMatches.asStateFlow()
 
     suspend fun saveMatch(match: MatchStatistic) {
-        val uid = auth.currentUser?.uid ?: return
+        val uid = ProfileRepository.profile.value?.playerId ?: auth.currentUser?.uid ?: return
         
         try {
             // 1. In Firebase speichern

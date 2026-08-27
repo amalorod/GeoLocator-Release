@@ -154,6 +154,7 @@ fun MultiplayerGameRoute(
     currentTheme: AppThemeMode,
     onThemeSelected: (AppThemeMode) -> Unit,
     onHomeClick: () -> Unit,
+    onStatisticsClick: () -> Unit,
     onExitGame: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MultiplayerGameViewModel = hiltViewModel()
@@ -189,6 +190,19 @@ fun MultiplayerGameRoute(
             onRetryLoading = { viewModel.loadSessionLocations(sessionId) },
             modifier = Modifier.fillMaxSize()
         )
+
+        if (uiState.isGameFinished) {
+            val stats = com.example.geoguessr_app.domain.model.statistics.GameStatistics(
+                totalScore = uiState.totalScore,
+                rounds = uiState.roundStatistics
+            )
+            MatchSummaryDialog(
+                statistics = stats,
+                onDetailsClick = onStatisticsClick,
+                onNewGameClick = onHomeClick,
+                onHomeClick = onHomeClick
+            )
+        }
     }
 }
 
@@ -257,7 +271,7 @@ private fun GameScreen(
             currentRound = uiState.currentRound,
             totalRounds = uiState.totalRounds,
             remainingSeconds = uiState.remainingSeconds,
-            gameModeName = uiState.gameMode.displayName,
+            gameMode = uiState.gameMode,
             lives = uiState.lives
         )
 
@@ -635,7 +649,7 @@ private fun RoundResultMap(
         currentRound: Int,
         totalRounds: Int,
         remainingSeconds: Int,
-        gameModeName: String,
+        gameMode: GameMode,
         lives: Int = Int.MAX_VALUE
     ) {
         Column(
@@ -659,7 +673,7 @@ private fun RoundResultMap(
                 ) {
                     Text("Score: $score")
                     
-                    val showLives = (gameModeName == "Battle Royale" || lives < 100)
+                    val showLives = (gameMode == GameMode.BATTLE_ROYALE || (lives < 100 && gameMode == GameMode.CUSTOM))
                     if (showLives) { 
                         Text("❤️ $lives")
                     }
@@ -675,13 +689,13 @@ private fun RoundResultMap(
                 shape = RoundedCornerShape(50)
             ) {
                 Text(
-                    text = gameModeName,
+                    text = gameMode.displayName,
                     modifier = Modifier.padding(
                         horizontal = 14.dp,
                         vertical = 3.dp
                     ),
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold
                 )
             }
         }

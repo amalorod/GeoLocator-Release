@@ -24,7 +24,14 @@ class GetRandomLocationsUseCase @Inject constructor(
         val filteredLocations = if (region == Region.WORLD) {
             allLocations
         } else {
-            allLocations.filter { it.region == region }
+            // Defensiver Filter, falls region aus irgendeinem Grund null wäre
+            allLocations.filter { loc -> 
+                try {
+                    loc.region == region
+                } catch (e: Exception) {
+                    false
+                }
+            }
         }
 
         require(filteredLocations.size >= count) {

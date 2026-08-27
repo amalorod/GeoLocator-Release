@@ -4,8 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -30,7 +28,6 @@ fun DailyQuestScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Header
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer,
@@ -42,10 +39,11 @@ fun DailyQuestScreen(
                     .padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBackClick) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                // TextButton statt IconButton mit Icon um AutoMirrored Crash zu vermeiden
+                TextButton(onClick = onBackClick) {
+                    Text(" Zurück ", fontWeight = FontWeight.Bold)
                 }
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Daily Quests",
                     style = MaterialTheme.typography.titleLarge,
@@ -54,13 +52,19 @@ fun DailyQuestScreen(
             }
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(quests) { quest ->
-                QuestItem(quest)
+        if (quests.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(quests, key = { it.id }) { quest ->
+                    QuestItem(quest)
+                }
             }
         }
     }
@@ -107,8 +111,10 @@ private fun QuestItem(quest: DailyQuest) {
                 
                 if (!quest.completed) {
                     Spacer(modifier = Modifier.height(8.dp))
+                    val progressFloat = if (quest.target > 0) quest.progress.toFloat() / quest.target.toFloat() else 0f
+                    @Suppress("DEPRECATION")
                     LinearProgressIndicator(
-                        progress = { quest.progress.toFloat() / quest.target.toFloat() },
+                        progress = progressFloat.coerceIn(0f, 1f),
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = MaterialTheme.colorScheme.surfaceVariant

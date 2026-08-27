@@ -1,6 +1,7 @@
 package com.example.geoguessr_app.data.dailyquest
 
 import android.util.Log
+import com.example.geoguessr_app.data.profile.ProfileRepository
 import com.example.geoguessr_app.domain.model.dailyquest.DailyQuest
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
@@ -57,8 +58,12 @@ object DailyQuestRepository {
     )
 
     suspend fun loadQuests() {
-        val uid = auth.currentUser?.uid ?: return
         try {
+            val uid = ProfileRepository.profile.value?.playerId ?: auth.currentUser?.uid ?: run {
+                val result = auth.signInAnonymously().await()
+                result.user?.uid
+            } ?: return
+
             val snapshot = database.reference
                 .child("users")
                 .child(uid)
@@ -75,12 +80,15 @@ object DailyQuestRepository {
             }
         } catch (e: Exception) {
             Log.e("QUESTS", "Fehler beim Laden", e)
-            _quests.value = DEFAULT_QUESTS
+            // Fallback auf Default, damit die UI nicht leer bleibt/abstürzt
+            if (_quests.value.isEmpty()) {
+                _quests.value = DEFAULT_QUESTS
+            }
         }
     }
 
     suspend fun saveQuests(quests: List<DailyQuest>) {
-        val uid = auth.currentUser?.uid ?: return
+        val uid = ProfileRepository.profile.value?.playerId ?: auth.currentUser?.uid ?: return
         try {
             database.reference
                 .child("users")

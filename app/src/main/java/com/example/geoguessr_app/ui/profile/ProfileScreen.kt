@@ -1,6 +1,7 @@
 package com.example.geoguessr_app.ui.profile
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -9,10 +10,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +36,8 @@ fun ProfileScreen(
 ) {
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
+    
+    // Gast-Check: Wenn ID leer oder Standardname
     val isGuest = profile.playerId.isEmpty() || profile.playerName == "Spieler"
     
     var showLoginModal by remember { mutableStateOf(false) }
@@ -46,7 +45,7 @@ fun ProfileScreen(
     var isProcessing by remember { mutableStateOf(false) }
     var modalError by remember { mutableStateOf<String?>(null) }
 
-    // Launcher für Galerie
+    // Launcher für Galerie-Bilder
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -62,7 +61,7 @@ fun ProfileScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Custom Header
+        // Sicherer Header
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer,
@@ -70,11 +69,12 @@ fun ProfileScreen(
         ) {
             Row(
                 modifier = Modifier
+                    .statusBarsPadding()
                     .padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(onClick = onBackClick) {
-                    Text("Zurück")
+                TextButton(onClick = onBackClick) {
+                    Text(" Zurück ", fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
@@ -101,18 +101,22 @@ fun ProfileScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Profilbild mit Klick-Funktion
+            // Avatar mit Klick-Support zum Ändern (nur für eingeloggte User)
             Box(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable(enabled = !isGuest) {
-                        galleryLauncher.launch("image/*")
+                        try {
+                            galleryLauncher.launch("image/*")
+                        } catch (e: Exception) {
+                            Log.e("PROFILE", "Galerie Fehler", e)
+                        }
                     },
                 contentAlignment = Alignment.Center
             ) {
-                if (profile.profileImageUrl != null) {
+                if (!isGuest && profile.profileImageUrl != null) {
                     AsyncImage(
                         model = profile.profileImageUrl,
                         contentDescription = "Profilbild",
@@ -121,14 +125,14 @@ fun ProfileScreen(
                     )
                 } else {
                     Text(
-                        text = if (profile.playerName.isNotEmpty()) profile.playerName.take(1).uppercase() else "?",
+                        text = if (!isGuest && profile.playerName.isNotEmpty()) 
+                               profile.playerName.take(1).uppercase() else "?",
                         style = MaterialTheme.typography.displayLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 }
                 
-                // Overlay für Kamera-Icon wenn nicht Gast
                 if (!isGuest) {
                     Box(
                         modifier = Modifier
@@ -136,22 +140,28 @@ fun ProfileScreen(
                             .background(Color.Black.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.BottomCenter
                     ) {
-                        Text("Ändern", color = Color.White, fontSize = 10.sp, modifier = Modifier.padding(bottom = 8.dp))
+                        Text(
+                            "ÄNDERN", 
+                            color = Color.White, 
+                            fontSize = 10.sp, 
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = if (isGuest) "Gast-Account" else profile.playerName,
+                text = if (isGuest) "Gast" else profile.playerName,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
 
             if (!isGuest) {
                 Text(
-                    text = "UID: ${profile.playerId.take(12)}...",
+                    text = "ID: ${profile.playerId.take(12)}...",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary
                 )
@@ -160,33 +170,41 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             if (isGuest) {
-                Button(
-                    onClick = { showLoginModal = true },
+                // Login Bereich für Gäste
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 32.dp)
-                        .height(56.dp),
-                    shape = MaterialTheme.shapes.medium
+                        .padding(horizontal = 24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    )
                 ) {
-                    Text("Einloggen / Profil laden", style = MaterialTheme.typography.titleMedium)
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Melde dich an, um deinen Fortschritt zu speichern.",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { showLoginModal = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Einloggen / Profil laden")
+                        }
+                    }
                 }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Text(
-                    text = "Logge dich ein, um deine Statistiken zu speichern und ein Profilbild hochzuladen.",
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 48.dp),
-                    color = MaterialTheme.colorScheme.secondary
-                )
             } else {
+                // Details Bereich für eingeloggte Nutzer
                 ElevatedCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(20.dp)) {
                         Text(
                             text = "Account-Details",
                             style = MaterialTheme.typography.titleMedium,
@@ -194,33 +212,35 @@ fun ProfileScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
                         
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                         
-                        DetailRow(icon = Icons.Default.Person, label = "Nutzername", value = profile.playerName)
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        DetailRow(icon = Icons.Default.DateRange, label = "Mitglied seit", value = formatDate(profile.createdAt))
+                        DetailRow(label = "Nutzername", value = profile.playerName)
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                        DetailRow(label = "Dabei seit", value = formatDate(profile.createdAt))
                     }
                 }
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
-                TextButton(onClick = { /* Logout Logik? */ }) {
-                    Text("Abmelden", color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = { 
+                    scope.launch { ProfileRepository.logout() }
+                }) {
+                    Text("Vom Gerät abmelden", color = MaterialTheme.colorScheme.error)
                 }
             }
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 
-    // Login / Register Modal
+    // Login Modal
     if (showLoginModal) {
         AlertDialog(
             onDismissRequest = { if (!isProcessing) showLoginModal = false },
-            title = { Text("Willkommen zurück!") },
+            title = { Text("Spieler-Login") },
             text = {
                 Column {
-                    Text("Gib deinen Nutzernamen ein. Wenn er existiert, wird dein Profil geladen. Wenn nicht, wird ein neues erstellt.")
+                    Text("Gib deinen Namen ein. Falls er existiert, laden wir deine Statistiken.")
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = loginUsername,
@@ -234,31 +254,40 @@ fun ProfileScreen(
                         enabled = !isProcessing
                     )
                     if (modalError != null) {
-                        Text(modalError!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            modalError!!, 
+                            color = MaterialTheme.colorScheme.error, 
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        if (loginUsername.length >= 3) {
+                        if (loginUsername.trim().length >= 3) {
                             isProcessing = true
                             scope.launch {
-                                // Erst versuchen einzuloggen
-                                val found = ProfileRepository.loginWithUsername(loginUsername)
-                                if (!found) {
-                                    // Wenn nicht gefunden, neues Profil erstellen
-                                    ProfileRepository.createAndLogin(loginUsername)
+                                try {
+                                    val success = ProfileRepository.loginWithUsername(loginUsername.trim())
+                                    if (!success) {
+                                        // Falls nicht gefunden -> neu anlegen
+                                        ProfileRepository.createAndLogin(loginUsername.trim())
+                                    }
+                                    isProcessing = false
+                                    showLoginModal = false
+                                    loginUsername = ""
+                                } catch (e: Exception) {
+                                    modalError = "Verbindungsfehler. Bitte erneut versuchen."
+                                    isProcessing = false
                                 }
-                                isProcessing = false
-                                showLoginModal = false
-                                loginUsername = ""
                             }
                         } else {
-                            modalError = "Mindestens 3 Zeichen benötigt."
+                            modalError = "Mindestens 3 Zeichen erforderlich."
                         }
                     },
-                    enabled = !isProcessing && loginUsername.length >= 3
+                    enabled = !isProcessing && loginUsername.trim().length >= 3
                 ) {
                     if (isProcessing) {
                         CircularProgressIndicator(
@@ -273,7 +302,11 @@ fun ProfileScreen(
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showLoginModal = false },
+                    onClick = { 
+                        showLoginModal = false
+                        loginUsername = ""
+                        modalError = null
+                    },
                     enabled = !isProcessing
                 ) {
                     Text("Abbrechen")
@@ -284,10 +317,8 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun DetailRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
+private fun DetailRow(label: String, value: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.secondary)
-        Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
             Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
@@ -296,7 +327,11 @@ private fun DetailRow(icon: androidx.compose.ui.graphics.vector.ImageVector, lab
 }
 
 private fun formatDate(timestamp: Long): String {
-    if (timestamp == 0L) return "Unbekannt"
-    val sdf = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-    return sdf.format(Date(timestamp))
+    if (timestamp <= 0L) return "Heute"
+    return try {
+        val sdf = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+        sdf.format(Date(timestamp))
+    } catch (ignore: Exception) {
+        "Unbekannt"
+    }
 }

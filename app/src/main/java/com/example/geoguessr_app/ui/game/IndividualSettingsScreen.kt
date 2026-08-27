@@ -4,8 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +14,7 @@ import com.example.geoguessr_app.domain.model.custom.CustomDifficulty
 import com.example.geoguessr_app.domain.model.custom.CustomGameSettings
 import com.example.geoguessr_app.domain.model.custom.Region
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IndividualSettingsScreen(
     onBackClick: () -> Unit,
@@ -44,8 +43,8 @@ fun IndividualSettingsScreen(
                     .padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBackClick) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                TextButton(onClick = onBackClick) {
+                    Text(" Zurück ", fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(

@@ -22,7 +22,6 @@ import com.example.geoguessr_app.data.statistics.StatisticsRepository
 import com.example.geoguessr_app.domain.model.custom.CustomGameSettings
 import com.example.geoguessr_app.ui.game.GameMode
 import com.example.geoguessr_app.ui.game.GameRoute
-import com.example.geoguessr_app.ui.game.IndividualSettingsScreen
 import com.example.geoguessr_app.ui.game.GameViewModel
 import com.example.geoguessr_app.ui.game.IndividualSettingsScreen
 import com.example.geoguessr_app.ui.game.MultiplayerGameRoute
@@ -64,9 +63,15 @@ fun GeoGuessrNavHost(
     }
 
     LaunchedEffect(Unit) {
-        StatisticsRepository.loadStatistics()
-        ProfileRepository.loadProfile()
-        DailyQuestRepository.loadQuests()
+        try {
+            Log.d("NAVHOST", "Starte Initialisierung...")
+            StatisticsRepository.loadStatistics()
+            ProfileRepository.loadProfile()
+            DailyQuestRepository.loadQuests()
+            Log.d("NAVHOST", "Initialisierung abgeschlossen.")
+        } catch (e: Exception) {
+            Log.e("NAVHOST", "Fehler bei Initialisierung", e)
+        }
     }
 
     NavHost(
@@ -270,6 +275,9 @@ fun GeoGuessrNavHost(
                         popUpTo(AppDestination.Home.route) { inclusive = true }
                     }
                 },
+                onStatisticsClick = {
+                    navController.navigate(AppDestination.Statistics.route)
+                },
                 onExitGame = {
                     navController.navigate(AppDestination.Home.route) {
                         popUpTo(AppDestination.Home.route) { inclusive = true }
@@ -325,10 +333,20 @@ fun GeoGuessrNavHost(
 
         composable(route = AppDestination.IndividualSettings.route) {
             IndividualSettingsScreen(
-                onBackClick = { navController.popBackStack() },
+                onBackClick = { 
+                    try {
+                        navController.popBackStack() 
+                    } catch (e: Exception) {
+                        Log.e("NAVHOST", "Fehler beim Zurückgehen", e)
+                    }
+                },
                 onStartGame = { settings: CustomGameSettings ->
-                    gameViewModel.startCustomGame(settings)
-                    navController.navigate(AppDestination.Game.route)
+                    try {
+                        gameViewModel.startCustomGame(settings)
+                        navController.navigate(AppDestination.Game.route)
+                    } catch (e: Exception) {
+                        Log.e("NAVHOST", "Fehler beim Spielstart", e)
+                    }
                 }
             )
         }

@@ -62,7 +62,7 @@ class MultiplayerGameViewModel @Inject constructor(
                 val currentMode = when(session.mode) {
                     "BATTLE_ROYALE" -> GameMode.BATTLE_ROYALE
                     "PRO" -> GameMode.PRO
-                    else -> GameMode.NORMAL
+                    else -> GameMode.MULTIPLAYER
                 }
 
                 val myState = _uiState.value.multiplayerPlayers.find { it.uid == currentUid }
