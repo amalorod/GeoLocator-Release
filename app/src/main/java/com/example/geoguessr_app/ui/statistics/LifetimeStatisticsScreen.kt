@@ -35,26 +35,25 @@ fun LifetimeStatisticsScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Custom Header
+        // Einheitlicher Header (bombenfest)
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.secondaryContainer,
+            color = MaterialTheme.colorScheme.primaryContainer,
             tonalElevation = 4.dp
         ) {
             Row(
                 modifier = Modifier
-                    .statusBarsPadding()
                     .padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(onClick = onBackClick) {
-                    Text("Zurück")
+                TextButton(onClick = onBackClick) {
+                    Text(" Zurück ", fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     text = "Statistik",
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }

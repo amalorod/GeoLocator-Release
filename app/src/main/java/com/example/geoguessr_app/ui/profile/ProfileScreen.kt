@@ -61,7 +61,7 @@ fun ProfileScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Sicherer Header
+        // Einheitlicher Header (bombenfest)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer,
@@ -69,7 +69,6 @@ fun ProfileScreen(
         ) {
             Row(
                 modifier = Modifier
-                    .statusBarsPadding()
                     .padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -214,9 +213,9 @@ fun ProfileScreen(
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        DetailRow(label = "Nutzername", value = profile.playerName)
+                        DetailRow(label = "Nutzername", value = profile.playerName, emoji = "👤")
                         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                        DetailRow(label = "Dabei seit", value = formatDate(profile.createdAt))
+                        DetailRow(label = "Dabei seit", value = formatDate(profile.createdAt), emoji = "📅")
                     }
                 }
                 
@@ -317,8 +316,10 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun DetailRow(label: String, value: String) {
+private fun DetailRow(label: String, value: String, emoji: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(text = emoji, fontSize = 20.sp)
+        Spacer(modifier = Modifier.width(16.dp))
         Column {
             Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
             Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)

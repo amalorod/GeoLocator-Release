@@ -35,11 +35,9 @@ fun DailyQuestScreen(
         ) {
             Row(
                 modifier = Modifier
-                    .statusBarsPadding()
                     .padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // TextButton statt IconButton mit Icon um AutoMirrored Crash zu vermeiden
                 TextButton(onClick = onBackClick) {
                     Text(" Zurück ", fontWeight = FontWeight.Bold)
                 }

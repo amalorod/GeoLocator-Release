@@ -31,7 +31,7 @@ fun IndividualSettingsScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Header
+        // Einheitlicher Header (bombenfest)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer,
@@ -39,7 +39,6 @@ fun IndividualSettingsScreen(
         ) {
             Row(
                 modifier = Modifier
-                    .statusBarsPadding()
                     .padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -48,7 +47,7 @@ fun IndividualSettingsScreen(
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = "Individuelles Spiel",
+                    text = "Individuell",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
