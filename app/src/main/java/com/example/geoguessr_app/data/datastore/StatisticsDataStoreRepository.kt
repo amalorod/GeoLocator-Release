@@ -2,7 +2,7 @@ package com.example.geoguessr_app.data.datastore
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
-import com.example.geoguessr_app.domain.model.statistics.LifetimeStatistics
+import com.example.geoguessr_app.domain.statistics.LifetimeStatistics
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

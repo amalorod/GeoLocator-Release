@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.geoguessr_app.data.statistics.StatisticsRepository
-import com.example.geoguessr_app.domain.model.statistics.LifetimeStatistics
+import com.example.geoguessr_app.domain.statistics.LifetimeStatistics
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 
 @Composable

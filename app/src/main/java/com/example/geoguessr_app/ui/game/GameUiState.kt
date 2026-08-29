@@ -3,8 +3,8 @@ package com.example.geoguessr_app.ui.game
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
-import com.example.geoguessr_app.domain.model.statistics.RoundStatistics
-import com.example.geoguessr_app.domain.model.statistics.GameStatistics
+import com.example.geoguessr_app.domain.statistics.RoundStatistics
+import com.example.geoguessr_app.domain.statistics.GameStatistics
 
 /**
  * Beschreibt den vollständigen sichtbaren Zustand des Spiels.

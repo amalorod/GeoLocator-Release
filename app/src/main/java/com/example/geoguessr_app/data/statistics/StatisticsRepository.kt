@@ -2,7 +2,7 @@ package com.example.geoguessr_app.data.statistics
 
 import android.util.Log
 import com.example.geoguessr_app.data.profile.ProfileRepository
-import com.example.geoguessr_app.domain.model.statistics.LifetimeStatistics
+import com.example.geoguessr_app.domain.statistics.LifetimeStatistics
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
@@ -36,7 +36,8 @@ object StatisticsRepository {
             gamesPlayed = current.gamesPlayed + 1,
             roundsPlayed = current.roundsPlayed + match.rounds,
             totalScore = current.totalScore + match.score,
-            bestGameScore = maxOf(current.bestGameScore, match.score)
+            bestGameScore = maxOf(current.bestGameScore, match.score),
+            totalDistanceKm = current.totalDistanceKm + match.distanceKm
         )
         _statistics.value = updated
         _recentMatches.value = (listOf(match) + _recentMatches.value).take(20)

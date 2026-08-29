@@ -19,13 +19,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.example.geoguessr_app.domain.model.statistics.RoundStatistics
-import com.example.geoguessr_app.domain.model.statistics.GameStatistics
 import com.example.geoguessr_app.data.dailyquest.DailyQuestRepository
 import com.example.geoguessr_app.data.statistics.StatisticsRepository
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
-
-
+import com.example.geoguessr_app.domain.statistics.GameStatistics
+import com.example.geoguessr_app.domain.statistics.RoundStatistics
 
 
 /**
@@ -45,6 +43,7 @@ class GameViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameUiState())
+
     /**
      * Öffentlich ausschließlich lesbarer Spielzustand.
      */
@@ -76,9 +75,9 @@ class GameViewModel @Inject constructor(
 
     private fun loadGame(gameMode: GameMode = _uiState.value.gameMode) {
         timerJob?.cancel()
-        
+
         val duration = customSettings?.timeLimitSeconds ?: gameMode.roundDurationSeconds
-        
+
         val initialLives = when (customSettings?.difficulty) {
             CustomDifficulty.EASY -> Int.MAX_VALUE
             CustomDifficulty.MEDIUM -> 5
@@ -230,7 +229,6 @@ class GameViewModel @Inject constructor(
     }
 
 
-
     /**
      * Öffnet die Weltkarte, auf der ein Tipp abgegeben werden kann.
      */
@@ -290,10 +288,7 @@ class GameViewModel @Inject constructor(
 
         timerJob?.cancel()
 
-        val actualCoordinate = GeoCoordinate(
-            latitude = actualLocation.latitude,
-            longitude = actualLocation.longitude
-        )
+        val actualCoordinate = actualLocation.coordinate
 
         val distance = calculateDistance(
             actualLocation = actualCoordinate,
@@ -343,19 +338,22 @@ class GameViewModel @Inject constructor(
             // Quest: Präzision (< 25km)
             if (distance < 25.0) {
                 val completed = DailyQuestRepository.updateQuestProgress("perfect_guess")
-                if (completed != null) _uiState.value = _uiState.value.copy(newlyCompletedQuest = completed)
+                if (completed != null) _uiState.value =
+                    _uiState.value.copy(newlyCompletedQuest = completed)
             }
-            
+
             // Quest: Europa Experte (< 100km)
             if (distance < 100.0) {
                 val completed = DailyQuestRepository.updateQuestProgress("europe_explorer")
-                if (completed != null) _uiState.value = _uiState.value.copy(newlyCompletedQuest = completed)
+                if (completed != null) _uiState.value =
+                    _uiState.value.copy(newlyCompletedQuest = completed)
             }
-            
+
             // Quest: Pro-Modus
             if (mode == GameMode.PRO) {
                 val completed = DailyQuestRepository.updateQuestProgress("pro_mode_guess")
-                if (completed != null) _uiState.value = _uiState.value.copy(newlyCompletedQuest = completed)
+                if (completed != null) _uiState.value =
+                    _uiState.value.copy(newlyCompletedQuest = completed)
             }
         }
     }
@@ -431,13 +429,14 @@ class GameViewModel @Inject constructor(
 
             viewModelScope.launch {
                 statisticsRepository.saveStatistics(updatedLifetime)
-                
+
                 // New: Save detailed match statistics to Firebase
                 val match = MatchStatistic(
                     timestamp = System.currentTimeMillis(),
                     gameMode = state.gameMode.name,
                     score = state.totalScore,
                     rounds = state.roundStatistics.size,
+                    distanceKm = state.roundStatistics.sumOf { it.distanceKm },
                     won = false, // In Singleplayer gibt es kein "won" in dem Sinne, evtl. Score-basiert
                     multiplayer = false
                 )
@@ -469,7 +468,7 @@ class GameViewModel @Inject constructor(
             currentRound = nextRound,
             remainingSeconds = duration,
             currentLocation = nextLocation,
-            isPaused= false,
+            isPaused = false,
             guessedLocation = null,
             roundDistanceKilometers = null,
             roundScore = null,

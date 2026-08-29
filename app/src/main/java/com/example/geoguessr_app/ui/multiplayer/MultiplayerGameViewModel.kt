@@ -180,7 +180,7 @@ class MultiplayerGameViewModel @Inject constructor(
         val currentLocation = state.currentLocation ?: return
         val guessedLocation = state.guessedLocation ?: return
 
-        val actualCoordinate = GeoCoordinate(currentLocation.latitude, currentLocation.longitude)
+        val actualCoordinate = currentLocation.coordinate
         val distance = calculateDistance(actualCoordinate, guessedLocation)
         val score = calculateScore(distance)
 
@@ -296,14 +296,15 @@ class MultiplayerGameViewModel @Inject constructor(
                  (state.currentRound >= state.totalRounds || 
                   state.multiplayerPlayers.count { it.lives > 0 } <= 1)
 
-        val match = MatchStatistic(
-            timestamp = System.currentTimeMillis(),
-            gameMode = state.gameMode.name,
-            score = state.totalScore,
-            rounds = state.currentRound,
-            won = won,
-            multiplayer = true
-        )
+            val match = MatchStatistic(
+                timestamp = System.currentTimeMillis(),
+                gameMode = state.gameMode.name,
+                score = state.totalScore,
+                rounds = state.currentRound,
+                distanceKm = state.roundDistanceKilometers ?: 0.0, // This might need refinement if multiple rounds are summed
+                won = won,
+                multiplayer = true
+            )
         viewModelScope.launch {
             StatisticsRepository.saveMatch(match)
             

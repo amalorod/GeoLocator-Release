@@ -49,8 +49,9 @@ import com.example.geoguessr_app.ui.multiplayer.MultiplayerGameViewModel
 import com.example.geoguessr_app.ui.multiplayer.MultiplayerScoreboard
 import com.example.geoguessr_app.ui.multiplayer.SessionUiState
 import com.example.geoguessr_app.ui.multiplayer.SessionViewModel
-import com.example.geoguessr_app.ui.statistics.MatchSummaryDialog
+import com.example.geoguessr_app.ui.components.MatchSummaryDialog
 import com.example.geoguessr_app.ui.theme.AppThemeMode
+import com.example.geoguessr_app.domain.statistics.GameStatistics
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.StreetViewPanoramaView
 import com.google.android.gms.maps.model.CameraPosition
@@ -192,7 +193,7 @@ fun MultiplayerGameRoute(
         )
 
         if (uiState.isGameFinished) {
-            val stats = com.example.geoguessr_app.domain.model.statistics.GameStatistics(
+            val stats = GameStatistics(
                 totalScore = uiState.totalScore,
                 rounds = uiState.roundStatistics
             )

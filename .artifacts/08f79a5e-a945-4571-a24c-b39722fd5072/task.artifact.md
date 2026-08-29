@@ -1,0 +1,7 @@
+- [x] Update `MatchStatistic.kt` to include `distanceKm`
+- [x] Fix package and imports in `MatchSummaryDialog.kt`
+- [x] Fix imports in `GameScreen.kt`
+- [x] Fix imports in `LifetimeStatisticsScreen.kt`
+- [x] Fix imports in `StatisticsScreen.kt`
+- [x] Clean up imports in `GameViewModel.kt`
+- [x] Verify build
