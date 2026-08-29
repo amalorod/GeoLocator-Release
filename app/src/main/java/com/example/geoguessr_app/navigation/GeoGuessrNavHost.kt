@@ -39,10 +39,28 @@ import com.example.geoguessr_app.ui.theme.AppThemeMode
 import com.example.geoguessr_app.ui.tutorial.TutorialScreen
 
 /**
- * Zentrale Navigation der App.
+ * Zentraler Navigationsgraph der Anwendung.
  *
- * Das GameViewModel wird oberhalb der einzelnen Ziele erzeugt.
- * Dadurch bleibt die aktive Partie beim Wechsel zum Hauptmenü erhalten.
+ * Implementiert die Single-Activity-Architektur: Sämtliche Screens werden
+ * hier als [composable]-Ziele registriert und über den [NavController]
+ * gewechselt. Diese Funktion bildet damit die Wurzel des UI-Layers.
+ *
+ * Das GameViewModel wird bewusst hier – oberhalb der einzelnen
+ * composable()-Ziele – über hiltViewModel() erzeugt, statt innerhalb der
+ * Game-Route. Dadurch ist es an den Lebenszyklus des NavHost und nicht an
+ * den der Game-Route gebunden. Der Nutzer kann so ins Hauptmenü wechseln
+ * (Home), während die Partie im Hintergrund weiterläuft, und über
+ * onResumeGameClick zur laufenden Partie zurückkehren, ohne dass der
+ * Spielzustand verloren geht.
+ *
+ * @param selectedGameMode aktuell ausgewählter Spielmodus (z. B. Normal,
+ *   Multiplayer, Custom); wird von außen (MainActivity) hereingereicht,
+ *   da er auch außerhalb des NavHosts (z. B. im Home-Menü) sichtbar ist.
+ * @param onGameModeSelected Callback zur Änderung des Spielmodus.
+ * @param currentThemeName Anzeigename des aktiven Farbthemas.
+ * @param onExitAppClick Callback zum vollständigen Beenden der App.
+ * @param currentTheme aktives Farbthema als Enum-Wert.
+ * @param onThemeSelected Callback zur Änderung des Farbthemas.
  */
 @Composable
 fun GeoGuessrNavHost(
@@ -55,23 +73,46 @@ fun GeoGuessrNavHost(
     onThemeSelected: (AppThemeMode) -> Unit,
 ) {
     val navController = rememberNavController()
+
+    // Über den gesamten NavHost hinweg gültiges GameViewModel (siehe
+    // Kotlin-Doc oben zur Begründung des "übergeordneten" Scopes).
     val gameViewModel: GameViewModel = hiltViewModel()
+
+    // ARCHITEKTUR-HINWEIS: ProfileRepository wird hier als statisches
+    // Singleton-Objekt angesprochen statt über Hilt injiziert zu werden.
+    // Das durchbricht das DI-Konzept der restlichen App und sollte im
+    // Rahmen der Data-Layer-Überarbeitung (di/-Modul) durch ein via
+    // Konstruktor injiziertes Repository ersetzt werden.
     val userProfile by ProfileRepository.profile.collectAsStateWithLifecycle()
 
+    // Merkt sich, ob im Hintergrund eine laufende Partie pausiert wurde
+    // (Nutzer ist zum Home-Screen navigiert, ohne das Spiel zu beenden).
+    // rememberSaveable stellt sicher, dass dieser Zustand auch eine
+    // Konfigurationsänderung (z. B. Bildschirmdrehung) überlebt.
     var isGameInBackground by rememberSaveable {
         mutableStateOf(false)
     }
 
+    // ARCHITEKTUR-HINWEIS: Das initiale Laden der App-Daten (Profil,
+    // Statistiken, Daily Quests) erfolgt direkt im NavHost. Sauberer
+    // wäre die Auslagerung in ein eigenes App-Start-ViewModel, da der
+    // NavHost eigentlich nur für das Routing verantwortlich sein sollte
+    // (Single-Responsibility-Prinzip). Für den aktuellen Projektstand
+    // wurde diese pragmatische Lösung gewählt, da die geladenen Daten
+    // von mehreren, unabhängigen Screens benötigt werden.
     LaunchedEffect(Unit) {
         try {
             Log.d("NAVHOST", "Starte Initialisierung...")
             StatisticsRepository.loadStatistics()
-            StatisticsRepository.loadLeaderboard() // Explizit Leaderboard laden
+            StatisticsRepository.loadLeaderboard()
             ProfileRepository.loadProfile()
             DailyQuestRepository.loadQuests()
             Log.d("NAVHOST", "Initialisierung abgeschlossen.")
         } catch (e: Exception) {
-            Log.e("NAVHOST", "Fehler bei Initialisierung", e)
+            // Fehler beim Laden werden abgefangen, damit ein einzelner
+            // fehlschlagender Repository-Aufruf nicht den Start der
+            // gesamten App verhindert (Robustheit statt Absturz).
+            Log.d("NAVHOST", "Fehler bei Initialisierung", e)
         }
     }
 
@@ -80,44 +121,43 @@ fun GeoGuessrNavHost(
         startDestination = AppDestination.Home.route,
         modifier = modifier,
     ) {
+        // --- Home Screen: zentraler Einstiegspunkt der App ---
         composable(route = AppDestination.Home.route) {
             HomeScreen(
                 currentThemeName = currentThemeName,
+                // Ein vorhandenes Profil signalisiert, dass der Nutzer
+                // kein Gast ist – steuert z. B. den Profilindikator.
                 isProfileSetup = userProfile != null,
                 onProfileClick = {
-                    navController.navigate(
-                        AppDestination.Profile.route
-                    )
+                    navController.navigate(AppDestination.Profile.route)
                 },
                 onStatisticsClick = {
-                    navController.navigate(
-                        AppDestination.Statistics.route
-                    )
+                    navController.navigate(AppDestination.Statistics.route)
                 },
                 onDailyQuestClick = {
-                    navController.navigate(
-                        AppDestination.DailyQuest.route
-                    )
+                    navController.navigate(AppDestination.DailyQuest.route)
                 },
                 onExitAppClick = onExitAppClick,
+                // Wechselt zyklisch zum nächsten verfügbaren Farbthema.
                 onThemeClick = { onThemeSelected(currentTheme.next()) },
                 hasActiveGame = isGameInBackground,
                 onStartGameClick = {
                     isGameInBackground = false
+                    // Verzweigung je nach gewähltem Spielmodus: Multiplayer
+                    // und individueller Modus benötigen vorherige
+                    // Konfigurationsschritte, der Normalmodus startet direkt.
                     if (selectedGameMode == GameMode.MULTIPLAYER) {
-                        navController.navigate(
-                            AppDestination.MultiplayerHome.route
-                        )
+                        navController.navigate(AppDestination.MultiplayerHome.route)
                     } else if (selectedGameMode == GameMode.CUSTOM) {
-                        navController.navigate(
-                            AppDestination.IndividualSettings.route
-                        )
+                        navController.navigate(AppDestination.IndividualSettings.route)
                     } else {
                         gameViewModel.startNewGame(selectedGameMode)
                         navController.navigate(AppDestination.Game.route)
                     }
                 },
                 onResumeGameClick = {
+                    // Setzt eine im Hintergrund pausierte Partie fort,
+                    // statt eine neue zu starten.
                     gameViewModel.resumeGame()
                     isGameInBackground = false
                     navController.popBackStack()
@@ -130,56 +170,42 @@ fun GeoGuessrNavHost(
             )
         }
 
-        composable(
-            route = AppDestination.DailyQuest.route
-        ) {
-            DailyQuestScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                }
-            )
+        composable(route = AppDestination.DailyQuest.route) {
+            DailyQuestScreen(onBackClick = { navController.popBackStack() })
         }
 
-        composable(
-            route = AppDestination.Profile.route
-        ) {
+        composable(route = AppDestination.Profile.route) {
             val profile by ProfileRepository.profile.collectAsStateWithLifecycle()
             ProfileScreen(
+                // Fallback auf ein leeres Standardprofil, falls noch kein
+                // Profil geladen wurde (z. B. Gastmodus oder Ladezustand),
+                // damit ProfileScreen keinen Nullable-Typ behandeln muss.
                 profile = profile ?: com.example.geoguessr_app.domain.model.profile.PlayerProfile(),
-                onBackClick = {
-                    navController.popBackStack()
-                }
+                onBackClick = { navController.popBackStack() }
             )
         }
 
-        composable(
-            route = AppDestination.MultiplayerHome.route
-        ) {
+        // --- Multiplayer-Einstiegspunkt ---
+        composable(route = AppDestination.MultiplayerHome.route) {
             MultiplayerHomeScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                },
+                onBackClick = { navController.popBackStack() },
                 onCreateLobbyClick = {
-                    navController.navigate(
-                        AppDestination.MultiplayerLobby.route
-                    )
+                    navController.navigate(AppDestination.MultiplayerLobby.route)
                 },
                 onJoinLobbyClick = {
-                    navController.navigate(
-                        AppDestination.JoinLobby.route
-                    )
+                    navController.navigate(AppDestination.JoinLobby.route)
                 }
             )
         }
 
-        composable(
-            route = AppDestination.JoinLobby.route
-        ) {
+        composable(route = AppDestination.JoinLobby.route) {
             JoinLobbyScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                },
+                onBackClick = { navController.popBackStack() },
                 onJoinClick = { code ->
+                    // Der eingegebene Lobby-Code wird als optionaler
+                    // Query-Parameter an die Lobby-Route angehängt, um
+                    // zwischen "Lobby erstellen" (kein Code) und
+                    // "Lobby beitreten" (mit Code) zu unterscheiden.
                     navController.navigate(
                         "${AppDestination.MultiplayerLobby.route}?lobbyCode=$code"
                     )
@@ -187,6 +213,9 @@ fun GeoGuessrNavHost(
             )
         }
 
+        // --- Multiplayer-Lobby: dient sowohl dem Erstellen als auch dem
+        // Beitreten einer Lobby, gesteuert über den optionalen Parameter
+        // lobbyCode ---
         composable(
             route = "${AppDestination.MultiplayerLobby.route}?lobbyCode={lobbyCode}",
             arguments = listOf(
@@ -201,33 +230,21 @@ fun GeoGuessrNavHost(
             val lobbyViewModel: LobbyViewModel = hiltViewModel()
             val uiState by lobbyViewModel.uiState.collectAsStateWithLifecycle()
 
-            Log.e(
-                "MULTIPLAYER",
-                "ROUTE ERREICHT | lobbyCodeArg=$lobbyCodeArg"
-            )
-
+            // Einmalige Aktion beim ersten Erreichen der Route: Je nachdem,
+            // ob ein Lobby-Code übergeben wurde, wird eine neue Lobby
+            // erstellt (Host) oder einer bestehenden beigetreten (Gast).
             LaunchedEffect(Unit) {
-
-                Log.e(
-                    "MULTIPLAYER",
-                    "LaunchedEffect (Unit) ausgeführt"
-                )
-
                 if (lobbyCodeArg == null) {
-                    Log.e(
-                        "MULTIPLAYER",
-                        "NavHost -> createLobby"
-                    )
                     lobbyViewModel.createLobby()
                 } else {
-                    Log.e(
-                        "MULTIPLAYER",
-                        "NavHost -> joinLobby($lobbyCodeArg)"
-                    )
                     lobbyViewModel.joinLobby(lobbyCodeArg)
                 }
             }
 
+            // Beobachtet den UI-State auf den Spielstart: Sobald der Host
+            // die Partie gestartet hat (started == true) und eine gültige
+            // Session-ID vorliegt, wechseln alle Lobby-Teilnehmer
+            // automatisch zum Multiplayer-Spielbildschirm.
             LaunchedEffect(uiState.started, uiState.sessionId) {
                 if (uiState.started && uiState.sessionId.isNotEmpty()) {
                     navController.navigate(
@@ -243,27 +260,22 @@ fun GeoGuessrNavHost(
                 selectedMode = uiState.selectedMode,
                 errorMessage = uiState.errorMessage,
                 onModeSelected = { lobbyViewModel.selectMode(it) },
-                onBackClick = {
-                    navController.popBackStack()
-                },
+                onBackClick = { navController.popBackStack() },
                 onLeaveClick = {
                     lobbyViewModel.leaveLobby()
                     navController.popBackStack()
                 },
-                onReadyClick = {
-                    lobbyViewModel.toggleReady()
-                },
-                onStartGameClick = {
-                    lobbyViewModel.startLobby()
-                }
+                onReadyClick = { lobbyViewModel.toggleReady() },
+                onStartGameClick = { lobbyViewModel.startLobby() }
             )
         }
 
+        // --- Aktive Multiplayer-Partie, identifiziert über die
+        // verpflichtende sessionId (Pfadparameter, kein Query-Parameter,
+        // da hier kein sinnvoller Default existiert) ---
         composable(
             route = "${AppDestination.MultiplayerGame.route}/{sessionId}",
-            arguments = listOf(
-                navArgument("sessionId") { type = NavType.StringType }
-            )
+            arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
         ) { backStackEntry ->
             val sessionId = backStackEntry.arguments?.getString("sessionId") ?: ""
             MultiplayerGameRoute(
@@ -272,6 +284,11 @@ fun GeoGuessrNavHost(
                 currentTheme = currentTheme,
                 onThemeSelected = onThemeSelected,
                 onHomeClick = {
+                    // popUpTo mit inclusive = true entfernt auch den
+                    // aktuellen Home-Eintrag aus dem Stack, sodass beim
+                    // erneuten Navigieren zu Home kein doppelter Eintrag
+                    // entsteht und der Zurück-Button nicht in die
+                    // beendete Partie zurückführt.
                     navController.navigate(AppDestination.Home.route) {
                         popUpTo(AppDestination.Home.route) { inclusive = true }
                     }
@@ -288,23 +305,18 @@ fun GeoGuessrNavHost(
         }
 
         composable(route = AppDestination.Tutorial.route) {
-            TutorialScreen(
-                onBackClick = navController::popBackStack
-            )
+            TutorialScreen(onBackClick = navController::popBackStack)
         }
 
-        composable(
-            route = AppDestination.Statistics.route
-        ) {
+        composable(route = AppDestination.Statistics.route) {
             val statistics = StatisticsRepository.statistics.collectAsState()
             LifetimeStatisticsScreen(
                 statistics = statistics.value,
-                onBackClick = {
-                    navController.popBackStack()
-                }
+                onBackClick = { navController.popBackStack() }
             )
         }
 
+        // --- Einzelspieler-Partie (Normal- und Custom-Modus) ---
         composable(route = AppDestination.Game.route) {
             GameRoute(
                 currentThemeName = currentThemeName,
@@ -312,6 +324,11 @@ fun GeoGuessrNavHost(
                 onThemeSelected = onThemeSelected,
                 viewModel = gameViewModel,
                 onHomeClick = {
+                    // Anders als bei Multiplayer wird die Partie hier NICHT
+                    // beendet, sondern nur pausiert (isGameInBackground =
+                    // true), damit sie über onResumeGameClick fortgesetzt
+                    // werden kann. launchSingleTop verhindert doppelte
+                    // Home-Instanzen im Stack.
                     isGameInBackground = true
                     navController.navigate(AppDestination.Home.route) {
                         launchSingleTop = true
@@ -321,11 +338,11 @@ fun GeoGuessrNavHost(
                     navController.navigate(AppDestination.Statistics.route)
                 },
                 onExitGame = {
+                    // Im Gegensatz zu onHomeClick wird die Partie hier
+                    // endgültig beendet (isGameInBackground = false).
                     isGameInBackground = false
                     navController.navigate(AppDestination.Home.route) {
-                        popUpTo(AppDestination.Home.route) {
-                            inclusive = false
-                        }
+                        popUpTo(AppDestination.Home.route) { inclusive = false }
                         launchSingleTop = true
                     }
                 }
@@ -334,11 +351,16 @@ fun GeoGuessrNavHost(
 
         composable(route = AppDestination.IndividualSettings.route) {
             IndividualSettingsScreen(
-                onBackClick = { 
+                onBackClick = {
+                    // Try-Catch fängt hier den unwahrscheinlichen Fall ab,
+                    // dass kein vorheriger Backstack-Eintrag existiert
+                    // (sollte durch die feste Navigationsstruktur der App
+                    // eigentlich nicht auftreten, dient aber als
+                    // Absicherung gegen Abstürze).
                     try {
-                        navController.popBackStack() 
+                        navController.popBackStack()
                     } catch (e: Exception) {
-                        Log.e("NAVHOST", "Fehler beim Zurückgehen", e)
+                        Log.d("NAVHOST", "Fehler beim Zurückgehen", e)
                     }
                 },
                 onStartGame = { settings: CustomGameSettings ->
@@ -346,22 +368,20 @@ fun GeoGuessrNavHost(
                         gameViewModel.startCustomGame(settings)
                         navController.navigate(AppDestination.Game.route)
                     } catch (e: Exception) {
-                        Log.e("NAVHOST", "Fehler beim Spielstart", e)
+                        Log.d("NAVHOST", "Fehler beim Spielstart", e)
                     }
                 }
             )
         }
 
+        // --- Interne Entwickler-/Testrouten, nicht über die regulä­re
+        // App-Navigation erreichbar ---
         composable(route = AppDestination.MapTest.route) {
-            MapTestScreen(
-                onBackClick = navController::popBackStack
-            )
+            MapTestScreen(onBackClick = navController::popBackStack)
         }
 
         composable(route = AppDestination.StreetViewTest.route) {
-            StreetViewTestScreen(
-                onBackClick = navController::popBackStack
-            )
+            StreetViewTestScreen(onBackClick = navController::popBackStack)
         }
     }
 }
