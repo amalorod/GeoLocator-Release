@@ -3,6 +3,7 @@ package com.example.geoguessr_app.data.profile
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.example.geoguessr_app.data.dailyquest.DailyQuestRepository
 import com.example.geoguessr_app.data.statistics.StatisticsRepository
 import com.example.geoguessr_app.domain.model.profile.PlayerProfile
 import com.google.firebase.auth.FirebaseAuth
@@ -79,8 +80,15 @@ object ProfileRepository {
             val profile = snapshot.getValue(PlayerProfile::class.java)
             if (profile != null) {
                 _profile.value = profile
+                // Registrierter User: Cloud-Statistiken laden
                 StatisticsRepository.loadStatistics(uid)
+                DailyQuestRepository.loadQuests()
                 Log.d("PROFILE", "Profil geladen: ${profile.playerName}")
+            } else {
+                // Gast ohne Profil: Statistiken leeren/lokal halten
+                StatisticsRepository.clearLocalStatistics()
+                DailyQuestRepository.resetQuests()
+                Log.d("PROFILE", "Gast-Modus: Starte mit leeren Statistiken.")
             }
             _isLoaded.value = true
         } catch (e: Exception) {
@@ -91,6 +99,10 @@ object ProfileRepository {
 
     suspend fun loginWithUsername(userName: String): Boolean {
         Log.d("PROFILE", "Login Versuch mit: $userName")
+        // Vor dem Login Statistiken und Quests leeren
+        StatisticsRepository.clearLocalStatistics()
+        DailyQuestRepository.resetQuests()
+        
         try {
             // Erstmal sicherstellen, dass wir eine UID haben
             if (auth.currentUser == null) {
@@ -120,6 +132,7 @@ object ProfileRepository {
                 _isLoaded.value = true
                 saveUidLocally(foundUid)
                 StatisticsRepository.loadStatistics(foundUid)
+                DailyQuestRepository.loadQuests() // Quests für den neuen User laden
                 return true
             }
             return false
@@ -132,11 +145,17 @@ object ProfileRepository {
     suspend fun logout() {
         saveUidLocally(null)
         _profile.value = null
+        StatisticsRepository.clearLocalStatistics()
+        DailyQuestRepository.resetQuests()
         // Wir bleiben in Firebase anonym angemeldet, aber löschen die Profil-Verknüpfung
     }
 
     suspend fun createAndLogin(userName: String): Boolean {
         val uid = auth.currentUser?.uid ?: return false
+        // Bei Neuerstellung Statistiken und Quests leeren
+        StatisticsRepository.clearLocalStatistics()
+        DailyQuestRepository.resetQuests()
+        
         val newProfile = PlayerProfile(
             playerId = uid,
             playerName = userName,

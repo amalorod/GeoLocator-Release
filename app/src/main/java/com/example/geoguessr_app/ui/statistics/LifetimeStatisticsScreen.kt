@@ -6,9 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -28,7 +26,10 @@ fun LifetimeStatisticsScreen(
     onBackClick: () -> Unit
 ) {
     val recentMatches by StatisticsRepository.recentMatches.collectAsState()
+    val topPlayers by StatisticsRepository.topPlayers.collectAsState()
     val scrollState = rememberScrollState()
+    
+    var showLeaderboard by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -109,6 +110,19 @@ fun LifetimeStatisticsScreen(
                 MiniCard(title = "Beste", value = statistics.bestGameScore.toString(), modifier = Modifier.weight(1f))
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { showLeaderboard = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary
+                ),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text("🏆 Leaderboard 🏆", style = MaterialTheme.typography.titleMedium)
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
@@ -133,6 +147,92 @@ fun LifetimeStatisticsScreen(
             }
             
             Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+
+    if (showLeaderboard) {
+        AlertDialog(
+            onDismissRequest = { showLeaderboard = false },
+            title = { 
+                Text(
+                    "Globales Leaderboard", 
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                ) 
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                ) {
+                    if (topPlayers.isEmpty()) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                        Text("Lade Top-Spieler...", modifier = Modifier.align(Alignment.CenterHorizontally))
+                    } else {
+                        topPlayers.forEachIndexed { index, entry ->
+                            LeaderboardItem(index + 1, entry)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLeaderboard = false }) {
+                    Text("Schließen", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun LeaderboardItem(rank: Int, entry: com.example.geoguessr_app.data.statistics.LeaderboardEntry) {
+    val medal = when(rank) {
+        1 -> "🥇"
+        2 -> "🥈"
+        3 -> "🥉"
+        else -> "#$rank"
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = medal, fontSize = 24.sp)
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = entry.playerName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${entry.stats.gamesPlayed} Spiele · Bestes Spiel: ${entry.stats.bestGameScore}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+            
+            Column(horizontalAlignment = Alignment.End) {
+                val avgScore = if (entry.stats.gamesPlayed > 0) entry.stats.totalScore / entry.stats.gamesPlayed else 0
+                Text(
+                    text = "$avgScore",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Ø Punkte",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
         }
     }
 }

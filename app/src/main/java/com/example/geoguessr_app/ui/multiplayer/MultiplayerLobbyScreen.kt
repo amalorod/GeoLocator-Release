@@ -54,7 +54,7 @@ fun MultiplayerLobbyScreen(
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = "Lobby",
+                    text = "Multiplayer",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )

@@ -66,6 +66,7 @@ fun GeoGuessrNavHost(
         try {
             Log.d("NAVHOST", "Starte Initialisierung...")
             StatisticsRepository.loadStatistics()
+            StatisticsRepository.loadLeaderboard() // Explizit Leaderboard laden
             ProfileRepository.loadProfile()
             DailyQuestRepository.loadQuests()
             Log.d("NAVHOST", "Initialisierung abgeschlossen.")

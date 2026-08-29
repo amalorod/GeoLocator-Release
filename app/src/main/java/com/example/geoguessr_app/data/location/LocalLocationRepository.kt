@@ -183,6 +183,15 @@ class LocalLocationRepository @Inject constructor() : LocationRepository {
                 hint = "Anden"
             ),
             GeoLocation(
+                id = "cusco",
+                name = "Cusco",
+                country = "Peru",
+                region = Region.SOUTH_AMERICA,
+                latitude = -13.5320,
+                longitude = -71.9675,
+                hint = "Schwarz-weiß gestreifte Pfosten"
+            ),
+            GeoLocation(
                 id = "cairo",
                 name = "Kairo",
                 country = "Ägypten",

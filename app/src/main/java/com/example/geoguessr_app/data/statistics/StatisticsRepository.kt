@@ -23,50 +23,65 @@ object StatisticsRepository {
     private val _recentMatches = MutableStateFlow<List<MatchStatistic>>(emptyList())
     val recentMatches: StateFlow<List<MatchStatistic>> = _recentMatches.asStateFlow()
 
+    private val _topPlayers = MutableStateFlow<List<LeaderboardEntry>>(emptyList())
+    val topPlayers: StateFlow<List<LeaderboardEntry>> = _topPlayers.asStateFlow()
+
     suspend fun saveMatch(match: MatchStatistic) {
-        val uid = ProfileRepository.profile.value?.playerId ?: auth.currentUser?.uid ?: return
+        val currentProfile = ProfileRepository.profile.value
+        val isGuest = currentProfile == null || currentProfile.playerName == "Spieler"
         
-        try {
-            // 1. In Firebase speichern
-            database.reference
-                .child("users")
-                .child(uid)
-                .child("statistics")
-                .child("matches")
-                .push()
-                .setValue(match)
-                .await()
+        // Lokale Statistik IMMER aktualisieren
+        val current = _statistics.value
+        val updated = current.copy(
+            gamesPlayed = current.gamesPlayed + 1,
+            roundsPlayed = current.roundsPlayed + match.rounds,
+            totalScore = current.totalScore + match.score,
+            bestGameScore = maxOf(current.bestGameScore, match.score)
+        )
+        _statistics.value = updated
+        _recentMatches.value = (listOf(match) + _recentMatches.value).take(20)
 
-            // Update recent matches locally
-            _recentMatches.value = (listOf(match) + _recentMatches.value).take(20)
+        // Nur in Firebase speichern, wenn wir ein echtes Profil haben
+        if (!isGuest && currentProfile != null) {
+            val uid = currentProfile.playerId.ifEmpty { auth.currentUser?.uid } ?: return
+            try {
+                // 1. Match in Firebase speichern
+                database.reference
+                    .child("users")
+                    .child(uid)
+                    .child("statistics")
+                    .child("matches")
+                    .push()
+                    .setValue(match)
+                    .await()
 
-            // 2. Lokale Statistik aktualisieren (in einer echten App würde man dies eher berechnen oder beobachten)
-            val current = _statistics.value
-            val updated = current.copy(
-                gamesPlayed = current.gamesPlayed + 1,
-                roundsPlayed = current.roundsPlayed + match.rounds,
-                totalScore = current.totalScore + match.score,
-                bestGameScore = maxOf(current.bestGameScore, match.score)
-            )
-            _statistics.value = updated
-            
-            // 3. Lifetime Stats in Firebase synchronisieren
-            database.reference
-                .child("users")
-                .child(uid)
-                .child("statistics")
-                .child("lifetime")
-                .setValue(updated)
-                .await()
-
-        } catch (e: Exception) {
-            Log.e("STATISTICS", "Fehler beim Speichern der Statistik", e)
+                // 2. Lifetime Stats in Firebase synchronisieren
+                database.reference
+                    .child("users")
+                    .child(uid)
+                    .child("statistics")
+                    .child("lifetime")
+                    .setValue(updated)
+                    .await()
+                
+                Log.d("STATISTICS", "Statistik für Nutzer ${currentProfile?.playerName} in Firebase gespeichert.")
+            } catch (e: Exception) {
+                Log.e("STATISTICS", "Fehler beim Cloud-Speichern", e)
+            }
+        } else {
+            Log.d("STATISTICS", "Statistik nur lokal gespeichert (Gast-Modus).")
         }
     }
 
     suspend fun loadStatistics(targetUid: String? = null) {
-        val uid = targetUid ?: auth.currentUser?.uid ?: return
+        val uid = targetUid ?: auth.currentUser?.uid ?: run {
+            // Falls gar keine UID (auch nicht anonym) vorhanden ist, stats zurücksetzen
+            clearLocalStatistics()
+            return
+        }
+        
         try {
+            Log.d("STATISTICS", "Lade Statistiken für UID: $uid")
             // Load Lifetime
             val snapshot = database.reference
                 .child("users")
@@ -76,9 +91,8 @@ object StatisticsRepository {
                 .get()
                 .await()
             
-            val stats = snapshot.getValue(LifetimeStatistics::class.java)
-            if (stats != null) {
-                _statistics.value = stats
+            if (snapshot.exists()) {
+                _statistics.value = snapshot.getValue(LifetimeStatistics::class.java) ?: LifetimeStatistics()
             } else {
                 _statistics.value = LifetimeStatistics()
             }
@@ -93,13 +107,58 @@ object StatisticsRepository {
                 .get()
                 .await()
 
-            val matches = matchesSnapshot.children.mapNotNull { 
-                it.getValue(MatchStatistic::class.java) 
-            }.reversed()
-            _recentMatches.value = matches
+            if (matchesSnapshot.exists()) {
+                val matches = matchesSnapshot.children.mapNotNull { 
+                    it.getValue(MatchStatistic::class.java) 
+                }.reversed()
+                _recentMatches.value = matches
+            } else {
+                _recentMatches.value = emptyList()
+            }
+
+            // Load Leaderboard
+            loadLeaderboard()
 
         } catch (e: Exception) {
             Log.e("STATISTICS", "Fehler beim Laden der Statistik", e)
         }
     }
+
+    fun clearLocalStatistics() {
+        _statistics.value = LifetimeStatistics()
+        _recentMatches.value = emptyList()
+    }
+
+    suspend fun loadLeaderboard() {
+        try {
+            val snapshot = database.reference.child("users").get().await()
+            val entries = mutableListOf<LeaderboardEntry>()
+
+            for (userSnapshot in snapshot.children) {
+                val profile = userSnapshot.child("profile").getValue(com.example.geoguessr_app.domain.model.profile.PlayerProfile::class.java)
+                val stats = userSnapshot.child("statistics").child("lifetime").getValue(LifetimeStatistics::class.java)
+                
+                if (profile != null && stats != null) {
+                    entries.add(LeaderboardEntry(profile.playerName, stats))
+                }
+            }
+
+            // Sortiere nach durchschnittlicher Punktzahl absteigend und nimm die Top 3
+            _topPlayers.value = entries
+                .sortedByDescending { 
+                    if (it.stats.gamesPlayed > 0) it.stats.totalScore.toDouble() / it.stats.gamesPlayed 
+                    else 0.0 
+                }
+                .take(3)
+                
+            Log.d("STATISTICS", "Leaderboard geladen: ${_topPlayers.value.size} Spieler")
+        } catch (e: Exception) {
+            Log.e("STATISTICS", "Fehler beim Laden des Leaderboards", e)
+        }
+    }
 }
+
+data class LeaderboardEntry(
+    val playerName: String,
+    val stats: LifetimeStatistics
+)

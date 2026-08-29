@@ -39,7 +39,7 @@ fun JoinLobbyScreen(
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = "Lobby beitreten",
+                    text = "Multiplayer",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )

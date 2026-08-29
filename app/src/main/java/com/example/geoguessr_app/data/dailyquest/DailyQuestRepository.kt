@@ -58,12 +58,16 @@ object DailyQuestRepository {
     )
 
     suspend fun loadQuests() {
-        try {
-            val uid = ProfileRepository.profile.value?.playerId ?: auth.currentUser?.uid ?: run {
-                val result = auth.signInAnonymously().await()
-                result.user?.uid
-            } ?: return
+        val currentProfile = ProfileRepository.profile.value
+        val isGuest = currentProfile == null || currentProfile.playerName == "Spieler"
+        
+        if (isGuest) {
+            resetQuests()
+            return
+        }
 
+        try {
+            val uid = currentProfile.playerId
             val snapshot = database.reference
                 .child("users")
                 .child(uid)
@@ -88,17 +92,25 @@ object DailyQuestRepository {
     }
 
     suspend fun saveQuests(quests: List<DailyQuest>) {
-        val uid = ProfileRepository.profile.value?.playerId ?: auth.currentUser?.uid ?: return
-        try {
-            database.reference
-                .child("users")
-                .child(uid)
-                .child("quests")
-                .setValue(quests)
-                .await()
-            _quests.value = quests
-        } catch (e: Exception) {
-            Log.e("QUESTS", "Fehler beim Speichern", e)
+        // Lokales Update immer
+        _quests.value = quests
+
+        val currentProfile = ProfileRepository.profile.value
+        val isGuest = currentProfile == null || currentProfile.playerName == "Spieler"
+
+        // Nur Cloud-Sync wenn kein Gast
+        if (!isGuest && currentProfile != null) {
+            val uid = currentProfile.playerId.ifEmpty { auth.currentUser?.uid } ?: return
+            try {
+                database.reference
+                    .child("users")
+                    .child(uid)
+                    .child("quests")
+                    .setValue(quests)
+                    .await()
+            } catch (e: Exception) {
+                Log.e("QUESTS", "Fehler beim Speichern", e)
+            }
         }
     }
 
@@ -121,5 +133,9 @@ object DailyQuestRepository {
             return if (isCompleted) updatedQuest else null
         }
         return null
+    }
+
+    fun resetQuests() {
+        _quests.value = DEFAULT_QUESTS
     }
 }
