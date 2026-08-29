@@ -116,11 +116,15 @@ fun ProfileScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (!isGuest && profile.profileImageUrl != null) {
+                    Log.d("PROFILE", "Lade Bild in UI: ${profile.profileImageUrl}")
                     AsyncImage(
                         model = profile.profileImageUrl,
                         contentDescription = "Profilbild",
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        onLoading = { Log.d("PROFILE", "Bild wird geladen...") },
+                        onSuccess = { Log.d("PROFILE", "Bild erfolgreich geladen") },
+                        onError = { Log.e("PROFILE", "Fehler beim Laden des Bildes: ${it.result.throwable.message}") }
                     )
                 } else {
                     Text(
