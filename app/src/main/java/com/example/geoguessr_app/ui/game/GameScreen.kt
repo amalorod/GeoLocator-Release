@@ -70,13 +70,22 @@ private const val STREET_VIEW_SEARCH_RADIUS_METERS = 500
 
 
 /**
- * Verbindet das Hilt-ViewModel mit der zustandslosen Oberfläche.
+ * Bindet [GameViewModel] und [SessionViewModel] an die zustandslose
+ * [GameScreen]-Oberfläche für den Einzelspieler- bzw. lokalen Spielablauf.
+ *
+ * Als "Route" fungiert diese Funktion als Adapter zwischen ViewModel-Layer
+ * und UI-Layer (MVVM): Sie sammelt die StateFlows der ViewModels via
+ * [collectAsStateWithLifecycle] – wichtig, da diese API im Gegensatz zu
+ * [androidx.compose.runtime.collectAsState] das Sammeln automatisch pausiert,
+ * wenn der Screen nicht im Vordergrund ist, und so unnötige Arbeit im
+ * Hintergrund vermeidet.
  */
 @Composable
 fun GameRoute(
-    currentThemeName: String,
     currentTheme: AppThemeMode,
+    currentDynamicColorEnabled: Boolean,
     onThemeSelected: (AppThemeMode) -> Unit,
+    onDynamicColorToggled: (Boolean) -> Unit,
     onHomeClick: () -> Unit,
     onStatisticsClick: () -> Unit,
     onExitGame: () -> Unit,
@@ -91,9 +100,10 @@ fun GameRoute(
         GameScreen(
             uiState = uiState,
             sessionUiState = sessionUiState,
-            currentThemeName = currentThemeName,
             currentTheme = currentTheme,
+            currentDynamicColorEnabled = currentDynamicColorEnabled,
             onThemeSelected = onThemeSelected,
+            onDynamicColorToggled = onDynamicColorToggled,
             onGuessSelected = viewModel::selectGuess,
             onShowGuessMap = viewModel::showGuessMap,
             onShowStreetView = viewModel::showStreetView,
@@ -118,6 +128,8 @@ fun GameRoute(
             )
         }
 
+        // Hinweis-Panel wird nur während einer aktiven, nicht abgeschlossenen
+        // Runde eingeblendet – verhindert überlappende UI mit Rundenergebnis/Endscreen.
         val currentHint = uiState.currentLocation?.hint
 
         if (currentHint != null && !uiState.isLoading && !uiState.isRoundFinished && !uiState.isGameFinished) {
@@ -140,12 +152,23 @@ fun GameRoute(
     }
 }
 
+/**
+ * Bindet [MultiplayerGameViewModel] und [SessionViewModel] an die gleiche
+ * zustandslose [GameScreen]-Oberfläche für den Mehrspielermodus.
+ *
+ * Bewusst als separate Route statt Parametrisierung von [GameRoute], da sich
+ * Datenquelle (Session-basiertes Laden via [sessionId]) und Spielende-Logik
+ * (Sieger-/Verlierer-Ermittlung) fachlich klar vom Einzelspielerfall
+ * unterscheiden – eine gemeinsame Route würde hier unnötig verzweigte
+ * Bedingungslogik in eine einzige Funktion zwingen.
+ */
 @Composable
 fun MultiplayerGameRoute(
     sessionId: String,
-    currentThemeName: String,
     currentTheme: AppThemeMode,
+    currentDynamicColorEnabled: Boolean,
     onThemeSelected: (AppThemeMode) -> Unit,
+    onDynamicColorToggled: (Boolean) -> Unit,
     onHomeClick: () -> Unit,
     onStatisticsClick: () -> Unit,
     onExitGame: () -> Unit,
@@ -156,6 +179,8 @@ fun MultiplayerGameRoute(
     val sessionViewModel: SessionViewModel = hiltViewModel()
     val sessionUiState by sessionViewModel.uiState.collectAsStateWithLifecycle()
 
+    // Lädt die Session-Standorte und startet die Session-Beobachtung genau
+    // einmal, wenn eine (neue) sessionId vorliegt – nicht bei jeder Recomposition.
     LaunchedEffect(sessionId) {
         viewModel.loadSessionLocations(sessionId)
         sessionViewModel.observeSession(sessionId)
@@ -165,14 +190,20 @@ fun MultiplayerGameRoute(
         GameScreen(
             uiState = uiState,
             sessionUiState = sessionUiState,
-            currentThemeName = currentThemeName,
             currentTheme = currentTheme,
+            currentDynamicColorEnabled = currentDynamicColorEnabled,
             onThemeSelected = onThemeSelected,
+            onDynamicColorToggled = onDynamicColorToggled,
             onGuessSelected = viewModel::selectGuess,
             onShowGuessMap = viewModel::showGuessMap,
             onShowStreetView = viewModel::showStreetView,
             onHomeClick = onHomeClick,
-            onPauseGame = { /* Pause im MP evtl. anders */ },
+            // TODO: Pause-Funktion für den Multiplayer-Modus ist fachlich noch
+            // nicht definiert (z. B. sollte Pausieren andere Spieler blockieren
+            // oder nur lokal die Ansicht einfrieren?). Bewusst als No-Op belassen,
+            // bis diese Entscheidung getroffen ist – AppTopBar zeigt den
+            // Pause-Button im MP-Fall daher idealerweise gar nicht erst an.
+            onPauseGame = { },
             onSubmitGuess = viewModel::submitGuess,
             onNextRound = viewModel::startNextRound,
             onDismissQuest = viewModel::dismissCompletedQuest,
@@ -209,9 +240,10 @@ fun MultiplayerGameRoute(
 private fun GameScreen(
     uiState: GameUiState,
     sessionUiState: SessionUiState,
-    currentThemeName: String,
     currentTheme: AppThemeMode,
+    currentDynamicColorEnabled: Boolean,
     onThemeSelected: (AppThemeMode) -> Unit,
+    onDynamicColorToggled: (Boolean) -> Unit,
     onGuessSelected: (GeoCoordinate) -> Unit,
     onShowGuessMap: () -> Unit,
     onShowStreetView: () -> Unit,
@@ -256,9 +288,10 @@ private fun GameScreen(
         }
 
         AppTopBar(
-            currentThemeName = currentThemeName,
             currentTheme = currentTheme,
+            currentDynamicColorEnabled = currentDynamicColorEnabled,
             onThemeSelected = onThemeSelected,
+            onDynamicColorToggled = onDynamicColorToggled,
             onHomeClick = onHomeClick,
             onPauseClick = onPauseGame,
             isPauseEnabled = !uiState.isLoading && !uiState.isRoundFinished && !uiState.isGameFinished && !uiState.isPaused,
@@ -468,20 +501,30 @@ private fun GameResult(
 }
 
 /**
- * Zeigt die Google Street View Panorama-Ansicht.
+ * Bettet die native Google-Street-View-Panorama-View über [AndroidView] in
+ * Compose ein. Da [StreetViewPanoramaView] eine klassische View mit eigenem
+ * Lifecycle ist, müssen dessen Lifecycle-Methoden (onCreate/onStart/...)
+ * manuell an den Compose-Lifecycle gekoppelt werden – Compose selbst
+ * propagiert Lifecycle-Events nicht automatisch an eingebettete Views.
+ *
+ * @param location Zu zeigender Standort (Latitude/Longitude).
+ * @param isUserNavigationEnabled Ob der Spielende sich frei durch das
+ * Panorama bewegen darf (im Hardcore-/Pro-Modus deaktivierbar).
  */
 @Composable
 private fun GameStreetView(
-    location: GeoLocation, isUserNavigationEnabled: Boolean, modifier: Modifier = Modifier
+    location: GeoLocation,
+    isUserNavigationEnabled: Boolean,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val streetViewPanoramaView = remember {
-        StreetViewPanoramaView(context)
-    }
+    // remember ohne Key: Die View soll über die gesamte Lebensdauer dieses
+    // Composables hinweg identisch bleiben, damit die native Panorama-Instanz
+    // nicht bei jeder Recomposition neu erzeugt wird.
+    val streetViewPanoramaView = remember { StreetViewPanoramaView(context) }
 
-    // Lifecycle-Management für die StreetView-View
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -495,21 +538,18 @@ private fun GameStreetView(
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    AndroidView(
-        factory = { streetViewPanoramaView }, modifier = modifier.fillMaxSize()
-    ) { view ->
+    AndroidView(factory = { streetViewPanoramaView }, modifier = modifier.fillMaxSize()) { view ->
         view.getStreetViewPanoramaAsync { panorama ->
             panorama.isPanningGesturesEnabled = true
             panorama.isZoomGesturesEnabled = true
             panorama.isUserNavigationEnabled = isUserNavigationEnabled
             panorama.isStreetNamesEnabled = false
             panorama.setPosition(
-                LatLng(location.latitude, location.longitude), STREET_VIEW_SEARCH_RADIUS_METERS
+                LatLng(location.latitude, location.longitude),
+                STREET_VIEW_SEARCH_RADIUS_METERS
             )
         }
     }
@@ -606,6 +646,8 @@ private fun RoundResultMap(
     }
 }
 
+/** Schwelle, unterhalb der Lebenspunkte im Custom-Modus überhaupt angezeigt werden. */
+private const val CUSTOM_MODE_LIVES_DISPLAY_THRESHOLD = 100
 
 @Composable
 private fun GameStatusHeader(

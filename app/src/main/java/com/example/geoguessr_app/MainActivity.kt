@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import com.example.geoguessr_app.navigation.GeoGuessrNavHost
 import com.example.geoguessr_app.ui.theme.GeoGuessr_AppTheme
@@ -16,8 +17,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.geoguessr_app.ui.theme.AppThemeMode
 import com.example.geoguessr_app.ui.game.GameMode
+import com.example.geoguessr_app.ui.theme.ThemeViewModel
 
 
 /**
@@ -39,50 +42,37 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Zeichnet den Content bis unter die System-Bars (Status-/Navigationsleiste),
-        // damit die App ein modernes, randloses Erscheinungsbild erhält.
         enableEdgeToEdge()
 
         setContent {
+            // Theme-Einstellungen werden nicht mehr lokal in der Activity
+            // gehalten, sondern über das app-weite ThemeViewModel aus dem
+            // DataStore bezogen. Dadurch überlebt das gewählte Theme jetzt
+            // auch App-Neustarts, nicht nur Konfigurationsänderungen.
+            val themeViewModel: ThemeViewModel = hiltViewModel()
+            val themeSettings by themeViewModel.themeSettings.collectAsState()
 
-            // App-weiter UI-State: Theme und Spielmodus werden hier gehalten,
-            // da sie von mehreren, unabhängigen Screens innerhalb des
-            // NavHosts gelesen bzw. verändert werden können. MainActivity
-            // bildet damit den "lowest common ancestor" dieser beiden
-            // States. rememberSaveable sorgt zusätzlich dafür, dass beide
-            // Werte Konfigurationsänderungen (z. B. Bildschirmdrehung)
-            // überleben.
-            var themeMode by rememberSaveable {
-                mutableStateOf(AppThemeMode.LIGHT)
-            }
             var selectedGameMode by rememberSaveable {
                 mutableStateOf(GameMode.NORMAL)
             }
 
-            // Wendet das aktuell gewählte Farbschema global auf die
-            // gesamte Compose-Hierarchie an.
-            GeoGuessr_AppTheme(themeMode = themeMode) {
-
-                // Scaffold liefert das Standard-Layout-Gerüst inkl.
-                // sicherer Innenabstände (innerPadding), die an den
-                // NavHost weitergegeben werden, damit Inhalte nicht von
-                // System-UI-Elementen überlappt werden.
+            GeoGuessr_AppTheme(
+                themeMode = themeSettings.mode,
+                dynamicColor = themeSettings.dynamicColorEnabled
+            ) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     GeoGuessrNavHost(
                         selectedGameMode = selectedGameMode,
                         onGameModeSelected = { mode -> selectedGameMode = mode },
-                        // Beendet die gesamte Task (alle Activities der App),
-                        // statt nur die aktuelle Activity zu schließen –
-                        // relevant, da die App nur eine einzige Activity besitzt.
-                        onExitAppClick = {
-                            finishAffinity()
-                        },
+                        onExitAppClick = { finishAffinity() },
                         modifier = Modifier.padding(innerPadding),
-                        currentThemeName = themeMode.displayName,
-                        currentTheme = themeMode,
+                        currentTheme = themeSettings.mode,
+                        currentDynamicColorEnabled = themeSettings.dynamicColorEnabled,
                         onThemeSelected = { selectedTheme ->
-                            themeMode = selectedTheme
+                            themeViewModel.setThemeMode(selectedTheme)
+                        },
+                        onDynamicColorToggled = { enabled ->
+                            themeViewModel.setDynamicColorEnabled(enabled)
                         },
                     )
                 }

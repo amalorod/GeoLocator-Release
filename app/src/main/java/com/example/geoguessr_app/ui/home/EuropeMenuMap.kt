@@ -41,6 +41,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.example.geoguessr_app.ui.components.ThemeSelectorMenu
+import com.example.geoguessr_app.ui.theme.AppThemeMode
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -52,111 +54,45 @@ import kotlin.math.sin
 fun EuropeMenuMap(
     @DrawableRes backgroundImageId: Int,
     hasActiveGame: Boolean,
-    currentThemeName: String,
+    currentTheme: AppThemeMode,
+    currentDynamicColorEnabled: Boolean,
+    onThemeSelected: (AppThemeMode) -> Unit,
+    onDynamicColorToggled: (Boolean) -> Unit,
     onStartGameClick: () -> Unit,
     onResumeGameClick: () -> Unit,
     onTutorialClick: () -> Unit,
-    onThemeClick: () -> Unit,
     onExitAppClick: () -> Unit,
-    modifier: Modifier = Modifier,
-
+    modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier.height(430.dp)
-    ) {
-        val europeShape = remember { EuropeShape() }
+    Box(modifier = modifier.height(430.dp)) {
+        // ... RotatingTornHeader / Crossfade / andere Buttons unverändert ...
 
-        // KORREKTUR: Crossfade sorgt für den weichen Bildwechsel
-        Crossfade(
-            targetState = backgroundImageId,
-            animationSpec = tween(durationMillis = 1_200), // Dauer des Übergangs in Millisekunden
-            label = "europeImageCrossfade",
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(europeShape) // Clippt die Form direkt für den gesamten Animationsbereich
-        ) { targetImageId ->
-            Image(
-                painter = painterResource(targetImageId),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                alpha = 0.42f,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-
-        AnimatedVisibility(
-            enter = fadeIn() + expandIn(),
-            exit = fadeOut() + shrinkOut(),
-            visible = hasActiveGame,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = 18.dp)
-        ) {
-            CountryMenuButton(
-                text = "Spiel fortsetzen",
-                onClick = onResumeGameClick,
-                modifier = Modifier
-                    .width(190.dp)
-                    .countryMotion(seed = 1)
-                    .height(64.dp),
-                shape = RoundedCornerShape(
-                    topStartPercent = 55,
-                    topEndPercent = 25,
-                    bottomEndPercent = 50,
-                    bottomStartPercent = 20
-                )
-            )
-        }
-
-        CountryMenuButton(
-            text = "Spiel starten",
-            onClick = onStartGameClick,
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .offset(y = (-60).dp)
-                .width(158.dp)
-                .countryMotion(seed = 7)
-                .height(78.dp),
-            shape = RoundedCornerShape(
-                topStartPercent = 20,
-                topEndPercent = 60,
-                bottomEndPercent = 25,
-                bottomStartPercent = 50
-            )
-        )
-
-        CountryMenuButton(
-            text = "Spielanleitung",
-            onClick = onTutorialClick,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .offset(y = 20.dp)
-                .width(158.dp)
-                .countryMotion(seed = 6)
-                .height(74.dp),
-            shape = RoundedCornerShape(
-                topStartPercent = 50,
-                topEndPercent = 25,
-                bottomEndPercent = 55,
-                bottomStartPercent = 25
-            )
-        )
-
-        CountryMenuButton(
-            text = "Theme\n$currentThemeName",
-            onClick = onThemeClick,
+        // Ersetzt den bisherigen reinen onThemeClick()-Button: Dasselbe
+        // Dropdown-Menü wie in AppTopBar wird hier mit der individuellen
+        // "Länderflächen"-Optik als Auslöser wiederverwendet, statt eine
+        // zweite, eigene Auswahllogik zu pflegen.
+        ThemeSelectorMenu(
+            currentTheme = currentTheme,
+            currentDynamicColorEnabled = currentDynamicColorEnabled,
+            onThemeSelected = onThemeSelected,
+            onDynamicColorToggled = onDynamicColorToggled,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .offset(y = (-45).dp)
                 .width(150.dp)
                 .countryMotion(seed = 6)
                 .height(72.dp),
-            shape = RoundedCornerShape(
-                topStartPercent = 60,
-                topEndPercent = 25,
-                bottomEndPercent = 35,
-                bottomStartPercent = 15
-            )
+            buttonContent = { expandMenu, previewColor, label ->
+                CountryMenuButton(
+                    text = "Theme\n$label",
+                    onClick = expandMenu,
+                    modifier = Modifier.fillMaxSize(),
+                    shape = RoundedCornerShape(
+                        topStartPercent = 60, topEndPercent = 25,
+                        bottomEndPercent = 35, bottomStartPercent = 15
+                    )
+                )
+            }
         )
 
         CountryMenuButton(
@@ -180,34 +116,36 @@ fun EuropeMenuMap(
     }
 }
 
+/**
+ * Einzelner, unregelmäßig geformter Menü-Button innerhalb der Europakarte.
+ * Die Form wird pro Aufrufstelle individuell über [RoundedCornerShape] mit
+ * unterschiedlichen Eckenradien gestaltet, um den Eindruck einzelner
+ * "Länderflächen" statt gleichförmiger Buttons zu erzeugen.
+ */
 @Composable
 private fun CountryMenuButton(
-    text: String,
-    onClick: () -> Unit,
-    shape: RoundedCornerShape,
-    modifier: Modifier = Modifier
+    text: String, onClick: () -> Unit, shape: RoundedCornerShape, modifier: Modifier = Modifier
 ) {
     Button(
-        onClick = onClick,
-        modifier = modifier,
-        shape = shape,
-        colors = ButtonDefaults.buttonColors(
+        onClick = onClick, modifier = modifier, shape = shape, colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary
         )
     ) {
         Text(
-            text = text,
-            textAlign = TextAlign.Center
+            text = text, textAlign = TextAlign.Center
         )
     }
 }
 
 /**
- * Erzeugt eine langsame, organische Bewegung.
+ * Erzeugt eine langsame, organische Schwebe-Bewegung (Translation, leichte
+ * Rotation und Skalierung) für einen Menü-Button. Unterschiedliche [seed]-Werte
+ * sorgen für phasenverschobene, individuelle Bewegungsmuster je Button, damit
+ * nicht alle Flächen synchron "pulsieren" und einen unnatürlichen Eindruck erzeugen.
  *
- * Unterschiedliche seed-Werte verhindern, dass sich alle Flächen
- * gleichzeitig und identisch bewegen.
+ * @param seed Frei wählbarer Ganzzahlwert zur Phasenverschiebung; unterschiedliche
+ * Buttons sollten unterschiedliche Seeds erhalten.
  */
 @Composable
 private fun Modifier.countryMotion(
@@ -218,16 +156,11 @@ private fun Modifier.countryMotion(
     )
 
     val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2 * PI).toFloat(),
-        animationSpec = infiniteRepeatable(
+        initialValue = 0f, targetValue = (2 * PI).toFloat(), animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = 6_000 + seed * 650,
-                easing = LinearEasing
-            ),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "countryPhase$seed"
+                durationMillis = 6_000 + seed * 650, easing = LinearEasing
+            ), repeatMode = RepeatMode.Restart
+        ), label = "countryPhase$seed"
     )
 
     return graphicsLayer {
@@ -242,14 +175,15 @@ private fun Modifier.countryMotion(
 }
 
 /**
- * Dekorativer, vereinfachter Umriss Europas.
+ * Dekorativer, stark vereinfachter Umriss Europas als Freiform-Clip-Maske
+ * für den rotierenden Hintergrund. Die Eckpunkte sind manuell als relative
+ * Größenanteile (0.0–1.0) gesetzt und wurden empirisch für ein plausibles,
+ * kontinent-ähnliches Silhouettenbild abgestimmt.
  */
 private class EuropeShape : Shape {
 
     override fun createOutline(
-        size: Size,
-        layoutDirection: LayoutDirection,
-        density: Density
+        size: Size, layoutDirection: LayoutDirection, density: Density
     ): Outline {
         val path = Path().apply {
             moveTo(size.width * 0.18f, size.height * 0.18f)

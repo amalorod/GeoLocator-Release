@@ -16,6 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.geoguessr_app.domain.model.custom.CustomGameSettings
+import com.example.geoguessr_app.domain.model.profile.PlayerProfile
 import com.example.geoguessr_app.ui.game.GameMode
 import com.example.geoguessr_app.ui.game.GameRoute
 import com.example.geoguessr_app.ui.game.GameViewModel
@@ -23,7 +24,6 @@ import com.example.geoguessr_app.ui.game.IndividualSettingsScreen
 import com.example.geoguessr_app.ui.game.MultiplayerGameRoute
 import com.example.geoguessr_app.ui.home.HomeScreen
 import com.example.geoguessr_app.ui.dailyquest.DailyQuestScreen
-import com.example.geoguessr_app.ui.dailyquest.DailyQuestViewModel
 import com.example.geoguessr_app.ui.maptest.MapTestScreen
 import com.example.geoguessr_app.ui.multiplayer.JoinLobbyScreen
 import com.example.geoguessr_app.ui.multiplayer.LobbyViewModel
@@ -39,16 +39,31 @@ import com.example.geoguessr_app.ui.tutorial.TutorialScreen
 
 /**
  * Zentraler Navigationsgraph der Anwendung.
+ *
+ * Verwaltet neben der reinen Bildschirmnavigation zwei über den gesamten
+ * Graphen hinweg gültige, app-weite Zustände: den Theme-/Dynamic-Color-
+ * Zustand (siehe [currentTheme]/[currentDynamicColorEnabled], gesetzt in
+ * [com.example.geoguessr_app.MainActivity] über das app-weite
+ * ThemeViewModel) sowie [isGameInBackground] zur Unterscheidung zwischen
+ * einer pausierten und einer endgültig beendeten Einzelspieler-Partie.
+ *
+ * @param currentTheme Aktuell aktives, festes Farbschema.
+ * @param currentDynamicColorEnabled Ob stattdessen die Material-You-Systemfarbe verwendet wird.
+ * @param onThemeSelected Callback bei Auswahl eines festen Farbschemas; wird unverändert
+ * bis zu [ThemeSelectorMenu][com.example.geoguessr_app.ui.components.ThemeSelectorMenu]
+ * in HomeScreen und GameScreen durchgereicht.
+ * @param onDynamicColorToggled Callback beim Umschalten der Material-You-Systemfarbe.
  */
 @Composable
 fun GeoGuessrNavHost(
     selectedGameMode: GameMode,
     onGameModeSelected: (GameMode) -> Unit,
     modifier: Modifier = Modifier,
-    currentThemeName: String,
-    onExitAppClick: () -> Unit,
     currentTheme: AppThemeMode,
+    currentDynamicColorEnabled: Boolean,
     onThemeSelected: (AppThemeMode) -> Unit,
+    onDynamicColorToggled: (Boolean) -> Unit,
+    onExitAppClick: () -> Unit,
 ) {
     val navController = rememberNavController()
 
@@ -82,7 +97,10 @@ fun GeoGuessrNavHost(
         // --- Home Screen: zentraler Einstiegspunkt der App ---
         composable(route = AppDestination.Home.route) {
             HomeScreen(
-                currentThemeName = currentThemeName,
+                currentTheme = currentTheme,
+                currentDynamicColorEnabled = currentDynamicColorEnabled,
+                onThemeSelected = onThemeSelected,
+                onDynamicColorToggled = onDynamicColorToggled,
                 // Ein vorhandenes Profil signalisiert, dass der Nutzer
                 // kein Gast ist – steuert z. B. den Profilindikator.
                 isProfileSetup = userProfile != null,
@@ -96,8 +114,6 @@ fun GeoGuessrNavHost(
                     navController.navigate(AppDestination.DailyQuest.route)
                 },
                 onExitAppClick = onExitAppClick,
-                // Wechselt zyklisch zum nächsten verfügbaren Farbthema.
-                onThemeClick = { onThemeSelected(currentTheme.next()) },
                 hasActiveGame = isGameInBackground,
                 onStartGameClick = {
                     isGameInBackground = false
@@ -135,7 +151,7 @@ fun GeoGuessrNavHost(
         composable(route = AppDestination.Profile.route) {
             val profile by profileViewModel.profile.collectAsStateWithLifecycle()
             ProfileScreen(
-                profile = profile ?: com.example.geoguessr_app.domain.model.profile.PlayerProfile(),
+                profile = profile ?: PlayerProfile(),
                 onBackClick = { navController.popBackStack() })
         }
 
@@ -228,9 +244,10 @@ fun GeoGuessrNavHost(
             val sessionId = backStackEntry.arguments?.getString("sessionId") ?: ""
             MultiplayerGameRoute(
                 sessionId = sessionId,
-                currentThemeName = currentThemeName,
                 currentTheme = currentTheme,
+                currentDynamicColorEnabled = currentDynamicColorEnabled,
                 onThemeSelected = onThemeSelected,
+                onDynamicColorToggled = onDynamicColorToggled,
                 onHomeClick = {
                     // popUpTo mit inclusive = true entfernt auch den
                     // aktuellen Home-Eintrag aus dem Stack, sodass beim
@@ -268,9 +285,10 @@ fun GeoGuessrNavHost(
         // --- Einzelspieler-Partie (Normal- und Custom-Modus) ---
         composable(route = AppDestination.Game.route) {
             GameRoute(
-                currentThemeName = currentThemeName,
                 currentTheme = currentTheme,
+                currentDynamicColorEnabled = currentDynamicColorEnabled,
                 onThemeSelected = onThemeSelected,
+                onDynamicColorToggled = onDynamicColorToggled,
                 viewModel = gameViewModel,
                 onHomeClick = {
                     // Anders als bei Multiplayer wird die Partie hier NICHT
@@ -319,7 +337,7 @@ fun GeoGuessrNavHost(
             })
         }
 
-        // --- Interne Entwickler-/Testrouten, nicht über die reguläre App-Navigation erreichbar ---
+        // --- Interne Testrouten, nicht über die reguläre App-Navigation erreichbar ---
         composable(route = AppDestination.MapTest.route) {
             MapTestScreen(onBackClick = navController::popBackStack)
         }
