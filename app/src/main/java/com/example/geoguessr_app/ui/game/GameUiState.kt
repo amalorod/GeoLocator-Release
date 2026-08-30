@@ -33,11 +33,10 @@ data class GameUiState(
     val isMultiplayer: Boolean = false,
     val sessionId: String? = null,
     val waitingForPlayers: Boolean = false,
-
-    val multiplayerPlayers:
-    List<MultiplayerPlayerState> =
-        emptyList(),
+    val multiplayerPlayers: List<MultiplayerPlayerState> = emptyList(),
     val newlyCompletedQuest: com.example.geoguessr_app.domain.model.dailyquest.DailyQuest? = null,
     val lives: Int = Int.MAX_VALUE,
-    val isStreetViewNavigationEnabled: Boolean = true
+    val isStreetViewNavigationEnabled: Boolean = true,
+    val matchWinnerName: String? = null,
+    val isLocalPlayerWinner: Boolean? = null
 )

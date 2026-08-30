@@ -362,8 +362,8 @@ class GameViewModel @Inject constructor(
                     score = state.totalScore,
                     rounds = state.roundStatistics.size,
                     distanceKm = state.roundStatistics.sumOf { it.distanceKm },
-                    won = false,
-                    multiplayer = false
+                    won = false, // ebenfalls zu prüfen, siehe unten
+                    multiplayer = state.isMultiplayer
                 )
                 statisticsRepository.saveMatch(match)
             }

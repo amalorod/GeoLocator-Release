@@ -12,6 +12,7 @@ import com.example.geoguessr_app.domain.model.GeoLocation
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerMode
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
+import com.example.geoguessr_app.domain.statistics.RoundStatistics
 import com.example.geoguessr_app.domain.usecase.CalculateDistanceUseCase
 import com.example.geoguessr_app.domain.usecase.CalculateScoreUseCase
 import com.example.geoguessr_app.domain.usecase.GetLocationsByIdsUseCase
@@ -41,7 +42,6 @@ class MultiplayerGameViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(GameUiState(isMultiplayer = true))
     val uiState = _uiState.asStateFlow()
-
     private var gameLocations: List<GeoLocation> = emptyList()
     private var sessionId: String = ""
     private var playerName: String = "Spieler"
@@ -51,18 +51,18 @@ class MultiplayerGameViewModel @Inject constructor(
     fun loadSessionLocations(sessionId: String) {
         this.sessionId = sessionId
         val currentUid = firebaseAuthRepository.currentUid() ?: return
-        
+
         startHeartbeat()
 
         // Observe Session for round changes
         viewModelScope.launch {
             sessionRepository.observeSession(sessionId).collect { session ->
                 if (session == null) return@collect
-                
+
                 isHost = session.hostUid == currentUid
 
                 // Map Session Mode to GameMode
-                val currentMode = when(session.mode) {
+                val currentMode = when (session.mode) {
                     "BATTLE_ROYALE" -> GameMode.BATTLE_ROYALE
                     "PRO" -> GameMode.PRO
                     else -> GameMode.MULTIPLAYER
@@ -76,29 +76,30 @@ class MultiplayerGameViewModel @Inject constructor(
                     saveMatchResult()
                     return@collect
                 }
-                
+
                 if (gameLocations.isEmpty()) {
                     val locations = getLocationsByIds(session.locationIds)
                     gameLocations = locations
                 }
 
                 val nextLocation = gameLocations.find { it.id == session.currentLocationId }
-                
-                if (session.currentRound != _uiState.value.currentRound || 
-                    _uiState.value.currentLocation?.id != session.currentLocationId) {
-                    
-                    _uiState.update { it.copy(
-                        currentRound = session.currentRound,
-                        currentLocation = nextLocation,
-                        totalRounds = session.totalRounds,
-                        isRoundFinished = false,
-                        guessedLocation = null,
-                        roundScore = null,
-                        roundDistanceKilometers = null,
-                        viewMode = GameViewMode.STREET_VIEW,
-                        isLoading = false,
-                        gameMode = currentMode
-                    ) }
+
+                if (session.currentRound != _uiState.value.currentRound || _uiState.value.currentLocation?.id != session.currentLocationId) {
+
+                    _uiState.update {
+                        it.copy(
+                            currentRound = session.currentRound,
+                            currentLocation = nextLocation,
+                            totalRounds = session.totalRounds,
+                            isRoundFinished = false,
+                            guessedLocation = null,
+                            roundScore = null,
+                            roundDistanceKilometers = null,
+                            viewMode = GameViewMode.STREET_VIEW,
+                            isLoading = false,
+                            gameMode = currentMode
+                        )
+                    }
 
                     // Wenn die Runde gewechselt hat, setzen wir unseren eigenen Status zurück,
                     // falls wir nicht der Host sind (Host hat es schon beim Wechsel getan)
@@ -106,11 +107,11 @@ class MultiplayerGameViewModel @Inject constructor(
                         viewModelScope.launch {
                             val uid = firebaseAuthRepository.currentUid() ?: return@launch
                             // Wir holen uns die aktuellen Leben aus dem UI State (da dort die Liste der Spieler ist)
-                            val currentPlayer = _uiState.value.multiplayerPlayers.find { it.uid == uid }
-                            
+                            val currentPlayer =
+                                _uiState.value.multiplayerPlayers.find { it.uid == uid }
+
                             sessionRepository.updatePlayerState(
-                                sessionId = sessionId,
-                                playerState = MultiplayerPlayerState(
+                                sessionId = sessionId, playerState = MultiplayerPlayerState(
                                     uid = uid,
                                     playerName = playerName,
                                     score = _uiState.value.totalScore,
@@ -129,7 +130,7 @@ class MultiplayerGameViewModel @Inject constructor(
         viewModelScope.launch {
             sessionRepository.observePlayerStates(sessionId).collect { players ->
                 playerName = players.find { it.uid == currentUid }?.playerName ?: "Spieler"
-                
+
                 _uiState.update { it.copy(multiplayerPlayers = players) }
 
                 // Auto-Win check: Wenn man alleine übrig ist (und es war eine Multiplayer-Runde)
@@ -141,8 +142,8 @@ class MultiplayerGameViewModel @Inject constructor(
                 // Disconnect check (Host only)
                 if (isHost) {
                     val now = System.currentTimeMillis()
-                    val inactivePlayers = players.filter { 
-                        it.uid != currentUid && (now - it.lastSeenTimestamp > 20000) 
+                    val inactivePlayers = players.filter {
+                        it.uid != currentUid && (now - it.lastSeenTimestamp > 20000)
                     }
                     inactivePlayers.forEach { inactive ->
                         viewModelScope.launch {
@@ -152,8 +153,9 @@ class MultiplayerGameViewModel @Inject constructor(
                 }
 
                 // Host check: If all players finished round, host can trigger next round
-                val allPlayersFinished = players.isNotEmpty() && players.all { it.finishedRound && it.round == _uiState.value.currentRound }
-                
+                val allPlayersFinished =
+                    players.isNotEmpty() && players.all { it.finishedRound && it.round == _uiState.value.currentRound }
+
                 if (isHost && allPlayersFinished && !_uiState.value.isGameFinished && _uiState.value.isRoundFinished) {
                     // Kurze Verzögerung damit man das Ergebnis sehen kann
                     viewModelScope.launch {
@@ -182,7 +184,6 @@ class MultiplayerGameViewModel @Inject constructor(
         val state = _uiState.value
         val currentLocation = state.currentLocation ?: return
         val guessedLocation = state.guessedLocation ?: return
-
         val actualCoordinate = currentLocation.coordinate
         val distance = calculateDistance(actualCoordinate, guessedLocation)
         val score = calculateScore(distance)
@@ -193,7 +194,9 @@ class MultiplayerGameViewModel @Inject constructor(
             val uid = firebaseAuthRepository.currentUid() ?: return@launch
             val currentPlayerState = state.multiplayerPlayers.find { it.uid == uid }
             var currentLives = currentPlayerState?.lives ?: 5
-            
+            val roundEntry = RoundStatistics(
+                roundNumber = state.currentRound, score = score, distanceKm = distance
+            )
             // Battle Royale Logic: Leben abziehen bei > 500km
             if (state.gameMode == GameMode.BATTLE_ROYALE && distance > 500.0) {
                 currentLives = (currentLives - 1).coerceAtLeast(0)
@@ -205,13 +208,13 @@ class MultiplayerGameViewModel @Inject constructor(
                     roundScore = score,
                     roundDistanceKilometers = distance,
                     isRoundFinished = true,
-                    waitingForPlayers = true
+                    waitingForPlayers = true,
+                    roundStatistics = it.roundStatistics + roundEntry
                 )
             }
 
             sessionRepository.updatePlayerState(
-                sessionId = sessionId,
-                playerState = MultiplayerPlayerState(
+                sessionId = sessionId, playerState = MultiplayerPlayerState(
                     uid = uid,
                     playerName = playerName,
                     score = updatedTotalScore,
@@ -221,7 +224,7 @@ class MultiplayerGameViewModel @Inject constructor(
                     currentGuessScore = score
                 )
             )
-            
+
             checkDailyQuests(distance, score, state.gameMode)
         }
     }
@@ -249,7 +252,7 @@ class MultiplayerGameViewModel @Inject constructor(
 
     fun startNextRound() {
         if (!isHost) return // Nur der Host darf die Session-Runde erhöhen
-        
+
         val state = _uiState.value
 
         viewModelScope.launch {
@@ -264,18 +267,14 @@ class MultiplayerGameViewModel @Inject constructor(
             val nextLocation = gameLocations.getOrNull(nextRound - 1) ?: return@launch
 
             sessionRepository.advanceRound(
-                sessionId = sessionId,
-                nextRound = nextRound,
-                nextLocationId = nextLocation.id
+                sessionId = sessionId, nextRound = nextRound, nextLocationId = nextLocation.id
             )
-            
+
             // Alle Spieler (die noch dabei sind) zurücksetzen
             state.multiplayerPlayers.filter { it.lives > 0 }.forEach { p ->
                 sessionRepository.updatePlayerState(
-                    sessionId = sessionId,
-                    playerState = p.copy(
-                        round = nextRound,
-                        finishedRound = false
+                    sessionId = sessionId, playerState = p.copy(
+                        round = nextRound, finishedRound = false
                     )
                 )
             }
@@ -292,35 +291,46 @@ class MultiplayerGameViewModel @Inject constructor(
     private fun saveMatchResult() {
         heartbeatJob?.cancel()
         val state = _uiState.value
-        val myState = state.multiplayerPlayers.find { 
-            it.uid == firebaseAuthRepository.currentUid() 
-        }
-        val won = myState != null && myState.lives > 0 && 
-                 (state.currentRound >= state.totalRounds || 
-                  state.multiplayerPlayers.count { it.lives > 0 } <= 1)
+        val myUid = firebaseAuthRepository.currentUid() ?: return
+        val (won, winnerName) = determineWinner(state, myUid)
 
-            val match = MatchStatistic(
-                timestamp = System.currentTimeMillis(),
-                gameMode = state.gameMode.name,
-                score = state.totalScore,
-                rounds = state.currentRound,
-                distanceKm = state.roundDistanceKilometers ?: 0.0, // This might need refinement if multiple rounds are summed
-                won = won,
-                multiplayer = true
-            )
+        val match = MatchStatistic(
+            timestamp = System.currentTimeMillis(),
+            gameMode = state.gameMode.name,
+            score = state.totalScore,
+            rounds = state.currentRound,
+            distanceKm = state.roundStatistics.sumOf { it.distanceKm },
+            won = won,
+            multiplayer = true
+        )
+
+        _uiState.update { it.copy(matchWinnerName = winnerName, isLocalPlayerWinner = won) }
+
         viewModelScope.launch {
             statisticsRepository.saveMatch(match)
-            
-            // Quest: Multiplayer Win
             if (won) {
                 val completed = dailyQuestRepository.updateQuestProgress("multiplayer_win")
                 if (completed != null) _uiState.update { it.copy(newlyCompletedQuest = completed) }
-                
-                // Quest: Battle Royale Win
                 if (state.gameMode == GameMode.BATTLE_ROYALE) {
                     val brCompleted = dailyQuestRepository.updateQuestProgress("battle_royale_win")
                     if (brCompleted != null) _uiState.update { it.copy(newlyCompletedQuest = brCompleted) }
                 }
+            }
+        }
+    }
+
+    private fun determineWinner(state: GameUiState, myUid: String): Pair<Boolean, String?> {
+        return when (state.gameMode) {
+            GameMode.BATTLE_ROYALE -> {
+                val myState = state.multiplayerPlayers.find { it.uid == myUid }
+                val survivors = state.multiplayerPlayers.filter { it.lives > 0 }
+                val won = myState != null && myState.lives > 0 && survivors.size <= 1
+                won to survivors.singleOrNull()?.playerName
+            }
+
+            else -> {
+                val topPlayer = state.multiplayerPlayers.maxByOrNull { it.score }
+                (topPlayer?.uid == myUid) to topPlayer?.playerName
             }
         }
     }
@@ -334,10 +344,9 @@ class MultiplayerGameViewModel @Inject constructor(
                 val profile = profileRepository.profile.value
                 val currentName = profile?.playerName ?: playerName
                 val currentPlayer = state.multiplayerPlayers.find { it.uid == uid }
-                
+
                 sessionRepository.updatePlayerState(
-                    sessionId = sessionId,
-                    playerState = MultiplayerPlayerState(
+                    sessionId = sessionId, playerState = MultiplayerPlayerState(
                         uid = uid,
                         playerName = currentName,
                         score = state.totalScore,

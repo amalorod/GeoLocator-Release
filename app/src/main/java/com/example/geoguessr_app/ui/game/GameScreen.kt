@@ -110,25 +110,17 @@ fun GameRoute(
         val gameStatistics = uiState.gameStatistics
         if (uiState.isGameFinished && gameStatistics != null) {
             MatchSummaryDialog(
-                statistics = gameStatistics,
-                onDetailsClick = onStatisticsClick,
-                onNewGameClick = {
+                statistics = gameStatistics, onDetailsClick = onStatisticsClick, onNewGameClick = {
                     viewModel.startNewGame(
                         uiState.gameMode
                     )
-                },
-                onHomeClick = onHomeClick
+                }, onHomeClick = onHomeClick
             )
         }
 
         val currentHint = uiState.currentLocation?.hint
 
-        if (
-            currentHint != null &&
-            !uiState.isLoading &&
-            !uiState.isRoundFinished &&
-            !uiState.isGameFinished
-        ) {
+        if (currentHint != null && !uiState.isLoading && !uiState.isRoundFinished && !uiState.isGameFinished) {
             HintPanel(
                 hint = currentHint,
                 roundNumber = uiState.currentRound,
@@ -194,11 +186,13 @@ fun MultiplayerGameRoute(
 
         if (uiState.isGameFinished) {
             val stats = GameStatistics(
-                totalScore = uiState.totalScore,
-                rounds = uiState.roundStatistics
+                totalScore = uiState.totalScore, rounds = uiState.roundStatistics
             )
             MatchSummaryDialog(
                 statistics = stats,
+                isMultiplayer = true,
+                isLocalPlayerWinner = uiState.isLocalPlayerWinner,
+                winnerName = uiState.matchWinnerName,
                 onDetailsClick = onStatisticsClick,
                 onNewGameClick = onHomeClick,
                 onHomeClick = onHomeClick
@@ -246,7 +240,11 @@ private fun GameScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(uiState.newlyCompletedQuest.icon, fontSize = 48.sp)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text(uiState.newlyCompletedQuest.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text(
+                            uiState.newlyCompletedQuest.title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
                         Text(uiState.newlyCompletedQuest.description, textAlign = TextAlign.Center)
                     }
                 },
@@ -254,8 +252,7 @@ private fun GameScreen(
                     Button(onClick = onDismissQuest) {
                         Text("Super!")
                     }
-                }
-            )
+                })
         }
 
         AppTopBar(
@@ -278,8 +275,7 @@ private fun GameScreen(
 
         if (uiState.isMultiplayer) {
             MultiplayerScoreboard(
-                players = sessionUiState.players,
-                modifier = Modifier.fillMaxWidth()
+                players = sessionUiState.players, modifier = Modifier.fillMaxWidth()
             )
         }
 
@@ -312,9 +308,7 @@ private fun GameScreen(
 
             uiState.isRoundFinished -> {
                 RoundResult(
-                    uiState = uiState,
-                    onNextRound = onNextRound,
-                    modifier = Modifier.weight(1f)
+                    uiState = uiState, onNextRound = onNextRound, modifier = Modifier.weight(1f)
                 )
             }
 
@@ -329,8 +323,7 @@ private fun GameScreen(
                     )
 
                     Button(
-                        onClick = onShowGuessMap,
-                        modifier = Modifier.fillMaxWidth()
+                        onClick = onShowGuessMap, modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Tipp auf der Weltkarte abgeben")
                     }
@@ -344,12 +337,9 @@ private fun GameScreen(
                     modifier = Modifier.weight(1f)
                 )
 
-                Text(
-                    text = uiState.guessedLocation?.let {
-                        formatCoordinates(it)
-                    } ?: "Tippe auf die Karte, um einen Ort auszuwählen.",
-                    textAlign = TextAlign.Center
-                )
+                Text(text = uiState.guessedLocation?.let {
+                    formatCoordinates(it)
+                } ?: "Tippe auf die Karte, um einen Ort auszuwählen.", textAlign = TextAlign.Center)
 
                 Button(
                     onClick = onSubmitGuess,
@@ -360,8 +350,7 @@ private fun GameScreen(
                 }
 
                 OutlinedButton(
-                    onClick = onShowStreetView,
-                    modifier = Modifier.fillMaxWidth()
+                    onClick = onShowStreetView, modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Zurück zu Street View")
                 }
@@ -375,9 +364,7 @@ private fun GameScreen(
  */
 @Composable
 private fun RoundResult(
-    uiState: GameUiState,
-    onNextRound: () -> Unit,
-    modifier: Modifier = Modifier
+    uiState: GameUiState, onNextRound: () -> Unit, modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
@@ -406,9 +393,13 @@ private fun RoundResult(
         )
 
         Text(
-            text = "Entfernung: ${uiState.roundDistanceKilometers?.let { "%.2f".format(Locale.US, it) } ?: "0"} km",
-            style = MaterialTheme.typography.bodyLarge
-        )
+            text = "Entfernung: ${
+                uiState.roundDistanceKilometers?.let {
+                    "%.2f".format(
+                        Locale.US, it
+                    )
+                } ?: "0"
+            } km", style = MaterialTheme.typography.bodyLarge)
 
         Text(
             text = "Punkte in dieser Runde: ${uiState.roundScore ?: 0}",
@@ -432,8 +423,7 @@ private fun RoundResult(
             )
         } else {
             Button(
-                onClick = onNextRound,
-                modifier = Modifier.padding(top = 16.dp)
+                onClick = onNextRound, modifier = Modifier.padding(top = 16.dp)
             ) {
                 Text(
                     if (uiState.currentRound == uiState.totalRounds) {
@@ -452,9 +442,7 @@ private fun RoundResult(
  */
 @Composable
 private fun GameResult(
-    totalScore: Int,
-    onExitGame: () -> Unit,
-    modifier: Modifier = Modifier
+    totalScore: Int, onExitGame: () -> Unit, modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
@@ -484,9 +472,7 @@ private fun GameResult(
  */
 @Composable
 private fun GameStreetView(
-    location: GeoLocation,
-    isUserNavigationEnabled: Boolean,
-    modifier: Modifier = Modifier
+    location: GeoLocation, isUserNavigationEnabled: Boolean, modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -515,8 +501,7 @@ private fun GameStreetView(
     }
 
     AndroidView(
-        factory = { streetViewPanoramaView },
-        modifier = modifier.fillMaxSize()
+        factory = { streetViewPanoramaView }, modifier = modifier.fillMaxSize()
     ) { view ->
         view.getStreetViewPanoramaAsync { panorama ->
             panorama.isPanningGesturesEnabled = true
@@ -524,8 +509,7 @@ private fun GameStreetView(
             panorama.isUserNavigationEnabled = isUserNavigationEnabled
             panorama.isStreetNamesEnabled = false
             panorama.setPosition(
-                LatLng(location.latitude, location.longitude),
-                STREET_VIEW_SEARCH_RADIUS_METERS
+                LatLng(location.latitude, location.longitude), STREET_VIEW_SEARCH_RADIUS_METERS
             )
         }
     }
@@ -549,8 +533,7 @@ private fun GuessMap(
         cameraPositionState = cameraPositionState,
         onMapClick = { latLng ->
             onGuessSelected(GeoCoordinate(latLng.latitude, latLng.longitude))
-        }
-    ) {
+        }) {
         selectedCoordinate?.let {
             Marker(
                 state = rememberUpdatedMarkerState(LatLng(it.latitude, it.longitude)),
@@ -562,24 +545,19 @@ private fun GuessMap(
 
 @Composable
 private fun RoundResultMap(
-    actualLocation: GeoLocation,
-    guessedLocation: GeoCoordinate,
-    modifier: Modifier = Modifier
+    actualLocation: GeoLocation, guessedLocation: GeoCoordinate, modifier: Modifier = Modifier
 ) {
     val actualPosition = LatLng(
-        actualLocation.latitude,
-        actualLocation.longitude
+        actualLocation.latitude, actualLocation.longitude
     )
 
     val guessedPosition = LatLng(
-        guessedLocation.latitude,
-        guessedLocation.longitude
+        guessedLocation.latitude, guessedLocation.longitude
     )
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
-            EUROPE_CENTER,
-            INITIAL_ZOOM
+            EUROPE_CENTER, INITIAL_ZOOM
         )
     }
 
@@ -588,13 +566,9 @@ private fun RoundResultMap(
     }
 
     val bounds = remember(
-        actualPosition,
-        guessedPosition
+        actualPosition, guessedPosition
     ) {
-        LatLngBounds.Builder()
-            .include(actualPosition)
-            .include(guessedPosition)
-            .build()
+        LatLngBounds.Builder().include(actualPosition).include(guessedPosition).build()
     }
 
     val boundsPaddingPixels = with(LocalDensity.current) {
@@ -605,10 +579,8 @@ private fun RoundResultMap(
         if (isMapLoaded) {
             cameraPositionState.animate(
                 update = CameraUpdateFactory.newLatLngBounds(
-                    bounds,
-                    boundsPaddingPixels
-                ),
-                durationMs = 800
+                    bounds, boundsPaddingPixels
+                ), durationMs = 800
             )
         }
     }
@@ -616,92 +588,78 @@ private fun RoundResultMap(
     GoogleMap(
         onMapLoaded = {
             isMapLoaded = true
-        },
-        modifier = modifier,
-        cameraPositionState = cameraPositionState
+        }, modifier = modifier, cameraPositionState = cameraPositionState
     ) {
         Marker(
-            state = rememberUpdatedMarkerState(actualPosition),
-            title = "Tatsächlicher Standort"
+            state = rememberUpdatedMarkerState(actualPosition), title = "Tatsächlicher Standort"
         )
 
         Marker(
-            state = rememberUpdatedMarkerState(guessedPosition),
-            title = "Dein Tipp"
+            state = rememberUpdatedMarkerState(guessedPosition), title = "Dein Tipp"
         )
 
         Polyline(
             points = listOf(
-                actualPosition,
-                guessedPosition
-            ),
-            color = Color.Red,
-            width = 8f,
-            geodesic = true
+                actualPosition, guessedPosition
+            ), color = Color.Red, width = 8f, geodesic = true
         )
     }
 }
 
 
-
-    @Composable
-    private fun GameStatusHeader(
-        score: Int,
-        currentRound: Int,
-        totalRounds: Int,
-        remainingSeconds: Int,
-        gameMode: GameMode,
-        lives: Int = Int.MAX_VALUE
+@Composable
+private fun GameStatusHeader(
+    score: Int,
+    currentRound: Int,
+    totalRounds: Int,
+    remainingSeconds: Int,
+    gameMode: GameMode,
+    lives: Int = Int.MAX_VALUE
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(5.dp)
+        Surface(
+            color = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            shape = RoundedCornerShape(50)
         ) {
-            Surface(
-                color = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(50)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            horizontal = 14.dp,
-                            vertical = 7.dp
-                        ),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Score: $score")
-                    
-                    val showLives = (gameMode == GameMode.BATTLE_ROYALE || (lives < 100 && gameMode == GameMode.CUSTOM))
-                    if (showLives) { 
-                        Text("❤️ $lives")
-                    }
-                    
-                    Text("Runde: $currentRound/$totalRounds")
-                    Text("$remainingSeconds Sek.")
-                }
-            }
-
-            Surface(
-                color = Color(0xFFD4AF37),
-                contentColor = Color(0xFF2B2100),
-                shape = RoundedCornerShape(50)
-            ) {
-                Text(
-                    text = gameMode.displayName,
-                    modifier = Modifier.padding(
-                        horizontal = 14.dp,
-                        vertical = 3.dp
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = 14.dp, vertical = 7.dp
                     ),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Score: $score")
+
+                val showLives =
+                    (gameMode == GameMode.BATTLE_ROYALE || (lives < 100 && gameMode == GameMode.CUSTOM))
+                if (showLives) {
+                    Text("❤️ $lives")
+                }
+
+                Text("Runde: $currentRound/$totalRounds")
+                Text("$remainingSeconds Sek.")
             }
         }
-    }
 
+        Surface(
+            color = Color(0xFFD4AF37),
+            contentColor = Color(0xFF2B2100),
+            shape = RoundedCornerShape(50)
+        ) {
+            Text(
+                text = gameMode.displayName, modifier = Modifier.padding(
+                    horizontal = 14.dp, vertical = 3.dp
+                ), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
 
 
 /**
@@ -710,8 +668,7 @@ private fun RoundResultMap(
 @Composable
 fun WaitingForPlayersOverlay() {
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         ElevatedCard {
             Column(
@@ -732,9 +689,6 @@ fun WaitingForPlayersOverlay() {
  */
 private fun formatCoordinates(coordinate: GeoCoordinate): String {
     return String.format(
-        Locale.US,
-        "Lat: %.4f, Lng: %.4f",
-        coordinate.latitude,
-        coordinate.longitude
+        Locale.US, "Lat: %.4f, Lng: %.4f", coordinate.latitude, coordinate.longitude
     )
 }
