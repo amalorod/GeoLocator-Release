@@ -17,11 +17,9 @@ import javax.inject.Inject
  * Verwaltet Multiplayer-Lobbys in Firebase Realtime Database (siehe
  * Doku, Kapitel 3.1 „Lobbys erstellen“ und 3.2 „Lobbys beitreten“).
  *
- * ARCHITEKTUR-HINWEIS: Die Firebase-URL ist hier erneut fest im Code
- * hinterlegt (siehe TODO-Sammlung zur di/-Überarbeitung) – identisch
- * zu den URLs in ProfileRepository, StatisticsRepository und
- * SessionRepository. Eine zentrale Bereitstellung über FirebaseModule
- * würde diese Redundanz auflösen.
+ * Die FirebaseDatabase-Instanz wird zentral über FirebaseModule
+ * bereitgestellt (siehe di/-Package) und per Konstruktor injiziert,
+ * statt hier eine eigene, redundante Instanz zu erzeugen.
  */
 class MultiplayerRepository @Inject constructor(
     private val database: FirebaseDatabase

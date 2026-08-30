@@ -122,24 +122,23 @@ class SessionRepository @Inject constructor(
      * einer Sitzung, damit z. B. Punktestände anderer Spieler in
      * Echtzeit im UI aktualisiert werden können.
      */
-    fun observePlayerStates(sessionId: String): Flow<List<MultiplayerPlayerState>> =
-        callbackFlow {
-            val reference = database.reference.child("sessions").child(sessionId).child("players")
+    fun observePlayerStates(sessionId: String): Flow<List<MultiplayerPlayerState>> = callbackFlow {
+        val reference = database.reference.child("sessions").child(sessionId).child("players")
 
-            val listener = object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val players = snapshot.children.mapNotNull {
-                        it.getValue(MultiplayerPlayerState::class.java)
-                    }
-                    trySend(players)
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val players = snapshot.children.mapNotNull {
+                    it.getValue(MultiplayerPlayerState::class.java)
                 }
-
-                override fun onCancelled(error: DatabaseError) {}
+                trySend(players)
             }
 
-            reference.addValueEventListener(listener)
-            awaitClose { reference.removeEventListener(listener) }
+            override fun onCancelled(error: DatabaseError) {}
         }
+
+        reference.addValueEventListener(listener)
+        awaitClose { reference.removeEventListener(listener) }
+    }
 
     /**
      * Liefert einen Live-Datenstrom des gesamten Sitzungszustands,

@@ -108,15 +108,13 @@ class GameViewModel @Inject constructor(
 
                 if (firstLocation == null) {
                     _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = "Es wurde kein Spielstandort gefunden."
+                        isLoading = false, errorMessage = "Es wurde kein Spielstandort gefunden."
                     )
                     return@onSuccess
                 }
 
                 _uiState.value = _uiState.value.copy(
-                    currentLocation = firstLocation,
-                    isLoading = false
+                    currentLocation = firstLocation, isLoading = false
                 )
 
                 startTimer()
@@ -139,12 +137,7 @@ class GameViewModel @Inject constructor(
     fun selectGuess(guessedLocation: GeoCoordinate) {
         val state = _uiState.value
 
-        if (
-            state.isLoading ||
-            state.isPaused ||
-            state.isRoundFinished ||
-            state.isGameFinished
-        ) {
+        if (state.isLoading || state.isPaused || state.isRoundFinished || state.isGameFinished) {
             return
         }
 
@@ -163,10 +156,7 @@ class GameViewModel @Inject constructor(
         timerJob?.cancel()
 
         timerJob = viewModelScope.launch {
-            while (
-                _uiState.value.remainingSeconds > 0 &&
-                !_uiState.value.isRoundFinished
-            ) {
+            while (_uiState.value.remainingSeconds > 0 && !_uiState.value.isRoundFinished) {
                 delay(1_000)
 
                 val state = _uiState.value
@@ -178,10 +168,7 @@ class GameViewModel @Inject constructor(
                 }
             }
 
-            if (
-                _uiState.value.remainingSeconds == 0 &&
-                !_uiState.value.isRoundFinished
-            ) {
+            if (_uiState.value.remainingSeconds == 0 && !_uiState.value.isRoundFinished) {
                 finishRoundWithoutGuess()
             }
         }
@@ -195,12 +182,7 @@ class GameViewModel @Inject constructor(
     fun pauseGame() {
         val state = _uiState.value
 
-        if (
-            state.isLoading ||
-            state.isRoundFinished ||
-            state.isGameFinished ||
-            state.isPaused
-        ) {
+        if (state.isLoading || state.isRoundFinished || state.isGameFinished || state.isPaused) {
             return
         }
 
@@ -231,12 +213,7 @@ class GameViewModel @Inject constructor(
     fun showGuessMap() {
         val state = _uiState.value
 
-        if (
-            state.isLoading ||
-            state.isPaused ||
-            state.isRoundFinished ||
-            state.isGameFinished
-        ) {
+        if (state.isLoading || state.isPaused || state.isRoundFinished || state.isGameFinished) {
             return
         }
 
@@ -253,11 +230,7 @@ class GameViewModel @Inject constructor(
     fun showStreetView() {
         val state = _uiState.value
 
-        if (
-            state.isLoading ||
-            state.isRoundFinished ||
-            state.isGameFinished
-        ) {
+        if (state.isLoading || state.isRoundFinished || state.isGameFinished) {
             return
         }
 
@@ -274,11 +247,7 @@ class GameViewModel @Inject constructor(
         val actualLocation = state.currentLocation ?: return
         val guessedLocation = state.guessedLocation ?: return
 
-        if (
-            state.isLoading ||
-            state.isRoundFinished ||
-            state.isGameFinished
-        ) {
+        if (state.isLoading || state.isRoundFinished || state.isGameFinished) {
             return
         }
 
@@ -287,8 +256,7 @@ class GameViewModel @Inject constructor(
         val actualCoordinate = actualLocation.coordinate
 
         val distance = calculateDistance(
-            actualLocation = actualCoordinate,
-            guessedLocation = guessedLocation
+            actualLocation = actualCoordinate, guessedLocation = guessedLocation
         )
 
         val score = calculateScore(
@@ -296,9 +264,7 @@ class GameViewModel @Inject constructor(
         )
 
         val roundStatisticsEntry = RoundStatistics(
-            roundNumber = state.currentRound,
-            score = score,
-            distanceKm = distance
+            roundNumber = state.currentRound, score = score, distanceKm = distance
         )
 
         var newLives = state.lives
@@ -312,14 +278,11 @@ class GameViewModel @Inject constructor(
             totalScore = state.totalScore + score,
             lives = newLives,
 
-            isRoundFinished =
-                !state.isMultiplayer,
+            isRoundFinished = !state.isMultiplayer,
 
-            waitingForPlayers =
-                state.isMultiplayer,
+            waitingForPlayers = state.isMultiplayer,
 
-            roundStatistics =
-                state.roundStatistics + roundStatisticsEntry,
+            roundStatistics = state.roundStatistics + roundStatisticsEntry,
         )
 
         if (newLives <= 0 && state.gameMode == GameMode.CUSTOM) {
@@ -367,9 +330,7 @@ class GameViewModel @Inject constructor(
         val state = _uiState.value
 
         val roundStatisticsEntry = RoundStatistics(
-            roundNumber = state.currentRound,
-            score = 0,
-            distanceKm = 0.0
+            roundNumber = state.currentRound, score = 0, distanceKm = 0.0
         )
 
         _uiState.value = _uiState.value.copy(
@@ -377,8 +338,7 @@ class GameViewModel @Inject constructor(
             roundDistanceKilometers = null,
             roundScore = 0,
             isRoundFinished = true,
-            roundStatistics =
-                state.roundStatistics + roundStatisticsEntry,
+            roundStatistics = state.roundStatistics + roundStatisticsEntry,
         )
     }
 
@@ -402,16 +362,14 @@ class GameViewModel @Inject constructor(
                     score = state.totalScore,
                     rounds = state.roundStatistics.size,
                     distanceKm = state.roundStatistics.sumOf { it.distanceKm },
-                    won = false, 
+                    won = false,
                     multiplayer = false
                 )
                 statisticsRepository.saveMatch(match)
             }
             _uiState.value = state.copy(
-                isGameFinished = true,
-                gameStatistics = GameStatistics(
-                    totalScore = state.totalScore,
-                    rounds = state.roundStatistics
+                isGameFinished = true, gameStatistics = GameStatistics(
+                    totalScore = state.totalScore, rounds = state.roundStatistics
                 )
             )
             return

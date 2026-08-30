@@ -33,15 +33,14 @@ class SessionViewModel @Inject constructor(
                 _session.value = session
             }
         }
-        
+
         viewModelScope.launch {
             sessionRepository.observePlayerStates(sessionId).collect { players ->
-                _uiState.update { 
+                _uiState.update {
                     it.copy(
-                        sessionId = sessionId, 
+                        sessionId = sessionId,
                         players = players,
-                        allPlayersFinished = players.isNotEmpty() && players.all { p -> p.finishedRound }
-                    ) 
+                        allPlayersFinished = players.isNotEmpty() && players.all { p -> p.finishedRound })
                 }
             }
         }
