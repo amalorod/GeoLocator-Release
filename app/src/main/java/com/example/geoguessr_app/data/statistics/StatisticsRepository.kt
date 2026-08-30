@@ -1,6 +1,6 @@
 package com.example.geoguessr_app.data.statistics
 
-import android.content.Context
+
 import android.util.Log
 import com.example.geoguessr_app.data.datastore.StatisticsDataStoreRepository
 import com.example.geoguessr_app.data.profile.ProfileRepository
@@ -194,7 +194,7 @@ class StatisticsRepository @Inject constructor(
         dataStoreRepository.saveStatistics(LifetimeStatistics())
         dataStoreRepository.saveRecentMatches(emptyList())
     }
-
+    
     /**
      * Lädt und berechnet das globale Leaderboard der Top 3 Spieler.
      *

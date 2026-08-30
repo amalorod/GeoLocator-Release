@@ -51,6 +51,10 @@ class ProfileViewModel @Inject constructor(
             val success = profileRepository.loginWithUsername(userName)
             if (success) {
                 val uid = profileRepository.profile.value?.playerId
+                // Verwerfen-beim-Login Strategie
+                statisticsRepository.clearLocalStatistics()
+                dailyQuestRepository.clearLocalQuests()
+                
                 statisticsRepository.loadStatistics(uid)
                 dailyQuestRepository.loadQuests()
                 onSuccess()
@@ -65,6 +69,10 @@ class ProfileViewModel @Inject constructor(
             val success = profileRepository.createAndLogin(userName)
             if (success) {
                 val uid = profileRepository.profile.value?.playerId
+                // Verwerfen-beim-Login Strategie
+                statisticsRepository.clearLocalStatistics()
+                dailyQuestRepository.clearLocalQuests()
+
                 statisticsRepository.loadStatistics(uid)
                 dailyQuestRepository.loadQuests()
                 onSuccess()

@@ -52,8 +52,8 @@ class ProfileRepository @Inject constructor(
     }
 
     private fun saveUidLocally(uid: String?) {
-        context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
-            ?.edit()?.putString("active_uid", uid)?.apply()
+        context.getSharedPreferences("prefs", Context.MODE_PRIVATE)?.edit()
+            ?.putString("active_uid", uid)?.apply()
     }
 
     suspend fun saveProfile(profile: PlayerProfile) {
@@ -66,11 +66,7 @@ class ProfileRepository @Inject constructor(
                 "createdAt" to profile.createdAt
             )
 
-            database.reference
-                .child("users")
-                .child(uid)
-                .child("profile")
-                .setValue(profileMap)
+            database.reference.child("users").child(uid).child("profile").setValue(profileMap)
                 .await()
 
             _profile.value = profile
@@ -120,12 +116,8 @@ class ProfileRepository @Inject constructor(
                 return
             }
 
-            val snapshot = database.reference
-                .child("users")
-                .child(uid)
-                .child("profile")
-                .get()
-                .await()
+            val snapshot =
+                database.reference.child("users").child(uid).child("profile").get().await()
 
             if (snapshot.exists()) {
                 val pId = snapshot.child("playerId").getValue(String::class.java) ?: uid
@@ -154,12 +146,14 @@ class ProfileRepository @Inject constructor(
      * den Nutzer bei Erfolg an.
      *
      * WICHTIG FÜR AUFRUFER: Nach erfolgreichem Login (return true)
-     * muss das ViewModel-Layer zusätzlich
+     * MUSS das ViewModel-Layer zusätzlich
+     * StatisticsRepository.clearLocalStatistics(),
+     * DailyQuestRepository.clearLocalQuests() sowie danach
      * StatisticsRepository.loadStatistics(uid) und
-     * DailyQuestRepository.loadQuests() aufrufen (siehe
-     * Klassendokumentation). Lokale Gast-Statistiken werden hierbei
-     * bewusst NICHT gelöscht, da sie unabhängig vom Account-Wechsel
-     * für einen späteren Logout weiter bestehen sollen.
+     * DailyQuestRepository.loadQuests() aufrufen. Dies stellt die
+     * "Verwerfen-beim-Login"-Strategie sicher, bei der lokale
+     * Gast-Daten beim Login gelöscht werden, um eine Vermischung mit
+     * Account-Daten zu verhindern.
      */
     suspend fun loginWithUsername(userName: String): Boolean {
         Log.d("PROFILE", "Login Versuch mit: $userName")
@@ -237,21 +231,19 @@ class ProfileRepository @Inject constructor(
      * UID angelegt werden kann.
      *
      * WICHTIG FÜR AUFRUFER: Nach erfolgreichem Aufruf (return true)
-     * muss das ViewModel-Layer zusätzlich
-     * StatisticsRepository.loadStatistics(uid) aufrufen. Ohne diesen
-     * Aufruf würde der In-Memory-Statistikzustand weiterhin die zuvor
-     * im Gast-Modus gesammelten Werte enthalten, und die erste Partie
-     * des neuen Accounts würde fälschlich mit alten Gast-Statistiken
-     * vermischt in Firebase gespeichert (siehe Klassendokumentation).
+     * MUSS das ViewModel-Layer zusätzlich
+     * StatisticsRepository.clearLocalStatistics() und
+     * DailyQuestRepository.clearLocalQuests() aufrufen, bevor
+     * StatisticsRepository.loadStatistics(uid) gerufen wird. Ohne diesen
+     * Reset würden die zuvor im Gast-Modus gesammelten Werte fälschlich
+     * mit den neuen Account-Daten vermischt.
      */
     suspend fun createAndLogin(userName: String): Boolean {
         if (authRepository.currentUid() == null) authRepository.signInAnonymously()
         val uid = authRepository.currentUid() ?: return false
 
         val newProfile = PlayerProfile(
-            playerId = uid,
-            playerName = userName,
-            createdAt = System.currentTimeMillis()
+            playerId = uid, playerName = userName, createdAt = System.currentTimeMillis()
         )
         saveProfile(newProfile)
         return true
@@ -275,13 +267,8 @@ class ProfileRepository @Inject constructor(
             val downloadUrl = ref.downloadUrl.await().toString()
             Log.d("PROFILE", "Upload erfolgreich, URL: $downloadUrl")
 
-            database.reference
-                .child("users")
-                .child(uid)
-                .child("profile")
-                .child("profileImageUrl")
-                .setValue(downloadUrl)
-                .await()
+            database.reference.child("users").child(uid).child("profile").child("profileImageUrl")
+                .setValue(downloadUrl).await()
 
             if (currentProfile != null) {
                 _profile.value = currentProfile.copy(profileImageUrl = downloadUrl)

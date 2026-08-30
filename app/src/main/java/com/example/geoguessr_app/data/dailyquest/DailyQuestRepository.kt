@@ -211,4 +211,16 @@ class DailyQuestRepository @Inject constructor(
     fun resetQuests() {
         _quests.value = DEFAULT_QUESTS
     }
+
+    /**
+     * Setzt die Quests vollständig zurück – sowohl den In-Memory-Zustand
+     * als auch die lokal persistierten Gast-Daten. Wird beim Übergang
+     * von Gast zu angemeldetem Nutzer aufgerufen, um sicherzustellen,
+     * dass keine alten Gast-Quests nach einem Login weiterbestehen
+     * ("Verwerfen-beim-Login"-Strategie).
+     */
+    suspend fun clearLocalQuests() {
+        _quests.value = DEFAULT_QUESTS
+        dataStoreRepository.saveQuests(DEFAULT_QUESTS)
+    }
 }

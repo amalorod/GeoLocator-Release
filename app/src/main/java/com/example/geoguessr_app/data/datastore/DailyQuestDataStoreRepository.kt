@@ -4,10 +4,12 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.preferences.core.edit
 import com.example.geoguessr_app.domain.model.dailyquest.DailyQuest
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
+import javax.inject.Inject
 
 /**
  * Persistiert den Daily-Quest-Fortschritt eines Gast-Nutzers lokal
@@ -17,8 +19,8 @@ import org.json.JSONObject
  * Profil besitzen. Für angemeldete Nutzer ist DailyQuestRepository
  * über Firebase Realtime Database die alleinige Quelle der Wahrheit.
  */
-class DailyQuestDataStoreRepository(
-    private val context: Context
+class DailyQuestDataStoreRepository @Inject constructor(
+    @ApplicationContext val context: Context
 ) {
     suspend fun saveQuests(quests: List<DailyQuest>) {
         try {

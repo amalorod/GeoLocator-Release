@@ -136,8 +136,7 @@ fun GeoGuessrNavHost(
             val profile by profileViewModel.profile.collectAsStateWithLifecycle()
             ProfileScreen(
                 profile = profile ?: com.example.geoguessr_app.domain.model.profile.PlayerProfile(),
-                onBackClick = { navController.popBackStack() }
-            )
+                onBackClick = { navController.popBackStack() })
         }
 
         // --- Multiplayer-Einstiegspunkt ---
@@ -149,23 +148,19 @@ fun GeoGuessrNavHost(
                 },
                 onJoinLobbyClick = {
                     navController.navigate(AppDestination.JoinLobby.route)
-                }
-            )
+                })
         }
 
         composable(route = AppDestination.JoinLobby.route) {
-            JoinLobbyScreen(
-                onBackClick = { navController.popBackStack() },
-                onJoinClick = { code ->
-                    // Der eingegebene Lobby-Code wird als optionaler
-                    // Query-Parameter an die Lobby-Route angehängt, um
-                    // zwischen "Lobby erstellen" (kein Code) und
-                    // "Lobby beitreten" (mit Code) zu unterscheiden.
-                    navController.navigate(
-                        "${AppDestination.MultiplayerLobby.route}?lobbyCode=$code"
-                    )
-                }
-            )
+            JoinLobbyScreen(onBackClick = { navController.popBackStack() }, onJoinClick = { code ->
+                // Der eingegebene Lobby-Code wird als optionaler
+                // Query-Parameter an die Lobby-Route angehängt, um
+                // zwischen "Lobby erstellen" (kein Code) und
+                // "Lobby beitreten" (mit Code) zu unterscheiden.
+                navController.navigate(
+                    "${AppDestination.MultiplayerLobby.route}?lobbyCode=$code"
+                )
+            })
         }
 
         // --- Multiplayer-Lobby: dient sowohl dem Erstellen als auch dem
@@ -178,8 +173,7 @@ fun GeoGuessrNavHost(
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
-                }
-            )
+                })
         ) { backStackEntry ->
             val lobbyCodeArg = backStackEntry.arguments?.getString("lobbyCode")
             val lobbyViewModel: LobbyViewModel = hiltViewModel()
@@ -221,8 +215,7 @@ fun GeoGuessrNavHost(
                     navController.popBackStack()
                 },
                 onReadyClick = { lobbyViewModel.toggleReady() },
-                onStartGameClick = { lobbyViewModel.startLobby() }
-            )
+                onStartGameClick = { lobbyViewModel.startLobby() })
         }
 
         // --- Aktive Multiplayer-Partie, identifiziert über die
@@ -255,8 +248,7 @@ fun GeoGuessrNavHost(
                     navController.navigate(AppDestination.Home.route) {
                         popUpTo(AppDestination.Home.route) { inclusive = true }
                     }
-                }
-            )
+                })
         }
 
         composable(route = AppDestination.Tutorial.route) {
@@ -270,8 +262,7 @@ fun GeoGuessrNavHost(
             LifetimeStatisticsScreen(
                 statistics = statistics,
                 isGuest = profile == null,
-                onBackClick = { navController.popBackStack() }
-            )
+                onBackClick = { navController.popBackStack() })
         }
 
         // --- Einzelspieler-Partie (Normal- und Custom-Modus) ---
@@ -303,37 +294,32 @@ fun GeoGuessrNavHost(
                         popUpTo(AppDestination.Home.route) { inclusive = false }
                         launchSingleTop = true
                     }
-                }
-            )
+                })
         }
 
         composable(route = AppDestination.IndividualSettings.route) {
-            IndividualSettingsScreen(
-                onBackClick = {
-                    // Try-Catch fängt hier den unwahrscheinlichen Fall ab,
-                    // dass kein vorheriger Backstack-Eintrag existiert
-                    // (sollte durch die feste Navigationsstruktur der App
-                    // eigentlich nicht auftreten, dient aber als
-                    // Absicherung gegen Abstürze).
-                    try {
-                        navController.popBackStack()
-                    } catch (e: Exception) {
-                        Log.d("NAVHOST", "Fehler beim Zurückgehen", e)
-                    }
-                },
-                onStartGame = { settings: CustomGameSettings ->
-                    try {
-                        gameViewModel.startCustomGame(settings)
-                        navController.navigate(AppDestination.Game.route)
-                    } catch (e: Exception) {
-                        Log.d("NAVHOST", "Fehler beim Spielstart", e)
-                    }
+            IndividualSettingsScreen(onBackClick = {
+                // Try-Catch fängt hier den unwahrscheinlichen Fall ab,
+                // dass kein vorheriger Backstack-Eintrag existiert
+                // (sollte durch die feste Navigationsstruktur der App
+                // eigentlich nicht auftreten, dient aber als
+                // Absicherung gegen Abstürze).
+                try {
+                    navController.popBackStack()
+                } catch (e: Exception) {
+                    Log.d("NAVHOST", "Fehler beim Zurückgehen", e)
                 }
-            )
+            }, onStartGame = { settings: CustomGameSettings ->
+                try {
+                    gameViewModel.startCustomGame(settings)
+                    navController.navigate(AppDestination.Game.route)
+                } catch (e: Exception) {
+                    Log.d("NAVHOST", "Fehler beim Spielstart", e)
+                }
+            })
         }
 
-        // --- Interne Entwickler-/Testrouten, nicht über die regulä­re
-        // App-Navigation erreichbar ---
+        // --- Interne Entwickler-/Testrouten, nicht über die reguläre App-Navigation erreichbar ---
         composable(route = AppDestination.MapTest.route) {
             MapTestScreen(onBackClick = navController::popBackStack)
         }
