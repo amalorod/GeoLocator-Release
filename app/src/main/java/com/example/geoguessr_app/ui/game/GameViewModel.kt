@@ -2,7 +2,6 @@ package com.example.geoguessr_app.ui.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.geoguessr_app.data.datastore.StatisticsDataStoreRepository
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
 import com.example.geoguessr_app.domain.model.custom.CustomDifficulty
@@ -355,6 +354,18 @@ class GameViewModel @Inject constructor(
         if (state.currentRound >= state.totalRounds) {
 
             viewModelScope.launch {
+
+
+                val won = when {
+                    state.isMultiplayer -> state.isLocalPlayerWinner ?: false
+                    state.gameMode == GameMode.CUSTOM || state.gameMode == GameMode.BATTLE_ROYALE -> state.lives > 0
+                    // Normal, Pro, Daily Quest kennen kein Sieg/Niederlage-Konzept (kein
+                    // Lebenssystem) – won ist hier schlicht nicht anwendbar und wird der
+                    // Einfachheit halber als "true" gespeichert, statt ein drittes
+                    // nullable Zwischenergebnis in MatchStatistic einzuführen.
+                    else -> true
+                }
+
                 // Save detailed match statistics
                 val match = MatchStatistic(
                     timestamp = System.currentTimeMillis(),
@@ -362,7 +373,7 @@ class GameViewModel @Inject constructor(
                     score = state.totalScore,
                     rounds = state.roundStatistics.size,
                     distanceKm = state.roundStatistics.sumOf { it.distanceKm },
-                    won = false, // ebenfalls zu prüfen, siehe unten
+                    won = won,
                     multiplayer = state.isMultiplayer
                 )
                 statisticsRepository.saveMatch(match)
