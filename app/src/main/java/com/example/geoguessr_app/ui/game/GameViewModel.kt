@@ -28,15 +28,11 @@ import com.example.geoguessr_app.domain.statistics.RoundStatistics
 
 /**
  * Verwaltet den Zustand und Ablauf einer vollständigen Partie.
- *
- * Das ViewModel erhält die Geschäftslogik über Hilt-injizierte Use Cases.
- * Compose, Google Maps und konkrete Repository-Implementierungen sind
- * dadurch von der Spiellogik getrennt.
  */
 @HiltViewModel
 class GameViewModel @Inject constructor(
-    private val statisticsRepository:
-    StatisticsDataStoreRepository,
+    private val statisticsRepository: StatisticsRepository,
+    private val dailyQuestRepository: DailyQuestRepository,
     private val getRandomLocations: GetRandomLocationsUseCase,
     private val calculateDistance: CalculateDistanceUseCase,
     private val calculateScore: CalculateScoreUseCase
@@ -337,21 +333,21 @@ class GameViewModel @Inject constructor(
         viewModelScope.launch {
             // Quest: Präzision (< 25km)
             if (distance < 25.0) {
-                val completed = DailyQuestRepository.updateQuestProgress("perfect_guess")
+                val completed = dailyQuestRepository.updateQuestProgress("perfect_guess")
                 if (completed != null) _uiState.value =
                     _uiState.value.copy(newlyCompletedQuest = completed)
             }
 
             // Quest: Europa Experte (< 100km)
             if (distance < 100.0) {
-                val completed = DailyQuestRepository.updateQuestProgress("europe_explorer")
+                val completed = dailyQuestRepository.updateQuestProgress("europe_explorer")
                 if (completed != null) _uiState.value =
                     _uiState.value.copy(newlyCompletedQuest = completed)
             }
 
             // Quest: Pro-Modus
             if (mode == GameMode.PRO) {
-                val completed = DailyQuestRepository.updateQuestProgress("pro_mode_guess")
+                val completed = dailyQuestRepository.updateQuestProgress("pro_mode_guess")
                 if (completed != null) _uiState.value =
                     _uiState.value.copy(newlyCompletedQuest = completed)
             }
@@ -398,49 +394,18 @@ class GameViewModel @Inject constructor(
 
         if (state.currentRound >= state.totalRounds) {
 
-            val currentLifetime =
-                StatisticsRepository.statistics.value
-
-            val updatedLifetime =
-                currentLifetime.copy(
-                    gamesPlayed =
-                        currentLifetime.gamesPlayed + 1,
-
-                    roundsPlayed =
-                        currentLifetime.roundsPlayed +
-                                state.roundStatistics.size,
-
-                    totalScore =
-                        currentLifetime.totalScore +
-                                state.totalScore,
-
-                    bestGameScore =
-                        maxOf(
-                            currentLifetime.bestGameScore,
-                            state.totalScore
-                        ),
-
-                    totalDistanceKm =
-                        currentLifetime.totalDistanceKm +
-                                state.roundStatistics.sumOf {
-                                    it.distanceKm
-                                }
-                )
-
             viewModelScope.launch {
-                statisticsRepository.saveStatistics(updatedLifetime)
-
-                // New: Save detailed match statistics to Firebase
+                // Save detailed match statistics
                 val match = MatchStatistic(
                     timestamp = System.currentTimeMillis(),
                     gameMode = state.gameMode.name,
                     score = state.totalScore,
                     rounds = state.roundStatistics.size,
                     distanceKm = state.roundStatistics.sumOf { it.distanceKm },
-                    won = false, // In Singleplayer gibt es kein "won" in dem Sinne, evtl. Score-basiert
+                    won = false, 
                     multiplayer = false
                 )
-                StatisticsRepository.saveMatch(match)
+                statisticsRepository.saveMatch(match)
             }
             _uiState.value = state.copy(
                 isGameFinished = true,

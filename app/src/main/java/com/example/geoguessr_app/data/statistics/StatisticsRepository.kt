@@ -6,39 +6,27 @@ import com.example.geoguessr_app.data.datastore.StatisticsDataStoreRepository
 import com.example.geoguessr_app.data.profile.ProfileRepository
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 import com.example.geoguessr_app.domain.statistics.LifetimeStatistics
-import com.google.firebase.auth.FirebaseAuth
+import com.example.geoguessr_app.data.firebase.FirebaseAuthRepository
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Verwaltet sämtliche spielübergreifenden Statistiken sowie das
- * globale Leaderboard (siehe Doku, Kapitel 4.4 „Statistics Screen“ und
- * 5.6 „Profil-, Statistik- und Cloud-System“).
- *
- * ARCHITEKTUR-HINWEIS: Als object-Singleton implementiert und mit einer
- * fest im Code hinterlegten Firebase-URL sowie eigener FirebaseAuth-
- * Instanz versehen, statt über Hilt injiziert zu werden. Dieses
- * Repository greift außerdem direkt auf das ebenfalls als Singleton
- * implementierte [ProfileRepository] zu. Für eine konsequente
- * Dependency-Injection-Architektur (siehe Doku, Kapitel 2.4) sollte
- * dies künftig über Konstruktor-Injection erfolgen.
- *
- * Kombiniert zwei strikt getrennte Datenquellen: Firebase Realtime
- * Database für angemeldete Nutzer und lokalen Jetpack DataStore für
- * Gast-Nutzer (siehe saveMatch). Welche Quelle gilt, wird ausschließlich
- * anhand des Login-Zustands in [ProfileRepository] entschieden – nicht
- * anhand von Heuristiken über Feldwerte, siehe Anmerkung bei isGuest.
+ * globale Leaderboard.
  */
-object StatisticsRepository {
-
-    private const val DB_URL =
-        "https://bsi-geoguessr-app-63b7f-default-rtdb.europe-west1.firebasedatabase.app/"
-    private val database = FirebaseDatabase.getInstance(DB_URL)
-    private val auth = FirebaseAuth.getInstance()
+@Singleton
+class StatisticsRepository @Inject constructor(
+    private val database: FirebaseDatabase,
+    private val authRepository: FirebaseAuthRepository,
+    private val profileRepository: ProfileRepository,
+    private val dataStoreRepository: StatisticsDataStoreRepository
+) {
 
     private val _statistics = MutableStateFlow(LifetimeStatistics())
     val statistics: StateFlow<LifetimeStatistics> = _statistics.asStateFlow()
@@ -49,17 +37,6 @@ object StatisticsRepository {
     private val _topPlayers = MutableStateFlow<List<LeaderboardEntry>>(emptyList())
     val topPlayers: StateFlow<List<LeaderboardEntry>> = _topPlayers.asStateFlow()
 
-    // Wird über initialize() befüllt (siehe MainActivity), analog zum
-    // bestehenden Muster in ProfileRepository. ARCHITEKTUR-HINWEIS:
-    // Dieselbe Kritik wie bei ProfileRepository gilt hier – langfristig
-    // sollte dies über Hilt injiziert werden statt über ein manuelles
-    // initialize().
-    private var dataStoreRepository: StatisticsDataStoreRepository? = null
-
-    fun initialize(context: Context) {
-        dataStoreRepository = StatisticsDataStoreRepository(context.applicationContext)
-    }
-
     /**
      * Speichert das Ergebnis einer abgeschlossenen Partie.
      *
@@ -69,7 +46,7 @@ object StatisticsRepository {
      * Firebase.
      */
     suspend fun saveMatch(match: MatchStatistic) {
-        val currentProfile = ProfileRepository.profile.value
+        val currentProfile = profileRepository.profile.value
 
         // Der Login-Zustand wird ausschließlich über das Vorhandensein
         // eines Profils entschieden. ProfileRepository setzt profile
@@ -93,14 +70,14 @@ object StatisticsRepository {
             // Gast-Pfad: Persistiert ausschließlich lokal auf dem
             // Gerät. Firebase wird hier bewusst nicht kontaktiert, um
             // eine spätere Vermischung mit Cloud-Daten auszuschließen.
-            dataStoreRepository?.saveStatistics(updated)
-            dataStoreRepository?.saveRecentMatches(_recentMatches.value)
+            dataStoreRepository.saveStatistics(updated)
+            dataStoreRepository.saveRecentMatches(_recentMatches.value)
             Log.d("STATISTICS", "Statistik und Matches lokal gespeichert (Gast-Modus).")
             return
         }
 
         // Eingeloggter Pfad: Persistiert ausschließlich in Firebase.
-        val uid = currentProfile?.playerId?.ifEmpty { auth.currentUser?.uid } ?: return
+        val uid = currentProfile?.playerId?.ifEmpty { authRepository.currentUid() } ?: return
         try {
             database.reference
                 .child("users")
@@ -137,7 +114,7 @@ object StatisticsRepository {
      *   des aktuell angemeldeten Nutzers verwendet.
      */
     suspend fun loadStatistics(targetUid: String? = null) {
-        val uid = targetUid ?: auth.currentUser?.uid ?: return
+        val uid = targetUid ?: authRepository.currentUid() ?: return
         try {
             val statsSnapshot = database.reference
                 .child("users")
@@ -186,14 +163,13 @@ object StatisticsRepository {
      * Lädt die persistierten Lifetime-Statistiken sowie die zuletzt
      * gespielten Partien eines Gast-Nutzers aus dem lokalen DataStore.
      * Wird beim App-Start im Gast-Fall sowie nach einem Logout
-     * aufgerufen (siehe ProfileRepository.loadProfile() und logout()),
+     * aufgerufen (siehe ProfileViewModel.loadInitialData() und logout()),
      * damit Gast-Fortschritt einen App-Neustart überlebt.
      */
     suspend fun loadLocalStatistics() {
-        val repository = dataStoreRepository ?: return
         try {
-            _statistics.value = repository.statistics.first()
-            val localMatches = repository.loadRecentMatches()
+            _statistics.value = dataStoreRepository.statistics.first()
+            val localMatches = dataStoreRepository.loadRecentMatches()
             _recentMatches.value = localMatches
 
             Log.d(
@@ -208,16 +184,15 @@ object StatisticsRepository {
     /**
      * Setzt die Statistiken vollständig zurück – sowohl den
      * In-Memory-Zustand als auch die lokal persistierten Gast-Daten.
-     * Wird beim Übergang von Gast zu angemeldetem Nutzer aufgerufen
-     * (siehe ProfileRepository.loginWithUsername und createAndLogin),
+     * Wird beim Übergang von Gast zu angemeldetem Nutzer aufgerufen,
      * um sicherzustellen, dass keine alten Gast-Statistiken nach einem
      * Login weiterbestehen ("Verwerfen-beim-Login"-Strategie).
      */
     suspend fun clearLocalStatistics() {
         _statistics.value = LifetimeStatistics()
         _recentMatches.value = emptyList()
-        dataStoreRepository?.saveStatistics(LifetimeStatistics())
-        dataStoreRepository?.saveRecentMatches(emptyList())
+        dataStoreRepository.saveStatistics(LifetimeStatistics())
+        dataStoreRepository.saveRecentMatches(emptyList())
     }
 
     /**

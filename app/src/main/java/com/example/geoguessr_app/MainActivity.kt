@@ -40,13 +40,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // TODO (Architektur-Review): Statische Initialisierung umgehen Hilt.
-        // Sollte langfristig durch Dependency Injection ersetzt werden
-        // (siehe di/-Modul), um Konsistenz mit dem restlichen DI-Konzept
-        // der App herzustellen.
-        com.example.geoguessr_app.data.profile.ProfileRepository.initialize(this)
-        com.example.geoguessr_app.data.statistics.StatisticsRepository.initialize(this)
-
         // Zeichnet den Content bis unter die System-Bars (Status-/Navigationsleiste),
         // damit die App ein modernes, randloses Erscheinungsbild erhält.
         enableEdgeToEdge()

@@ -1,6 +1,7 @@
 package com.example.geoguessr_app.di
 
 import android.content.Context
+import com.example.geoguessr_app.data.datastore.DailyQuestDataStoreRepository
 import com.example.geoguessr_app.data.datastore.StatisticsDataStoreRepository
 import dagger.Module
 import dagger.Provides
@@ -9,18 +10,32 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/**
+ * Stellt die lokalen DataStore-Repositories bereit, die den
+ * Gast-Fortschritt (Statistiken und Daily Quests) persistieren.
+ *
+ * Beide Klassen besitzen bewusst keinen @Inject-Konstruktor, da sie
+ * einen Context-Parameter benötigen, der über @ApplicationContext von
+ * Hilt aufgelöst wird – daher die explizite Bereitstellung hier statt
+ * einer automatischen Konstruktor-Injektion.
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object DataStoreModule {
 
     @Provides
     @Singleton
-    fun provideStatisticsRepository(
+    fun provideStatisticsDataStoreRepository(
         @ApplicationContext context: Context
     ): StatisticsDataStoreRepository {
+        return StatisticsDataStoreRepository(context)
+    }
 
-        return StatisticsDataStoreRepository(
-            context = context
-        )
+    @Provides
+    @Singleton
+    fun provideDailyQuestDataStoreRepository(
+        @ApplicationContext context: Context
+    ): DailyQuestDataStoreRepository {
+        return DailyQuestDataStoreRepository(context)
     }
 }

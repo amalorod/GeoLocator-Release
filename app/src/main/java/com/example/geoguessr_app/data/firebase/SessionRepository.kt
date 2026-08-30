@@ -1,10 +1,6 @@
-
-
-
 package com.example.geoguessr_app.data.firebase
 
 import android.util.Log
-import android.util.Log.e
 import com.example.geoguessr_app.domain.model.multiplayer.MatchSession
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
 import com.google.firebase.database.DataSnapshot
@@ -12,215 +8,156 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-import com.google.firebase.database.*
-import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
+/**
+ * Verwaltet die laufende Multiplayer-Partie (MatchSession) in Firebase
+ * Realtime Database, nachdem eine Lobby gestartet wurde (siehe
+ * MultiplayerRepository.startLobby und Doku, Kapitel 3.4
+ * „Spielsitzungen“).
+ *
+ * Während [MultiplayerRepository] den Zustand vor Spielstart
+ * (Lobby-Bildung, Bereit-Status) verwaltet, ist diese Klasse für den
+ * eigentlichen Spielverlauf zuständig: Rundenfortschritt, individuelle
+ * Spielerzustände und Spielende.
+ */
+class SessionRepository @Inject constructor(
+    private val database: FirebaseDatabase
+) {
 
-class SessionRepository {
-
-    private val DB_URL = "https://bsi-geoguessr-app-63b7f-default-rtdb.europe-west1.firebasedatabase.app/"
-
-    private val database = FirebaseDatabase.getInstance(DB_URL)
-
-    suspend fun loadSession(
-        sessionId: String
-    ): MatchSession? {
-
-        val snapshot =
-            database.reference
-                .child("sessions")
-                .child(sessionId)
-                .get()
-                .await()
-
-        return snapshot.getValue(
-            MatchSession::class.java
-        )
+    /**
+     * Lädt den aktuellen Zustand einer Spielsitzung einmalig (kein
+     * Live-Abo), z. B. beim erstmaligen Betreten des
+     * Multiplayer-Spielbildschirms.
+     */
+    suspend fun loadSession(sessionId: String): MatchSession? {
+        val snapshot = database.reference.child("sessions").child(sessionId).get().await()
+        return snapshot.getValue(MatchSession::class.java)
     }
 
-
-
+    /**
+     * Legt eine neue Spielsitzung in Firebase an. Wird vom Host
+     * aufgerufen, sobald er die Lobby startet (siehe
+     * MultiplayerRepository.startLobby).
+     */
     suspend fun createSession(session: MatchSession) {
-        Log.e("MULTIPLAYER", "SESSION REPOSITORY START")
-
         try {
-            Log.e("MULTIPLAYER", "SESSION VOR SETVALUE")
-
-            database.reference
-                .child("sessions")
-                .child(session.sessionId)
-                .setValue(session)
+            database.reference.child("sessions").child(session.sessionId).setValue(session)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
-                        Log.e("MULTIPLAYER", "SESSION SCHREIBVORGANG ERFOLGREICH")
+                        Log.d("MULTIPLAYER", "Session-Schreibvorgang erfolgreich")
                     } else {
-                        Log.e("MULTIPLAYER", "SESSION SCHREIBVORGANG FEHLGESCHLAGEN: ${task.exception?.message}")
+                        Log.e(
+                            "MULTIPLAYER",
+                            "Session-Schreibvorgang fehlgeschlagen: ${task.exception?.message}"
+                        )
                     }
-                }
-                .await()
-
-            Log.e("MULTIPLAYER", "SESSION GESPEICHERT")
+                }.await()
         } catch (e: Exception) {
-                // Fängt Fehler ab, falls Firebase das Schreiben blockiert (z.B. wegen Rules)
-                Log.e("MULTIPLAYER", "SESSION FEHLER", e)
-            }
+            // Fängt Fehler ab, falls Firebase das Schreiben blockiert
+            // (z. B. wegen Security Rules).
+            Log.e("MULTIPLAYER", "Fehler beim Erstellen der Session", e)
         }
-
-
-
-    suspend fun updatePlayerState(
-        sessionId: String,
-        playerState: MultiplayerPlayerState
-    ) {
-
-        database.reference
-            .child("sessions")
-            .child(sessionId)
-            .child("players")
-            .child(playerState.uid)
-            .setValue(playerState)
-            .await()
     }
 
-    suspend fun removePlayerFromSession(
-        sessionId: String,
-        uid: String
-    ) {
-        database.reference
-            .child("sessions")
-            .child(sessionId)
-            .child("players")
-            .child(uid)
-            .removeValue()
-            .await()
+    /**
+     * Aktualisiert den individuellen Spielzustand (z. B. aktueller
+     * Score, abgegebener Tipp) eines einzelnen Spielers innerhalb der
+     * Sitzung.
+     */
+    suspend fun updatePlayerState(sessionId: String, playerState: MultiplayerPlayerState) {
+        database.reference.child("sessions").child(sessionId).child("players")
+            .child(playerState.uid).setValue(playerState).await()
     }
 
+    /**
+     * Entfernt einen Spieler vollständig aus der Sitzung, z. B. wenn
+     * er die laufende Partie vorzeitig verlässt.
+     */
+    suspend fun removePlayerFromSession(sessionId: String, uid: String) {
+        database.reference.child("sessions").child(sessionId).child("players").child(uid)
+            .removeValue().await()
+    }
+
+    /**
+     * Markiert die Sitzung als beendet, sobald alle Runden gespielt
+     * wurden.
+     */
     suspend fun finishSession(sessionId: String) {
-        database.reference
-            .child("sessions")
-            .child(sessionId)
-            .child("finished")
-            .setValue(true)
+        database.reference.child("sessions").child(sessionId).child("finished").setValue(true)
             .await()
     }
 
-
-
-    suspend fun advanceRound(
-        sessionId: String,
-        nextRound: Int,
-        nextLocationId: String
-    ) {
-        database.reference
-            .child("sessions")
-            .child(sessionId)
-            .child("currentRound")
+    /**
+     * Schaltet die Sitzung auf die nächste Runde weiter: aktualisiert
+     * Rundennummer, den neuen Standort sowie den Startzeitpunkt der
+     * Runde, damit alle Teilnehmer synchron in dieselbe neue Runde
+     * wechseln.
+     *
+     * ANMERKUNG: Die drei setValue()-Aufrufe werden hier nicht
+     * awaited und nicht zu einer einzigen updateChildren()-Transaktion
+     * zusammengefasst (im Gegensatz zu z. B. startLobby in
+     * MultiplayerRepository). Das bedeutet, die drei Werte könnten in
+     * seltenen Fällen kurzfristig inkonsistent zueinander bei anderen
+     * Clients ankommen. Eine Vereinheitlichung zu einer einzigen
+     * updateChildren()-Transaktion (analog zu startLobby) würde das
+     * beheben.
+     */
+    suspend fun advanceRound(sessionId: String, nextRound: Int, nextLocationId: String) {
+        database.reference.child("sessions").child(sessionId).child("currentRound")
             .setValue(nextRound)
 
-        database.reference
-            .child("sessions")
-            .child(sessionId)
-            .child("currentLocationId")
+        database.reference.child("sessions").child(sessionId).child("currentLocationId")
             .setValue(nextLocationId)
 
-        database.reference
-            .child("sessions")
-            .child(sessionId)
-            .child("roundStartTimestamp")
-            .setValue(
-                System.currentTimeMillis()
-            )
+        database.reference.child("sessions").child(sessionId).child("roundStartTimestamp")
+            .setValue(System.currentTimeMillis())
     }
-    fun observePlayerStates(
-        sessionId: String
-    ): Flow<List<MultiplayerPlayerState>> =
+
+    /**
+     * Liefert einen Live-Datenstrom aller Spielerzustände innerhalb
+     * einer Sitzung, damit z. B. Punktestände anderer Spieler in
+     * Echtzeit im UI aktualisiert werden können.
+     */
+    fun observePlayerStates(sessionId: String): Flow<List<MultiplayerPlayerState>> =
         callbackFlow {
+            val reference = database.reference.child("sessions").child(sessionId).child("players")
 
-            val reference =
-                database.reference
-                    .child("sessions")
-                    .child(sessionId)
-                    .child("players")
-
-            val listener =
-                object : ValueEventListener {
-
-                    override fun onDataChange(
-                        snapshot: DataSnapshot
-                    ) {
-
-                        val players =
-                            snapshot.children.mapNotNull {
-
-                                it.getValue(
-                                    MultiplayerPlayerState::class.java
-                                )
-                            }
-
-                        trySend(players)
+            val listener = object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val players = snapshot.children.mapNotNull {
+                        it.getValue(MultiplayerPlayerState::class.java)
                     }
-
-                    override fun onCancelled(
-                        error: DatabaseError
-                    ) {
-                    }
+                    trySend(players)
                 }
 
-            reference.addValueEventListener(
-                listener
-            )
-
-            awaitClose {
-
-                reference.removeEventListener(
-                    listener
-                )
-            }
-        }
-
-
-    fun observeSession(
-        sessionId: String
-    ): Flow<MatchSession?> = callbackFlow {
-
-        val reference =
-            database.reference
-                .child("sessions")
-                .child(sessionId)
-
-        val listener =
-            object : ValueEventListener {
-
-                override fun onDataChange(
-                    snapshot: DataSnapshot
-                ) {
-
-                    val session =
-                        snapshot.getValue(
-                            MatchSession::class.java
-                        )
-
-                    trySend(session)
-                }
-
-                override fun onCancelled(
-                    error: DatabaseError
-                ) {
-                }
+                override fun onCancelled(error: DatabaseError) {}
             }
 
-        reference.addValueEventListener(
-            listener
-        )
-
-        awaitClose {
-
-            reference.removeEventListener(
-                listener
-            )
+            reference.addValueEventListener(listener)
+            awaitClose { reference.removeEventListener(listener) }
         }
+
+    /**
+     * Liefert einen Live-Datenstrom des gesamten Sitzungszustands,
+     * z. B. um Rundenwechsel oder das Sitzungsende bei allen Clients
+     * synchron sichtbar zu machen.
+     */
+    fun observeSession(sessionId: String): Flow<MatchSession?> = callbackFlow {
+        val reference = database.reference.child("sessions").child(sessionId)
+
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                trySend(snapshot.getValue(MatchSession::class.java))
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        }
+
+        reference.addValueEventListener(listener)
+        awaitClose { reference.removeEventListener(listener) }
     }
-
 }

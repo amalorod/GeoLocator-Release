@@ -23,7 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.geoguessr_app.data.profile.ProfileRepository
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.geoguessr_app.domain.model.profile.PlayerProfile
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -32,7 +32,8 @@ import java.util.*
 @Composable
 fun ProfileScreen(
     profile: PlayerProfile,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
@@ -50,9 +51,7 @@ fun ProfileScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            scope.launch {
-                ProfileRepository.uploadProfilePicture(it)
-            }
+            viewModel.uploadPicture(it)
         }
     }
 
@@ -226,7 +225,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 TextButton(onClick = { 
-                    scope.launch { ProfileRepository.logout() }
+                    viewModel.logout()
                 }) {
                     Text("Vom Gerät abmelden", color = MaterialTheme.colorScheme.error)
                 }
@@ -271,21 +270,22 @@ fun ProfileScreen(
                     onClick = {
                         if (loginUsername.trim().length >= 3) {
                             isProcessing = true
-                            scope.launch {
-                                try {
-                                    val success = ProfileRepository.loginWithUsername(loginUsername.trim())
-                                    if (!success) {
-                                        // Falls nicht gefunden -> neu anlegen
-                                        ProfileRepository.createAndLogin(loginUsername.trim())
-                                    }
+                            viewModel.login(
+                                userName = loginUsername.trim(),
+                                onSuccess = {
                                     isProcessing = false
                                     showLoginModal = false
                                     loginUsername = ""
-                                } catch (e: Exception) {
-                                    modalError = "Verbindungsfehler. Bitte erneut versuchen."
-                                    isProcessing = false
+                                },
+                                onError = {
+                                    // Falls nicht gefunden -> neu anlegen
+                                    viewModel.createAccount(loginUsername.trim()) {
+                                        isProcessing = false
+                                        showLoginModal = false
+                                        loginUsername = ""
+                                    }
                                 }
-                            }
+                            )
                         } else {
                             modalError = "Mindestens 3 Zeichen erforderlich."
                         }

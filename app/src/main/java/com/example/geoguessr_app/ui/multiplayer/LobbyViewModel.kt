@@ -27,6 +27,7 @@ class LobbyViewModel @Inject constructor(
     private val multiplayerRepository: MultiplayerRepository,
     private val firebaseAuthRepository: FirebaseAuthRepository,
     private val sessionRepository: SessionRepository,
+    private val profileRepository: ProfileRepository,
     private val getRandomLocations: GetRandomLocationsUseCase
 ) : ViewModel() {
 
@@ -74,7 +75,7 @@ class LobbyViewModel @Inject constructor(
                     ?: firebaseAuthRepository.signInAnonymously()
                 Log.e("MULTIPLAYER", "UID = $uid")
 
-                val profile = ProfileRepository.profile.value
+                val profile = profileRepository.profile.value
                 val hostPlayer = LobbyPlayer(
                     uid = uid,
                     name = profile?.playerName ?: "Host",
@@ -138,7 +139,7 @@ class LobbyViewModel @Inject constructor(
 
                 _uiState.update { it.copy(currentUserUid = uid) }
 
-                val profile = ProfileRepository.profile.value
+                val profile = profileRepository.profile.value
                 // 3. Beitreten
                 multiplayerRepository.joinLobby(
                     lobbyCode = lobbyCode,

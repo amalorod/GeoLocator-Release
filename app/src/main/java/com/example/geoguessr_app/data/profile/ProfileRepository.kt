@@ -5,36 +5,40 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
-import com.example.geoguessr_app.data.dailyquest.DailyQuestRepository
-import com.example.geoguessr_app.data.statistics.StatisticsRepository
+import com.example.geoguessr_app.data.firebase.FirebaseAuthRepository
 import com.example.geoguessr_app.domain.model.profile.PlayerProfile
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
- * Verwaltet das Nutzerprofil sowie den Login-Zustand der Anwendung
- * (siehe Doku, Kapitel 5.6 „Profil-, Statistik- und Cloud-System“).
+ * Verwaltet das Nutzerprofil sowie den Login-Zustand der Anwendung.
  *
- * ARCHITEKTUR-ENTSCHEIDUNG: Gast-Modus und angemeldeter Modus sind
- * als zwei unabhängige, parallele Zustände konzipiert. Gast-
- * Statistiken (siehe StatisticsRepository, lokal über DataStore
- * persistiert) werden bei einem Login NICHT gelöscht, da sie
- * inhaltlich nichts mit einem Firebase-Account zu tun haben und beim
- * nächsten Logout unverändert wieder verfügbar sein sollen.
+ * ARCHITEKTUR-HINWEIS ZUR ORCHESTRIERUNG: Diese Klasse ist bewusst NICHT
+ * mehr für das Laden von Statistiken oder Daily Quests verantwortlich,
+ * um eine zirkuläre Abhängigkeit zu StatisticsRepository/
+ * DailyQuestRepository zu vermeiden (beide würden ihrerseits den
+ * aktuellen Profilzustand benötigen). Diese Orchestrierung – z. B. nach
+ * einem erfolgreichen loadProfile()/logout()/createAndLogin() zusätzlich
+ * die zugehörigen Statistiken bzw. Quests nachzuladen – liegt ab jetzt
+ * ausschließlich im aufrufenden ViewModel-Layer (siehe ProfileViewModel).
+ * WICHTIG: Jeder Aufrufer dieser Methoden muss diese Nachbereitung
+ * selbst übernehmen, siehe Methodendokumentation weiter unten.
  */
-object ProfileRepository {
-
-    private const val DB_URL =
-        "https://bsi-geoguessr-app-63b7f-default-rtdb.europe-west1.firebasedatabase.app/"
-    private val database = FirebaseDatabase.getInstance(DB_URL)
-    private val storage = FirebaseStorage.getInstance()
-    private val auth = FirebaseAuth.getInstance()
+@Singleton
+class ProfileRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val authRepository: FirebaseAuthRepository,
+    private val database: FirebaseDatabase,
+    private val storage: FirebaseStorage,
+) {
 
     private val _profile = MutableStateFlow<PlayerProfile?>(null)
     val profile: StateFlow<PlayerProfile?> = _profile.asStateFlow()
@@ -42,31 +46,19 @@ object ProfileRepository {
     private val _isLoaded = MutableStateFlow(false)
     val isLoaded: StateFlow<Boolean> = _isLoaded.asStateFlow()
 
-    private var appContext: Context? = null
-
-    fun initialize(context: Context) {
-        appContext = context.applicationContext
-    }
-
-    /**
-     * Liest die zuletzt gespeicherte UID aus SharedPreferences – dies
-     * ist die alleinige Quelle der Wahrheit für den Login-Zustand
-     * (siehe loadProfile).
-     */
     private fun getSavedUid(): String? {
-        return appContext?.getSharedPreferences("prefs", Context.MODE_PRIVATE)
+        return context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
             ?.getString("active_uid", null)
     }
 
     private fun saveUidLocally(uid: String?) {
-        appContext?.getSharedPreferences("prefs", Context.MODE_PRIVATE)
+        context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
             ?.edit()?.putString("active_uid", uid)?.apply()
     }
 
     suspend fun saveProfile(profile: PlayerProfile) {
-        val uid = profile.playerId.ifEmpty { auth.currentUser?.uid } ?: return
+        val uid = profile.playerId.ifEmpty { authRepository.currentUid() } ?: return
         try {
-            // Explizites Map-Mapping um Naming-Fehler in Firebase zu vermeiden
             val profileMap = mapOf(
                 "playerId" to profile.playerId,
                 "playerName" to profile.playerName,
@@ -94,23 +86,27 @@ object ProfileRepository {
     }
 
     /**
-     * Lädt beim App-Start den zuletzt aktiven Zustand.
+     * Lädt beim App-Start den zuletzt aktiven Zustand rein bezogen auf
+     * das Profil.
      *
      * ARCHITEKTUR-ENTSCHEIDUNG: Der Login-Status wird ausschließlich
      * über den lokal gespeicherten active_uid-Wert bestimmt (siehe
-     * getSavedUid()), NICHT über auth.currentUser. Der Grund: Firebase
-     * Anonymous Authentication persistiert eine Sitzung geräteweit
-     * über App-Neustarts hinweg, bis explizit auth.signOut() aufgerufen
-     * wird. Würde man sich stattdessen auf auth.currentUser verlassen,
-     * bliebe ein Nutzer nach einem expliziten Logout beim nächsten
-     * App-Start unerwartet wieder angemeldet, analog zu klassischem
-     * Web-Login (siehe Banking-Apps): Ein expliziter Logout beendet
-     * die Sitzung dauerhaft, bis sich der Nutzer erneut aktiv anmeldet.
+     * getSavedUid()), NICHT über authRepository.currentUid(). Der Grund:
+     * Firebase Anonymous Authentication persistiert eine Sitzung
+     * geräteweit über App-Neustarts hinweg, bis explizit signOut()
+     * aufgerufen wird. Würde man sich stattdessen auf currentUid()
+     * verlassen, bliebe ein Nutzer nach einem expliziten Logout beim
+     * nächsten App-Start unerwartet wieder angemeldet, analog zu
+     * klassischem Web-Login (siehe Banking-Apps).
      *
-     * Aus demselben Grund wird im Gast-Fall keine automatische anonyme
-     * Anmeldung mehr durchgeführt: Gast-Daten werden ausschließlich
-     * über den lokalen DataStore verwaltet und benötigen keine
-     * Firebase-Verbindung.
+     * WICHTIG FÜR AUFRUFER (siehe Klassendokumentation): Nach dieser
+     * Methode MUSS im ViewModel-Layer zusätzlich abhängig vom
+     * resultierenden profile.value entweder
+     * StatisticsRepository.loadLocalStatistics()/DailyQuestRepository.resetQuests()
+     * (Gast-Fall, profile.value == null) oder
+     * StatisticsRepository.loadStatistics(uid)/DailyQuestRepository.loadQuests()
+     * (Login-Fall) aufgerufen werden, da diese Klasse selbst keine
+     * Kenntnis von den anderen Repositories besitzt.
      */
     suspend fun loadProfile() {
         try {
@@ -121,8 +117,6 @@ object ProfileRepository {
                 // bewusst im Gast-Modus, unabhängig davon, ob Firebase
                 // im Hintergrund noch eine alte anonyme Sitzung hält.
                 _profile.value = null
-                StatisticsRepository.loadLocalStatistics()
-                DailyQuestRepository.resetQuests()
                 return
             }
 
@@ -141,17 +135,12 @@ object ProfileRepository {
                 val pCreatedAt = snapshot.child("createdAt").getValue(Long::class.java) ?: 0L
 
                 _profile.value = PlayerProfile(pId, pName, pImageUrl, pCreatedAt)
-
-                StatisticsRepository.loadStatistics(uid)
-                DailyQuestRepository.loadQuests()
             } else {
                 // Gespeicherte UID verweist auf kein (mehr) gültiges
-                // Profil (z. B. nach externer Löschung in Firebase) –
-                // Rückfall auf den Gast-Modus statt eines Fehlzustands.
+                // Profil – Rückfall auf den Gast-Modus statt eines
+                // Fehlzustands.
                 saveUidLocally(null)
                 _profile.value = null
-                StatisticsRepository.loadLocalStatistics()
-                DailyQuestRepository.resetQuests()
             }
         } catch (e: Exception) {
             Log.e("PROFILE", "Fehler beim Laden des Profils", e)
@@ -164,18 +153,19 @@ object ProfileRepository {
      * Sucht ein bestehendes Profil anhand des Spielernamens und meldet
      * den Nutzer bei Erfolg an.
      *
-     * Lokale Gast-Statistiken werden hierbei bewusst NICHT gelöscht
-     * (siehe Klassendokumentation). Der In-Memory-Zustand von
-     * [StatisticsRepository] wird stattdessen durch loadStatistics()
-     * vollständig durch die Firebase-Daten des gefundenen Accounts
-     * überschrieben.
+     * WICHTIG FÜR AUFRUFER: Nach erfolgreichem Login (return true)
+     * muss das ViewModel-Layer zusätzlich
+     * StatisticsRepository.loadStatistics(uid) und
+     * DailyQuestRepository.loadQuests() aufrufen (siehe
+     * Klassendokumentation). Lokale Gast-Statistiken werden hierbei
+     * bewusst NICHT gelöscht, da sie unabhängig vom Account-Wechsel
+     * für einen späteren Logout weiter bestehen sollen.
      */
     suspend fun loginWithUsername(userName: String): Boolean {
         Log.d("PROFILE", "Login Versuch mit: $userName")
-        DailyQuestRepository.resetQuests()
 
         try {
-            if (auth.currentUser == null) auth.signInAnonymously().await()
+            if (authRepository.currentUid() == null) authRepository.signInAnonymously()
 
             val snapshot = database.reference.child("users").get().await()
 
@@ -206,8 +196,6 @@ object ProfileRepository {
                     _profile.value = foundProfile
                     _isLoaded.value = true
                     saveUidLocally(foundUid)
-                    StatisticsRepository.loadStatistics(foundUid)
-                    DailyQuestRepository.loadQuests()
                     return true
                 }
             }
@@ -221,20 +209,23 @@ object ProfileRepository {
     /**
      * Beendet die Sitzung des angemeldeten Nutzers vollständig und
      * echt, analog zu klassischen Login-Systemen wie Online-Banking:
-     * Es wird tatsächlich auth.signOut() aufgerufen, wodurch die
-     * Firebase-Sitzung beendet wird und beim nächsten App-Start nicht
-     * automatisch wieder aktiv ist.
+     * Es wird tatsächlich authRepository.signOut() aufgerufen, wodurch
+     * die Firebase-Sitzung beendet wird und beim nächsten App-Start
+     * nicht automatisch wieder aktiv ist.
      *
-     * Nach dem Logout wechselt die App in den Gast-Modus und lädt die
-     * lokal persistierten Gast-Statistiken über loadLocalStatistics(),
-     * die durch einen zwischenzeitlichen Login unangetastet blieben.
+     * WICHTIG FÜR AUFRUFER: Diese Methode setzt NUR den Profilzustand
+     * zurück. Das ViewModel-Layer muss danach zusätzlich
+     * StatisticsRepository.loadLocalStatistics() und
+     * DailyQuestRepository.resetQuests() aufrufen, damit die App in
+     * den Gast-Modus mit den zuvor lokal persistierten Gast-Daten
+     * wechselt (siehe Klassendokumentation). Ohne diesen Folgeaufruf
+     * bliebe der Statistik-State fälschlich auf dem Stand des zuvor
+     * angemeldeten Accounts stehen.
      */
-    suspend fun logout() {
+    fun logout() {
         saveUidLocally(null)
         _profile.value = null
-        auth.signOut()
-        StatisticsRepository.loadLocalStatistics()
-        DailyQuestRepository.resetQuests()
+        authRepository.signOut()
     }
 
     /**
@@ -245,22 +236,17 @@ object ProfileRepository {
      * anonyme Sitzung erzeugt, bevor ein Profil unter der zugehörigen
      * UID angelegt werden kann.
      *
-     * WICHTIGER FIX: Nach dem Speichern des Profils wird zusätzlich
-     * StatisticsRepository.loadStatistics(uid) aufgerufen. Ohne diesen
+     * WICHTIG FÜR AUFRUFER: Nach erfolgreichem Aufruf (return true)
+     * muss das ViewModel-Layer zusätzlich
+     * StatisticsRepository.loadStatistics(uid) aufrufen. Ohne diesen
      * Aufruf würde der In-Memory-Statistikzustand weiterhin die zuvor
-     * im Gast-Modus gesammelten Werte enthalten (da diese nicht mehr
-     * gelöscht werden, siehe Klassendokumentation), und die erste
-     * Partie des neuen Accounts würde fälschlich mit den alten
-     * Gast-Statistiken vermischt in Firebase gespeichert. loadStatistics()
-     * lädt für den frischen Account korrekt einen leeren
-     * LifetimeStatistics()-Standardwert, ohne den lokalen DataStore
-     * der Gast-Statistik zu berühren.
+     * im Gast-Modus gesammelten Werte enthalten, und die erste Partie
+     * des neuen Accounts würde fälschlich mit alten Gast-Statistiken
+     * vermischt in Firebase gespeichert (siehe Klassendokumentation).
      */
     suspend fun createAndLogin(userName: String): Boolean {
-        if (auth.currentUser == null) auth.signInAnonymously().await()
-        val uid = auth.currentUser?.uid ?: return false
-
-        DailyQuestRepository.resetQuests()
+        if (authRepository.currentUid() == null) authRepository.signInAnonymously()
+        val uid = authRepository.currentUid() ?: return false
 
         val newProfile = PlayerProfile(
             playerId = uid,
@@ -268,21 +254,12 @@ object ProfileRepository {
             createdAt = System.currentTimeMillis()
         )
         saveProfile(newProfile)
-        StatisticsRepository.loadStatistics(uid)
         return true
     }
 
-    /**
-     * Lädt ein neues Profilbild hoch, komprimiert es zuvor lokal, um
-     * Speicherplatz in Firebase Storage zu sparen (siehe compressImage).
-     *
-     * Der lokale Zustand wird zweimal aktualisiert: zunächst optimistisch
-     * mit der lokalen URI für eine sofortige UI-Reaktion, anschließend
-     * final mit der tatsächlichen Firebase-Download-URL.
-     */
     suspend fun uploadProfilePicture(uri: Uri): String? {
         val currentProfile = _profile.value
-        val uid = currentProfile?.playerId ?: auth.currentUser?.uid ?: return null
+        val uid = currentProfile?.playerId ?: authRepository.currentUid() ?: return null
 
         Log.d("PROFILE", "Upload (optimiert) gestartet für UID: $uid")
         try {
@@ -298,10 +275,6 @@ object ProfileRepository {
             val downloadUrl = ref.downloadUrl.await().toString()
             Log.d("PROFILE", "Upload erfolgreich, URL: $downloadUrl")
 
-            // Punktuelles Update nur des Bild-URL-Feldes, statt das
-            // gesamte Profil erneut zu schreiben, um versehentliches
-            // Überschreiben anderer, zwischenzeitlich geänderter
-            // Felder zu vermeiden.
             database.reference
                 .child("users")
                 .child(uid)
@@ -320,21 +293,9 @@ object ProfileRepository {
         }
     }
 
-    /**
-     * Komprimiert ein Bild auf maximal 512px Kantenlänge und speichert
-     * es als JPEG mit 70% Qualität, um Upload-Zeit und Speicherverbrauch
-     * in Firebase Storage gering zu halten.
-     *
-     * Nutzt ein zweistufiges Ladeverfahren: Zunächst werden nur die
-     * Bildabmessungen ausgelesen (inJustDecodeBounds), um eine passende
-     * SampleSize für das Downsampling zu berechnen, statt das
-     * Originalbild vollständig in den Speicher zu laden und erst
-     * danach zu verkleinern. Das reduziert den Speicherverbrauch
-     * erheblich, insbesondere bei sehr hochauflösenden Kamerabildern.
-     */
     private fun compressImage(uri: Uri): ByteArray? {
         return try {
-            val contentResolver = appContext?.contentResolver ?: return null
+            val contentResolver = context.contentResolver ?: return null
 
             val options = BitmapFactory.Options().apply {
                 inJustDecodeBounds = true
@@ -355,7 +316,7 @@ object ProfileRepository {
             val decodeOptions = BitmapFactory.Options().apply {
                 this.inSampleSize = inSampleSize
             }
-            val sampledBitmap = contentResolver.openInputStream(uri)?.use {
+            val sampledBitmap: Bitmap = contentResolver.openInputStream(uri)?.use {
                 BitmapFactory.decodeStream(it, null, decodeOptions)
             } ?: return null
 

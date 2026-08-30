@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.geoguessr_app.data.statistics.StatisticsRepository
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.geoguessr_app.domain.statistics.LifetimeStatistics
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 
@@ -25,10 +25,11 @@ import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 fun LifetimeStatisticsScreen(
     statistics: LifetimeStatistics,
     isGuest: Boolean,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    viewModel: StatisticsViewModel = hiltViewModel()
 ) {
-    val recentMatches by StatisticsRepository.recentMatches.collectAsState()
-    val topPlayers by StatisticsRepository.topPlayers.collectAsState()
+    val recentMatches by viewModel.recentMatches.collectAsState()
+    val topPlayers by viewModel.topPlayers.collectAsState()
     val scrollState = rememberScrollState()
     
     var showLeaderboard by remember { mutableStateOf(false) }

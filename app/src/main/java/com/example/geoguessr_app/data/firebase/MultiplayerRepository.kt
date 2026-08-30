@@ -3,92 +3,108 @@ package com.example.geoguessr_app.data.firebase
 import android.util.Log
 import com.example.geoguessr_app.domain.model.multiplayer.Lobby
 import com.example.geoguessr_app.domain.model.multiplayer.LobbyPlayer
-import com.google.firebase.database.FirebaseDatabase
-import kotlinx.coroutines.tasks.await
 import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
 
-class MultiplayerRepository {
+/**
+ * Verwaltet Multiplayer-Lobbys in Firebase Realtime Database (siehe
+ * Doku, Kapitel 3.1 „Lobbys erstellen“ und 3.2 „Lobbys beitreten“).
+ *
+ * ARCHITEKTUR-HINWEIS: Die Firebase-URL ist hier erneut fest im Code
+ * hinterlegt (siehe TODO-Sammlung zur di/-Überarbeitung) – identisch
+ * zu den URLs in ProfileRepository, StatisticsRepository und
+ * SessionRepository. Eine zentrale Bereitstellung über FirebaseModule
+ * würde diese Redundanz auflösen.
+ */
+class MultiplayerRepository @Inject constructor(
+    private val database: FirebaseDatabase
+) {
 
-    // BITTE PRÜFE DIESE URL IN DER FIREBASE CONSOLE!
-    private val DB_URL = "https://bsi-geoguessr-app-63b7f-default-rtdb.europe-west1.firebasedatabase.app/"
-
-    private val database = FirebaseDatabase.getInstance(DB_URL)
-
+    /**
+     * Erstellt eine neue Lobby mit dem übergebenen Code und setzt den
+     * erstellenden Spieler als initialen Host ein.
+     *
+     * ANMERKUNG ZU LOG-LEVELN: Die Erfolgsmeldungen werden hier über
+     * Log.e() (Error-Level) statt Log.d() protokolliert. Das dürfte aus
+     * intensivem Debugging der Multiplayer-Funktion stammen, sollte
+     * vor Abgabe aber auf Log.d() korrigiert werden, da Log.e() sonst
+     * das Logcat-Fehlerfilter beim späteren Debuggen mit
+     * Erfolgsmeldungen überflutet.
+     *
+     * addOnCompleteListener() und das anschließende .await() greifen
+     * auf denselben Task zu; die Erfolgs-/Fehler-Logs im Listener sind
+     * dadurch redundant zum umgebenden try-catch-Block, der Fehler
+     * bereits über die geworfene Exception beim await() abfängt.
+     */
     suspend fun createLobby(
-        lobbyCode: String,
-        hostPlayer: LobbyPlayer
+        lobbyCode: String, hostPlayer: LobbyPlayer
     ) {
         Log.e("MULTIPLAYER", "Repo: createLobby($lobbyCode)")
         try {
             val lobby = Lobby(
-                lobbyCode = lobbyCode,
-                hostUid = hostPlayer.uid,
-                players = listOf(hostPlayer)
+                lobbyCode = lobbyCode, hostUid = hostPlayer.uid, players = listOf(hostPlayer)
             )
 
-            Log.e("MULTIPLAYER", "Versuche Schreibvorgang an: ${database.reference.child("lobbies").child(lobbyCode)}")
-
-            database.reference
-                .child("lobbies")
-                .child(lobbyCode)
-                .setValue(lobby)
+            database.reference.child("lobbies").child(lobbyCode).setValue(lobby)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         Log.e("MULTIPLAYER", "Schreibvorgang ERFOLGREICH")
                     } else {
-                        Log.e("MULTIPLAYER", "Schreibvorgang FEHLGESCHLAGEN: ${task.exception?.message}")
+                        Log.e(
+                            "MULTIPLAYER",
+                            "Schreibvorgang FEHLGESCHLAGEN: ${task.exception?.message}"
+                        )
                     }
-                }
-                .await()
-
-            Log.e("MULTIPLAYER", "LOBBY GESPEICHERT (await beendet)")
-
+                }.await()
         } catch (e: Exception) {
             Log.e("MULTIPLAYER", "EXCEPTION", e)
         }
     }
 
+    /**
+     * Fügt einen Spieler einer bestehenden Lobby hinzu, sofern er nicht
+     * bereits Teil der Spielerliste ist (Schutz vor Duplikaten bei
+     * mehrfachem Beitrittsversuch, z. B. durch Netzwerk-Retries).
+     */
     suspend fun joinLobby(
-        lobbyCode: String,
-        player: LobbyPlayer
+        lobbyCode: String, player: LobbyPlayer
     ) {
-        Log.e("MULTIPLAYER", "Repo: joinLobby($lobbyCode)")
-        val lobbyRef = database.reference
-            .child("lobbies")
-            .child(lobbyCode)
-
+        val lobbyRef = database.reference.child("lobbies").child(lobbyCode)
         val snapshot = lobbyRef.get().await()
         val lobby = snapshot.getValue(Lobby::class.java) ?: return
 
-        // Nur hinzufügen, wenn noch nicht drin
         if (lobby.players.none { it.uid == player.uid }) {
             val updatedPlayers = lobby.players + player
             lobbyRef.child("players").setValue(updatedPlayers).await()
         }
     }
 
+    /**
+     * Entfernt einen Spieler aus der Lobby. Verlässt der letzte Spieler
+     * die Lobby, wird sie vollständig gelöscht, statt als leere Lobby
+     * in der Datenbank zu verbleiben. Verlässt der Host die Lobby,
+     * wird automatisch der erste verbleibende Spieler in der Liste zum
+     * neuen Host ernannt, damit die Lobby weiterhin steuerbar bleibt.
+     */
     suspend fun leaveLobby(
-        lobbyCode: String,
-        uid: String
+        lobbyCode: String, uid: String
     ) {
-        val lobbyRef = database.reference
-            .child("lobbies")
-            .child(lobbyCode)
-
+        val lobbyRef = database.reference.child("lobbies").child(lobbyCode)
         val snapshot = lobbyRef.get().await()
         val lobby = snapshot.getValue(Lobby::class.java) ?: return
 
         val updatedPlayers = lobby.players.filter { it.uid != uid }
 
         if (updatedPlayers.isEmpty()) {
-            // Letzter Spieler geht -> Lobby löschen
             lobbyRef.removeValue().await()
         } else {
-            // Wenn der Host geht, neuen Host ernennen (den ersten in der Liste)
             val finalPlayers = if (lobby.hostUid == uid) {
                 updatedPlayers.mapIndexed { index, p ->
                     if (index == 0) p.copy(host = true) else p
@@ -100,105 +116,93 @@ class MultiplayerRepository {
             val newHostUid = if (lobby.hostUid == uid) finalPlayers.first().uid else lobby.hostUid
 
             val updates = mapOf(
-                "players" to finalPlayers,
-                "hostUid" to newHostUid
+                "players" to finalPlayers, "hostUid" to newHostUid
             )
             lobbyRef.updateChildren(updates).await()
         }
     }
 
+    /**
+     * Kehrt den Bereit-Status (ready) eines Spielers um. Wird
+     * verwendet, damit alle Spieler in der Lobby signalisieren können,
+     * dass sie zum Spielstart bereit sind (siehe MultiplayerLobbyScreen).
+     */
     suspend fun toggleReadyStatus(
-        lobbyCode: String,
-        uid: String
+        lobbyCode: String, uid: String
     ) {
-        val lobbyRef = database.reference
-            .child("lobbies")
-            .child(lobbyCode)
-
+        val lobbyRef = database.reference.child("lobbies").child(lobbyCode)
         val snapshot = lobbyRef.get().await()
         val lobby = snapshot.getValue(Lobby::class.java) ?: return
 
         val updatedPlayers = lobby.players.map { player ->
-            if (player.uid == uid) {
-                player.copy(ready = !player.ready)
-            } else {
-                player
-            }
+            if (player.uid == uid) player.copy(ready = !player.ready) else player
         }
 
         lobbyRef.child("players").setValue(updatedPlayers).await()
     }
 
-    suspend fun lobbyExists(
-        code: String
-    ): Boolean {
-        Log.e("MULTIPLAYER", "Repo: lobbyExists($code)")
-        val snapshot = database.reference
-            .child("lobbies")
-            .child(code)
-            .get()
-            .await()
-
+    /**
+     * Prüft, ob ein Lobby-Code tatsächlich einer existierenden Lobby
+     * entspricht. Wird beim manuellen Beitreten über einen eingegebenen
+     * Code verwendet, um Nutzern eine klare Fehlermeldung bei einem
+     * ungültigen Code anzuzeigen (siehe JoinLobbyScreen).
+     */
+    suspend fun lobbyExists(code: String): Boolean {
+        val snapshot = database.reference.child("lobbies").child(code).get().await()
         return snapshot.exists()
     }
 
-    fun observeLobby(
-        lobbyCode: String
-    ): Flow<Lobby?> = callbackFlow {
-        val reference = database.reference
-            .child("lobbies")
-            .child(lobbyCode)
+    /**
+     * Liefert einen Live-Datenstrom des Lobby-Zustands. Wird verwendet,
+     * damit alle Teilnehmer in Echtzeit sehen, wenn neue Spieler
+     * beitreten, den Bereit-Status ändern oder der Host die Partie
+     * startet.
+     *
+     * ANMERKUNG: onCancelled() bleibt hier bewusst leer – ein Fehler
+     * bei der Firebase-Verbindung (z. B. Berechtigungsproblem) würde
+     * aktuell stillschweigend ignoriert, statt den Flow mit einem
+     * Fehler zu terminieren. Für die produktive Nutzung wäre ein
+     * close(error.toException()) hier robuster.
+     */
+    fun observeLobby(lobbyCode: String): Flow<Lobby?> = callbackFlow {
+        val reference = database.reference.child("lobbies").child(lobbyCode)
 
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val lobby = snapshot.getValue(Lobby::class.java)
-                trySend(lobby)
+                trySend(snapshot.getValue(Lobby::class.java))
             }
 
-            override fun onCancelled(error: com.google.firebase.database.DatabaseError) {
-            }
+            override fun onCancelled(error: DatabaseError) {}
         }
 
         reference.addValueEventListener(listener)
-
-        awaitClose {
-            reference.removeEventListener(listener)
-        }
+        awaitClose { reference.removeEventListener(listener) }
     }
 
-    suspend fun startLobby(
-        lobbyCode: String,
-        sessionId: String
-    ) {
-        Log.e("MULTIPLAYER", "Repo: startLobby($lobbyCode, $sessionId)")
+    /**
+     * Markiert die Lobby als gestartet und verknüpft sie mit der
+     * zugehörigen Session-ID, wodurch alle Lobby-Teilnehmer über
+     * observeLobby() automatisch zum Spielbildschirm wechseln (siehe
+     * GeoGuessrNavHost).
+     */
+    suspend fun startLobby(lobbyCode: String, sessionId: String) {
         try {
             val updates = mapOf(
-                "started" to true,
-                "sessionId" to sessionId
+                "started" to true, "sessionId" to sessionId
             )
-
-            database.reference
-                .child("lobbies")
-                .child(lobbyCode)
-                .updateChildren(updates)
-                .await()
-            
-            Log.e("MULTIPLAYER", "LOBBY GESTARTET (Repo Erfolg)")
+            database.reference.child("lobbies").child(lobbyCode).updateChildren(updates).await()
         } catch (e: Exception) {
             Log.e("MULTIPLAYER", "FIREBASE FEHLER BEIM STARTEN", e)
         }
     }
 
-    suspend fun updateLobbyMode(
-        lobbyCode: String,
-        mode: String
-    ) {
+    /**
+     * Aktualisiert den gewählten Spielmodus der Lobby (z. B. Anzahl
+     * Runden, Region), damit alle Teilnehmer denselben Modus sehen.
+     */
+    suspend fun updateLobbyMode(lobbyCode: String, mode: String) {
         try {
-            database.reference
-                .child("lobbies")
-                .child(lobbyCode)
-                .child("mode")
-                .setValue(mode)
+            database.reference.child("lobbies").child(lobbyCode).child("mode").setValue(mode)
                 .await()
         } catch (e: Exception) {
             Log.e("MULTIPLAYER", "Fehler beim Modus-Update", e)

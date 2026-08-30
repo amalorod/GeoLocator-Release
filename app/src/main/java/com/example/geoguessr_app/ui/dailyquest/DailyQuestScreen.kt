@@ -14,14 +14,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.geoguessr_app.data.dailyquest.DailyQuestRepository
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.geoguessr_app.domain.model.dailyquest.DailyQuest
 
 @Composable
 fun DailyQuestScreen(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    viewModel: DailyQuestViewModel = hiltViewModel()
 ) {
-    val quests by DailyQuestRepository.quests.collectAsState()
+    val quests by viewModel.quests.collectAsState()
 
     Column(
         modifier = Modifier

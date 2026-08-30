@@ -33,7 +33,10 @@ class MultiplayerGameViewModel @Inject constructor(
     private val getLocationsByIds: GetLocationsByIdsUseCase,
     private val calculateDistance: CalculateDistanceUseCase,
     private val calculateScore: CalculateScoreUseCase,
-    private val firebaseAuthRepository: FirebaseAuthRepository
+    private val firebaseAuthRepository: FirebaseAuthRepository,
+    private val statisticsRepository: StatisticsRepository,
+    private val dailyQuestRepository: DailyQuestRepository,
+    private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameUiState(isMultiplayer = true))
@@ -226,15 +229,15 @@ class MultiplayerGameViewModel @Inject constructor(
     private fun checkDailyQuests(distance: Double, score: Int, mode: GameMode) {
         viewModelScope.launch {
             if (distance < 25.0) {
-                val completed = DailyQuestRepository.updateQuestProgress("perfect_guess")
+                val completed = dailyQuestRepository.updateQuestProgress("perfect_guess")
                 if (completed != null) _uiState.update { it.copy(newlyCompletedQuest = completed) }
             }
             if (distance < 100.0) {
-                val completed = DailyQuestRepository.updateQuestProgress("europe_explorer")
+                val completed = dailyQuestRepository.updateQuestProgress("europe_explorer")
                 if (completed != null) _uiState.update { it.copy(newlyCompletedQuest = completed) }
             }
             if (mode == GameMode.PRO) {
-                val completed = DailyQuestRepository.updateQuestProgress("pro_mode_guess")
+                val completed = dailyQuestRepository.updateQuestProgress("pro_mode_guess")
                 if (completed != null) _uiState.update { it.copy(newlyCompletedQuest = completed) }
             }
         }
@@ -306,16 +309,16 @@ class MultiplayerGameViewModel @Inject constructor(
                 multiplayer = true
             )
         viewModelScope.launch {
-            StatisticsRepository.saveMatch(match)
+            statisticsRepository.saveMatch(match)
             
             // Quest: Multiplayer Win
             if (won) {
-                val completed = DailyQuestRepository.updateQuestProgress("multiplayer_win")
+                val completed = dailyQuestRepository.updateQuestProgress("multiplayer_win")
                 if (completed != null) _uiState.update { it.copy(newlyCompletedQuest = completed) }
                 
                 // Quest: Battle Royale Win
                 if (state.gameMode == GameMode.BATTLE_ROYALE) {
-                    val brCompleted = DailyQuestRepository.updateQuestProgress("battle_royale_win")
+                    val brCompleted = dailyQuestRepository.updateQuestProgress("battle_royale_win")
                     if (brCompleted != null) _uiState.update { it.copy(newlyCompletedQuest = brCompleted) }
                 }
             }
@@ -328,7 +331,7 @@ class MultiplayerGameViewModel @Inject constructor(
             while (true) {
                 val uid = firebaseAuthRepository.currentUid() ?: break
                 val state = _uiState.value
-                val profile = ProfileRepository.profile.value
+                val profile = profileRepository.profile.value
                 val currentName = profile?.playerName ?: playerName
                 val currentPlayer = state.multiplayerPlayers.find { it.uid == uid }
                 
