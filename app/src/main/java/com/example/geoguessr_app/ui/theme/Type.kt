@@ -6,7 +6,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Set of Material typography styles to start with
+/**
+ * Zentrale Typografie-Definition für das App-weite Material 3 Theme.
+ *
+ * Aktuell wird lediglich [bodyLarge] individuell gesetzt; alle übrigen
+ * Textrollen (titleLarge, labelSmall, ...) verwenden bewusst die
+ * Material-3-Standardwerte, um den Definitionsaufwand gering zu halten
+ * und ein konsistentes Erscheinungsbild mit dem Betriebssystem zu wahren.
+ */
 val Typography = Typography(
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
@@ -15,20 +22,4 @@ val Typography = Typography(
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
     )
-    /* Other default text styles to override
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
-    )
-    */
 )
