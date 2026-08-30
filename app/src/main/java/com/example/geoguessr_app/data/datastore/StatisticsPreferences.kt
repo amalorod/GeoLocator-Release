@@ -19,4 +19,7 @@ object StatisticsPreferences {
 
     val TOTAL_DISTANCE =
         doublePreferencesKey("total_distance")
+
+    val RECENT_MATCHES =
+        androidx.datastore.preferences.core.stringPreferencesKey("recent_matches")
 }

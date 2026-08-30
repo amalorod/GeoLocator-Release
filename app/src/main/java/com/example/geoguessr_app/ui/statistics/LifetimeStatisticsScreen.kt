@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.geoguessr_app.data.statistics.StatisticsRepository
@@ -23,6 +24,7 @@ import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 @Composable
 fun LifetimeStatisticsScreen(
     statistics: LifetimeStatistics,
+    isGuest: Boolean,
     onBackClick: () -> Unit
 ) {
     val recentMatches by StatisticsRepository.recentMatches.collectAsState()
@@ -137,7 +139,7 @@ fun LifetimeStatisticsScreen(
                 MatchEntry(match)
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             }
-            
+
             if (recentMatches.isEmpty()) {
                 Text(
                     text = "Noch keine Daten vorhanden.",
@@ -165,7 +167,13 @@ fun LifetimeStatisticsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 ) {
-                    if (topPlayers.isEmpty()) {
+                    if (isGuest) {
+                        Text(
+                            "Um das Leaderboard einzusehen, bitte einloggen.",
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
+                        )
+                    } else if (topPlayers.isEmpty()) {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                         Text("Lade Top-Spieler...", modifier = Modifier.align(Alignment.CenterHorizontally))
                     } else {

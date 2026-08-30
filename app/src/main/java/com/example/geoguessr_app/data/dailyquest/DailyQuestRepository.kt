@@ -59,7 +59,7 @@ object DailyQuestRepository {
 
     suspend fun loadQuests() {
         val currentProfile = ProfileRepository.profile.value
-        val isGuest = currentProfile == null || currentProfile.playerName == "Spieler"
+        val isGuest = currentProfile == null
         
         if (isGuest) {
             resetQuests()
@@ -96,7 +96,7 @@ object DailyQuestRepository {
         _quests.value = quests
 
         val currentProfile = ProfileRepository.profile.value
-        val isGuest = currentProfile == null || currentProfile.playerName == "Spieler"
+        val isGuest = currentProfile == null
 
         // Nur Cloud-Sync wenn kein Gast
         if (!isGuest && currentProfile != null) {

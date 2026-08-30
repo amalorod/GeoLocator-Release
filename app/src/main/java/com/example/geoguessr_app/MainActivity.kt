@@ -20,8 +20,6 @@ import com.example.geoguessr_app.ui.theme.AppThemeMode
 import com.example.geoguessr_app.ui.game.GameMode
 
 
-
-
 /**
  * Einziger Activity-Einstiegspunkt der Anwendung (Single-Activity-Architektur).
  *
@@ -47,6 +45,7 @@ class MainActivity : ComponentActivity() {
         // (siehe di/-Modul), um Konsistenz mit dem restlichen DI-Konzept
         // der App herzustellen.
         com.example.geoguessr_app.data.profile.ProfileRepository.initialize(this)
+        com.example.geoguessr_app.data.statistics.StatisticsRepository.initialize(this)
 
         // Zeichnet den Content bis unter die System-Bars (Status-/Navigationsleiste),
         // damit die App ein modernes, randloses Erscheinungsbild erhält.

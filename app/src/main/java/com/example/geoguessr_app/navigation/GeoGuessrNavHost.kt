@@ -3,7 +3,6 @@ package com.example.geoguessr_app.navigation
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -103,10 +102,13 @@ fun GeoGuessrNavHost(
     LaunchedEffect(Unit) {
         try {
             Log.d("NAVHOST", "Starte Initialisierung...")
-            StatisticsRepository.loadStatistics()
-            StatisticsRepository.loadLeaderboard()
+            // Das Profil steuert nun den gesamten Ladevorgang für Statistiken und Quests
             ProfileRepository.loadProfile()
-            DailyQuestRepository.loadQuests()
+
+            // Leaderboard wird nur für angemeldete Nutzer geladen (oder immer, wenn gewünscht)
+            if (ProfileRepository.profile.value != null) {
+                StatisticsRepository.loadLeaderboard()
+            }
             Log.d("NAVHOST", "Initialisierung abgeschlossen.")
         } catch (e: Exception) {
             // Fehler beim Laden werden abgefangen, damit ein einzelner
@@ -309,9 +311,12 @@ fun GeoGuessrNavHost(
         }
 
         composable(route = AppDestination.Statistics.route) {
-            val statistics = StatisticsRepository.statistics.collectAsState()
+            val statistics by StatisticsRepository.statistics.collectAsStateWithLifecycle()
+            val profile by ProfileRepository.profile.collectAsStateWithLifecycle()
+
             LifetimeStatisticsScreen(
-                statistics = statistics.value,
+                statistics = statistics,
+                isGuest = profile == null,
                 onBackClick = { navController.popBackStack() }
             )
         }
