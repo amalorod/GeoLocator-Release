@@ -63,9 +63,7 @@ fun ThemeSelectorMenu(
     onDynamicColorToggled: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     buttonContent: @Composable (
-        expandMenu: () -> Unit,
-        previewColor: Color,
-        label: String
+        expandMenu: () -> Unit, previewColor: Color, label: String
     ) -> Unit = { expandMenu, previewColor, label ->
         DefaultThemeSelectorButton(onClick = expandMenu, previewColor = previewColor, label = label)
     }
@@ -77,19 +75,15 @@ fun ThemeSelectorMenu(
     } else {
         currentTheme.previewColor()
     }
-    val label = if (currentDynamicColorEnabled) "Design (System)" else "Design"
+    val label = "Design"
 
     Box(modifier = modifier) {
         buttonContent(
-            { isThemeMenuExpanded = true },
-            previewColor,
-            label
+            { isThemeMenuExpanded = true }, previewColor, label
         )
 
         DropdownMenu(
-            expanded = isThemeMenuExpanded,
-            onDismissRequest = { isThemeMenuExpanded = false }
-        ) {
+            expanded = isThemeMenuExpanded, onDismissRequest = { isThemeMenuExpanded = false }) {
             DropdownMenuItem(
                 text = {
                     Row(
@@ -98,7 +92,7 @@ fun ThemeSelectorMenu(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Systemfarbe (Material You)",
+                            text = "Systemfarbe",
                             fontWeight = if (currentDynamicColorEnabled) FontWeight.Bold else FontWeight.Normal
                         )
                         Switch(
@@ -109,8 +103,7 @@ fun ThemeSelectorMenu(
                 },
                 onClick = { onDynamicColorToggled(!currentDynamicColorEnabled) },
                 modifier = Modifier.defaultMinSize(
-                    minWidth = THEME_MENU_ITEM_MIN_WIDTH,
-                    minHeight = THEME_MENU_ITEM_MIN_HEIGHT
+                    minWidth = THEME_MENU_ITEM_MIN_WIDTH, minHeight = THEME_MENU_ITEM_MIN_HEIGHT
                 )
             )
 
@@ -137,14 +130,11 @@ fun ThemeSelectorMenu(
                                 }
                             )
                         }
-                    },
-                    onClick = {
+                    }, onClick = {
                         onThemeSelected(theme)
                         isThemeMenuExpanded = false
-                    },
-                    modifier = Modifier.defaultMinSize(
-                        minWidth = THEME_MENU_ITEM_MIN_WIDTH,
-                        minHeight = THEME_MENU_ITEM_MIN_HEIGHT
+                    }, modifier = Modifier.defaultMinSize(
+                        minWidth = THEME_MENU_ITEM_MIN_WIDTH, minHeight = THEME_MENU_ITEM_MIN_HEIGHT
                     )
                 )
             }
@@ -155,9 +145,7 @@ fun ThemeSelectorMenu(
 /** Standard-Optik des Auslöser-Buttons, wie bisher in AppTopBar verwendet. */
 @Composable
 private fun DefaultThemeSelectorButton(
-    onClick: () -> Unit,
-    previewColor: Color,
-    label: String
+    onClick: () -> Unit, previewColor: Color, label: String
 ) {
     val colors: ButtonColors = ButtonDefaults.buttonColors(
         containerColor = MaterialTheme.colorScheme.primary,

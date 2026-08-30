@@ -64,8 +64,87 @@ fun EuropeMenuMap(
     onExitAppClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+
     Box(modifier = modifier.height(430.dp)) {
-        // ... RotatingTornHeader / Crossfade / andere Buttons unverändert ...
+        val europeShape = remember { EuropeShape() }
+
+        // Crossfade sorgt für einen weichen Übergang zwischen den rotierenden
+        // Hintergrundbildern aus HomeScreen, statt eines harten Bildwechsels.
+        Crossfade(
+            targetState = backgroundImageId,
+            animationSpec = tween(durationMillis = 1_200),
+            label = "europeImageCrossfade",
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(europeShape)
+        ) { targetImageId ->
+            Image(
+                painter = painterResource(targetImageId),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                alpha = 0.42f,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        AnimatedVisibility(
+            enter = fadeIn() + expandIn(),
+            exit = fadeOut() + shrinkOut(),
+            visible = hasActiveGame,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = 18.dp)
+        ) {
+            CountryMenuButton(
+                text = "Spiel fortsetzen",
+                onClick = onResumeGameClick,
+                modifier = Modifier
+                    .width(190.dp)
+                    .countryMotion(seed = 1)
+                    .height(64.dp),
+                shape = RoundedCornerShape(
+                    topStartPercent = 55,
+                    topEndPercent = 25,
+                    bottomEndPercent = 50,
+                    bottomStartPercent = 20
+                )
+            )
+        }
+
+        CountryMenuButton(
+            text = "Spiel starten",
+            onClick = onStartGameClick,
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .offset(y = (-60).dp)
+                .width(158.dp)
+                .countryMotion(seed = 7)
+                .height(78.dp),
+            shape = RoundedCornerShape(
+                topStartPercent = 20,
+                topEndPercent = 60,
+                bottomEndPercent = 25,
+                bottomStartPercent = 50
+            )
+        )
+
+        CountryMenuButton(
+            text = "Spielanleitung",
+            onClick = onTutorialClick,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .offset(y = 20.dp)
+                .width(158.dp)
+                .countryMotion(seed = 6)
+                .height(74.dp),
+            shape = RoundedCornerShape(
+                topStartPercent = 50,
+                topEndPercent = 25,
+                bottomEndPercent = 55,
+                bottomStartPercent = 25
+            )
+        )
+
 
         // Ersetzt den bisherigen reinen onThemeClick()-Button: Dasselbe
         // Dropdown-Menü wie in AppTopBar wird hier mit der individuellen
@@ -88,12 +167,13 @@ fun EuropeMenuMap(
                     onClick = expandMenu,
                     modifier = Modifier.fillMaxSize(),
                     shape = RoundedCornerShape(
-                        topStartPercent = 60, topEndPercent = 25,
-                        bottomEndPercent = 35, bottomStartPercent = 15
+                        topStartPercent = 60,
+                        topEndPercent = 25,
+                        bottomEndPercent = 35,
+                        bottomStartPercent = 15
                     )
                 )
-            }
-        )
+            })
 
         CountryMenuButton(
             text = "App beenden",
