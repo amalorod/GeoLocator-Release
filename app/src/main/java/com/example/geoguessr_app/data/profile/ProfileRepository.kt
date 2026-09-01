@@ -126,7 +126,7 @@ class ProfileRepository @Inject constructor(
                     ?: snapshot.child("profile_image_url").getValue(String::class.java)
                 val pCreatedAt = snapshot.child("createdAt").getValue(Long::class.java) ?: 0L
 
-                _profile.value = PlayerProfile(pId, pName, pImageUrl, pCreatedAt)
+                _profile.value = PlayerProfile(pId, pName, pImageUrl, pCreatedAt, isGuest = false)
             } else {
                 // Gespeicherte UID verweist auf kein (mehr) gültiges
                 // Profil – Rückfall auf den Gast-Modus statt eines
@@ -181,7 +181,8 @@ class ProfileRepository @Inject constructor(
                     val pCreatedAt =
                         profileSnapshot.child("createdAt").getValue(Long::class.java) ?: 0L
 
-                    val foundProfile = PlayerProfile(pId, pName, pImageUrl, pCreatedAt)
+                    val foundProfile =
+                        PlayerProfile(pId, pName, pImageUrl, pCreatedAt, isGuest = false)
 
                     Log.d(
                         "PROFILE",
@@ -243,7 +244,10 @@ class ProfileRepository @Inject constructor(
         val uid = authRepository.currentUid() ?: return false
 
         val newProfile = PlayerProfile(
-            playerId = uid, playerName = userName, createdAt = System.currentTimeMillis()
+            playerId = uid,
+            playerName = userName,
+            createdAt = System.currentTimeMillis(),
+            isGuest = false
         )
         saveProfile(newProfile)
         return true

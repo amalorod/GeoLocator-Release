@@ -6,12 +6,36 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,13 +46,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.example.geoguessr_app.domain.model.profile.PlayerProfile
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
+/**
+ * Profil-Übersicht mit zwei grundverschiedenen Zuständen: Gast (kein
+ * gespeicherter Fortschritt, Login-Aufforderung) und eingeloggter Nutzer
+ * (Account-Details, Profilbild-Upload, Logout).
+ *
+ * @param profile Aktuell aktives Profil; unterscheidet über [isGuest]
+ * zwischen Gast- und Account-Ansicht.
+ * @param onBackClick Navigiert zurück zum Startbildschirm.
+ */
 @Composable
 fun ProfileScreen(
     profile: PlayerProfile,
@@ -36,23 +69,19 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val scrollState = rememberScrollState()
-    val scope = rememberCoroutineScope()
-    
-    // Gast-Check: Wenn ID leer oder Standardname
-    val isGuest = profile.playerId.isEmpty() || profile.playerName == "Spieler"
-    
+
+    // Erkennt einen Gast-Zustand, indem bewusst zwischen Vorhandensein eines Profils unterschieden wird
+    val isGuest = profile.isGuest
+
     var showLoginModal by remember { mutableStateOf(false) }
     var loginUsername by remember { mutableStateOf("") }
     var isProcessing by remember { mutableStateOf(false) }
     var modalError by remember { mutableStateOf<String?>(null) }
 
-    // Launcher für Galerie-Bilder
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let {
-            viewModel.uploadPicture(it)
-        }
+        uri?.let { viewModel.uploadPicture(it) }
     }
 
     Column(
@@ -60,15 +89,13 @@ fun ProfileScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Einheitlicher Header (bombenfest)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer,
             tonalElevation = 4.dp
         ) {
             Row(
-                modifier = Modifier
-                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(onClick = onBackClick) {
@@ -99,7 +126,6 @@ fun ProfileScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Avatar mit Klick-Support zum Ändern (nur für eingeloggte User)
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -115,26 +141,31 @@ fun ProfileScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (!isGuest && profile.profileImageUrl != null) {
-                    Log.d("PROFILE", "Lade Bild in UI: ${profile.profileImageUrl}")
                     AsyncImage(
                         model = profile.profileImageUrl,
                         contentDescription = "Profilbild",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
-                        onLoading = { Log.d("PROFILE", "Bild wird geladen...") },
-                        onSuccess = { Log.d("PROFILE", "Bild erfolgreich geladen") },
-                        onError = { Log.e("PROFILE", "Fehler beim Laden des Bildes: ${it.result.throwable.message}") }
+                        onError = {
+                            Log.e(
+                                "PROFILE",
+                                "Fehler beim Laden des Bildes: ${it.result.throwable.message}"
+                            )
+                        }
                     )
                 } else {
                     Text(
-                        text = if (!isGuest && profile.playerName.isNotEmpty()) 
-                               profile.playerName.take(1).uppercase() else "?",
+                        text = if (!isGuest && profile.playerName.isNotEmpty()) {
+                            profile.playerName.take(1).uppercase()
+                        } else {
+                            "?"
+                        },
                         style = MaterialTheme.typography.displayLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 }
-                
+
                 if (!isGuest) {
                     Box(
                         modifier = Modifier
@@ -143,9 +174,9 @@ fun ProfileScreen(
                         contentAlignment = Alignment.BottomCenter
                     ) {
                         Text(
-                            "ÄNDERN", 
-                            color = Color.White, 
-                            fontSize = 10.sp, 
+                            "ÄNDERN",
+                            color = Color.White,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
@@ -172,7 +203,6 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             if (isGuest) {
-                // Login Bereich für Gäste
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -200,7 +230,6 @@ fun ProfileScreen(
                     }
                 }
             } else {
-                // Details Bereich für eingeloggte Nutzer
                 ElevatedCard(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -213,29 +242,28 @@ fun ProfileScreen(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        
                         Spacer(modifier = Modifier.height(16.dp))
-                        
                         DetailRow(label = "Nutzername", value = profile.playerName, emoji = "👤")
                         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                        DetailRow(label = "Dabei seit", value = formatDate(profile.createdAt), emoji = "📅")
+                        DetailRow(
+                            label = "Dabei seit",
+                            value = formatDate(profile.createdAt),
+                            emoji = "📅"
+                        )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(32.dp))
-                
-                TextButton(onClick = { 
-                    viewModel.logout()
-                }) {
+
+                TextButton(onClick = { viewModel.logout() }) {
                     Text("Vom Gerät abmelden", color = MaterialTheme.colorScheme.error)
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(48.dp))
         }
     }
 
-    // Login Modal
     if (showLoginModal) {
         AlertDialog(
             onDismissRequest = { if (!isProcessing) showLoginModal = false },
@@ -246,19 +274,19 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = loginUsername,
-                        onValueChange = { 
+                        onValueChange = {
                             loginUsername = it
-                            modalError = null 
+                            modalError = null
                         },
                         label = { Text("Nutzername") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         enabled = !isProcessing
                     )
-                    if (modalError != null) {
+                    modalError?.let { error ->
                         Text(
-                            modalError!!, 
-                            color = MaterialTheme.colorScheme.error, 
+                            error,
+                            color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.padding(top = 4.dp)
                         )
@@ -278,7 +306,11 @@ fun ProfileScreen(
                                     loginUsername = ""
                                 },
                                 onError = {
-                                    // Falls nicht gefunden -> neu anlegen
+                                    // Kein bestehender Account mit diesem Namen
+                                    // gefunden -> automatischer Fallback auf
+                                    // Account-Erstellung statt einer separaten
+                                    // Fehlermeldung, die den Nutzer zu einem
+                                    // erneuten, expliziten Klick zwingen würde.
                                     viewModel.createAccount(loginUsername.trim()) {
                                         isProcessing = false
                                         showLoginModal = false
@@ -305,7 +337,7 @@ fun ProfileScreen(
             },
             dismissButton = {
                 TextButton(
-                    onClick = { 
+                    onClick = {
                         showLoginModal = false
                         loginUsername = ""
                         modalError = null
@@ -319,23 +351,32 @@ fun ProfileScreen(
     }
 }
 
+/** Einzelne Zeile im "Account-Details"-Bereich mit Emoji-Icon, Label und Wert. */
 @Composable
 private fun DetailRow(label: String, value: String, emoji: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(text = emoji, fontSize = 20.sp)
         Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-            Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
 
+/** Formatiert einen Unix-Timestamp als deutsches Datum (TT.MM.JJJJ). */
 private fun formatDate(timestamp: Long): String {
     if (timestamp <= 0L) return "Heute"
     return try {
-        val sdf = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-        sdf.format(Date(timestamp))
+        SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(timestamp))
     } catch (ignore: Exception) {
         "Unbekannt"
     }

@@ -10,12 +10,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 
 /**
- * Verdunkelt das Spiel während einer Pause.
+ * Vollflächiges, halbtransparentes Overlay während einer Pause im
+ * Spielbildschirm ([GameScreen]).
  *
- * Ein Tipp auf eine beliebige Stelle setzt das Spiel fort.
+ * Verdunkelt den gesamten Bildschirminhalt darunter (Street View bzw.
+ * Weltkarte bleiben dabei im Hintergrund unverändert im Compose-Baum
+ * erhalten, nur optisch überdeckt). Ein Tipp auf eine beliebige Stelle
+ * innerhalb des Overlays löst [onResume] aus und setzt die Partie fort.
+ *
+ * @param onResume Setzt die pausierte Partie fort (typischerweise [GameViewModel.resumeGame]).
+ * @param modifier Modifier für den äußeren Container.
  */
 @Composable
 fun PauseOverlay(
@@ -26,7 +35,10 @@ fun PauseOverlay(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.75f))
-            .clickable(onClick = onResume),
+            .clickable(onClick = onResume)
+            // contentDescription macht klar, dass ein Tipp die
+            // Partie fortsetzt.
+            .semantics { contentDescription = "Pausiert. Zum Fortsetzen tippen." },
         contentAlignment = Alignment.Center
     ) {
         Text(

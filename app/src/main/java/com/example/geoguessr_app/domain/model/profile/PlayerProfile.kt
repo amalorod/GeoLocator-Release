@@ -51,5 +51,12 @@ data class PlayerProfile(
 
     @get:PropertyName("createdAt")
     @set:PropertyName("createdAt")
-    var createdAt: Long = 0L
+    var createdAt: Long = 0L,
+
+    // Nicht in Firebase gespeichert und bewusst ohne @PropertyName, da der
+    // Gast-Status rein lokal initialisiert wird. Default true, damit ein frisch erzeugtes
+    // PlayerProfile() (siehe GeoGuessrNavHost, Fallback für den Gast-Fall)
+    // automatisch als Gast gilt, ohne dass jeder Aufrufer isGuest separat
+    // setzen müsste.
+    var isGuest: Boolean = true
 )
