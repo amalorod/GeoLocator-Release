@@ -11,6 +11,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Beobachtet die laufende [MatchSession] sowie den Fortschritt aller
+ * Mitspieler während einer aktiven Multiplayer-Partie.
+ *
+ * Im Gegensatz zu [LobbyViewModel.observeLobby] ist [observeSession] durch
+ * [isObserving] explizit gegen mehrfaches, paralleles Abonnieren
+ * desselben Firebase-Listeners abgesichert.
+ */
 @HiltViewModel
 class SessionViewModel @Inject constructor(
     private val sessionRepository: SessionRepository
@@ -24,6 +32,7 @@ class SessionViewModel @Inject constructor(
 
     private var isObserving = false
 
+    /** Startet die Echtzeit-Beobachtung von Session- und Spielerdaten. */
     fun observeSession(sessionId: String) {
         if (isObserving) return
         isObserving = true
@@ -40,16 +49,10 @@ class SessionViewModel @Inject constructor(
                     it.copy(
                         sessionId = sessionId,
                         players = players,
-                        allPlayersFinished = players.isNotEmpty() && players.all { p -> p.finishedRound })
+                        allPlayersFinished = players.isNotEmpty() && players.all { p -> p.finishedRound }
+                    )
                 }
             }
-        }
-    }
-
-    fun allPlayersFinished(): Boolean {
-
-        return uiState.value.players.all {
-            it.finishedRound
         }
     }
 }

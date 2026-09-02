@@ -1,9 +1,27 @@
 package com.example.geoguessr_app.ui.multiplayer
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -11,6 +29,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * Eingabebildschirm für den Beitritt zu einer bestehenden Lobby per Code.
+ *
+ * Der Code wird lokal per [remember] gehalten, da er nur bis zum Klick auf
+ * "Jetzt beitreten" relevant ist; ab dort übernimmt [LobbyViewModel.joinLobby]
+ * (aufgerufen über [onJoinClick]) die weitere Verarbeitung.
+ *
+ * @param onJoinClick Übergibt den eingegebenen Code zur Navigation zur Lobby-Route.
+ * @param onBackClick Navigiert zurück zu [MultiplayerHomeScreen].
+ */
 @Composable
 fun JoinLobbyScreen(
     onJoinClick: (String) -> Unit,
@@ -23,15 +51,13 @@ fun JoinLobbyScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Einheitlicher Header (bombenfest)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer,
             tonalElevation = 4.dp
         ) {
             Row(
-                modifier = Modifier
-                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(onClick = onBackClick) {
@@ -54,7 +80,7 @@ fun JoinLobbyScreen(
             verticalArrangement = Arrangement.Top
         ) {
             Spacer(modifier = Modifier.height(40.dp))
-            
+
             Text(
                 text = "🔑",
                 fontSize = 72.sp,

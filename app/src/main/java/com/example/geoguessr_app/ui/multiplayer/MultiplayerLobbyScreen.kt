@@ -45,8 +45,7 @@ fun MultiplayerLobbyScreen(
             tonalElevation = 4.dp
         ) {
             Row(
-                modifier = Modifier
-                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(onClick = onBackClick) {
@@ -75,8 +74,7 @@ fun MultiplayerLobbyScreen(
         ) {
             if (errorMessage != null) {
                 ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.elevatedCardColors(
+                    modifier = Modifier.fillMaxWidth(), colors = CardDefaults.elevatedCardColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer
                     )
                 ) {
@@ -87,12 +85,11 @@ fun MultiplayerLobbyScreen(
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 Button(
-                    onClick = onBackClick,
-                    modifier = Modifier.fillMaxWidth()
+                    onClick = onBackClick, modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Zurück zum Hauptmenü")
                 }
@@ -102,7 +99,7 @@ fun MultiplayerLobbyScreen(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary
                 )
-                
+
                 OutlinedTextField(
                     value = lobbyCode,
                     onValueChange = {},
@@ -171,8 +168,7 @@ fun MultiplayerLobbyScreen(
                     ModeButton(
                         mode = mode,
                         selected = mode == selectedMode,
-                        onClick = { if (isHost) onModeSelected(mode) }
-                    )
+                        onClick = { if (isHost) onModeSelected(mode) })
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
@@ -180,13 +176,18 @@ fun MultiplayerLobbyScreen(
 
                 Button(
                     onClick = onReadyClick,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isReady) Color.DarkGray else Color(0xFF1565C0)
                     ),
                     shape = MaterialTheme.shapes.medium
                 ) {
-                    Text(if (isReady) "Nicht bereit" else "Ich bin bereit!", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        if (isReady) "Nicht bereit" else "Ich bin bereit!",
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
 
                 if (isHost) {
@@ -195,7 +196,9 @@ fun MultiplayerLobbyScreen(
                     Button(
                         onClick = onStartGameClick,
                         enabled = allReady,
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (allReady) Color(0xFFC62828) else Color.Gray
                         ),
@@ -206,7 +209,9 @@ fun MultiplayerLobbyScreen(
                 } else {
                     Text(
                         text = "Warte auf den Host...",
-                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary
@@ -219,13 +224,13 @@ fun MultiplayerLobbyScreen(
 
 @Composable
 private fun ModeButton(
-    mode: MultiplayerMode,
-    selected: Boolean,
-    onClick: () -> Unit
+    mode: MultiplayerMode, selected: Boolean, onClick: () -> Unit
 ) {
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(48.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp),
         shape = MaterialTheme.shapes.medium,
         colors = ButtonDefaults.buttonColors(
             containerColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,

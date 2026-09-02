@@ -1,5 +1,6 @@
 package com.example.geoguessr_app.ui.game
 
+import com.example.geoguessr_app.ui.multiplayer.WaitingForPlayersOverlay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +53,7 @@ import com.example.geoguessr_app.ui.multiplayer.SessionViewModel
 import com.example.geoguessr_app.ui.components.MatchSummaryDialog
 import com.example.geoguessr_app.ui.theme.AppThemeMode
 import com.example.geoguessr_app.domain.statistics.GameStatistics
+import com.example.geoguessr_app.ui.multiplayer.WaitingForPlayersOverlay
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.StreetViewPanoramaView
 import com.google.android.gms.maps.model.CameraPosition
@@ -90,16 +92,17 @@ fun GameRoute(
     onStatisticsClick: () -> Unit,
     onExitGame: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: GameViewModel,
-    sessionViewModel: SessionViewModel = hiltViewModel()
+    viewModel: GameViewModel
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val sessionUiState by sessionViewModel.uiState.collectAsStateWithLifecycle()
 
     Box(modifier = modifier.fillMaxSize()) {
         GameScreen(
             uiState = uiState,
-            sessionUiState = sessionUiState,
+            // sessionUiState = SessionUiState() als fester Leerzustand statt
+            // eines ungenutzten ViewModels – GameScreen benötigt ihn ohnehin
+            // nur für uiState.isMultiplayer == true (siehe MultiplayerScoreboard).
+            sessionUiState = SessionUiState(),
             currentTheme = currentTheme,
             currentDynamicColorEnabled = currentDynamicColorEnabled,
             onThemeSelected = onThemeSelected,
@@ -308,7 +311,9 @@ private fun GameScreen(
 
         if (uiState.isMultiplayer) {
             MultiplayerScoreboard(
-                players = sessionUiState.players, modifier = Modifier.fillMaxWidth()
+                players = sessionUiState.players,
+                totalRounds = uiState.totalRounds,
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
@@ -702,29 +707,6 @@ private fun GameStatusHeader(
         }
     }
 }
-
-
-/**
- * Overlay, das angezeigt wird, wenn man auf andere Spieler wartet.
- */
-@Composable
-fun WaitingForPlayersOverlay() {
-    Box(
-        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-    ) {
-        ElevatedCard {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                CircularProgressIndicator()
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Warten auf Spieler...")
-            }
-        }
-    }
-}
-
 
 /**
  * Formatiert Koordinaten für die Anzeige.

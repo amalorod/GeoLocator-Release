@@ -22,6 +22,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Steuert die Lobby-Phase: Erstellen, Beitreten, Ready-Status und den
+ * Übergang zur laufenden Partie via [startLobby].
+ *
+ * BEKANNTER PUNKT (zurückgestellt): [observeLobby] besitzt aktuell keinen
+ * Schutz gegen mehrfaches gleichzeitiges Beobachten derselben Lobby
+ * (im Gegensatz zu [SessionViewModel.observeSession] mit seinem
+ * isObserving-Flag). Solange [createLobby]/[joinLobby] nur einmal pro
+ * Lobby-Beitritt aufgerufen werden, ist das unkritisch.
+ */
 @HiltViewModel
 class LobbyViewModel @Inject constructor(
     private val multiplayerRepository: MultiplayerRepository,
@@ -32,17 +42,13 @@ class LobbyViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LobbyUiState())
-
     val uiState: StateFlow<LobbyUiState> = _uiState.asStateFlow()
 
-    init {
-        Log.e("MULTIPLAYER", "LobbyViewModel INIT")
-    }
-
+    /** Wechselt den Spielmodus; wirkt nur, wenn der lokale Nutzer Host ist. */
     fun selectMode(mode: MultiplayerMode) {
         val lobbyCode = _uiState.value.lobbyCode
-        val isHost =
-            _uiState.value.players.find { it.uid == _uiState.value.currentUserUid }?.host ?: false
+        val isHost = _uiState.value.players
+            .find { it.uid == _uiState.value.currentUserUid }?.host ?: false
 
         if (!isHost) return
 
@@ -53,24 +59,25 @@ class LobbyViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Erzeugt eine neue Lobby mit dem lokalen Nutzer als Host.
+     *
+     * Fehler werden hier bewusst nur geloggt, ohne [LobbyUiState.errorMessage]
+     * zu setzen: Das Erstellen einer Lobby gilt als praktisch immer
+     * erfolgreich (keine Nutzereingabe, die fehlschlagen könnte, im
+     * Gegensatz zu [joinLobby] mit einem potenziell falsch eingegebenen Code).
+     */
     fun createLobby() {
-        Log.e("MULTIPLAYER", "createLobby() START")
         viewModelScope.launch {
             try {
-                // 1. Sofort Code generieren und UI anzeigen
                 val code = LobbyCodeGenerator.generate()
-                Log.d("MULTIPLAYER", "Lobby Code generated: $code")
 
                 _uiState.update {
-                    it.copy(
-                        lobbyCode = code, isLoading = true, errorMessage = null
-                    )
+                    it.copy(lobbyCode = code, isLoading = true, errorMessage = null)
                 }
 
-                // 2. Auth sicherstellen
                 val uid = firebaseAuthRepository.currentUid()
                     ?: firebaseAuthRepository.signInAnonymously()
-                Log.e("MULTIPLAYER", "UID = $uid")
 
                 val profile = profileRepository.profile.value
                 val hostPlayer = LobbyPlayer(
@@ -86,20 +93,11 @@ class LobbyViewModel @Inject constructor(
                     )
                 }
 
-                // 3. In Firebase speichern
-                multiplayerRepository.createLobby(
-                    lobbyCode = code, hostPlayer = hostPlayer
-                )
+                multiplayerRepository.createLobby(lobbyCode = code, hostPlayer = hostPlayer)
 
-                // 4. Beobachten und finaler State-Update
                 observeLobby(code)
 
-                _uiState.update {
-                    it.copy(
-                        players = listOf(hostPlayer), isLoading = false
-                    )
-                }
-                Log.d("MULTIPLAYER", "Lobby created successfully: $code")
+                _uiState.update { it.copy(players = listOf(hostPlayer), isLoading = false) }
             } catch (e: Exception) {
                 Log.e("MULTIPLAYER", "Error creating lobby", e)
                 _uiState.update { it.copy(isLoading = false) }
@@ -107,18 +105,14 @@ class LobbyViewModel @Inject constructor(
         }
     }
 
-    fun joinLobby(
-        lobbyCode: String
-    ) {
+    /** Tritt einer bestehenden Lobby anhand des Codes bei. */
+    fun joinLobby(lobbyCode: String) {
         viewModelScope.launch {
             try {
                 _uiState.update {
-                    it.copy(
-                        isLoading = true, lobbyCode = lobbyCode, errorMessage = null
-                    )
+                    it.copy(isLoading = true, lobbyCode = lobbyCode, errorMessage = null)
                 }
 
-                // 1. Prüfen, ob Lobby existiert
                 if (!multiplayerRepository.lobbyExists(lobbyCode)) {
                     _uiState.update {
                         it.copy(
@@ -129,16 +123,15 @@ class LobbyViewModel @Inject constructor(
                     return@launch
                 }
 
-                // 2. Auth sicherstellen
                 val uid = firebaseAuthRepository.currentUid()
                     ?: firebaseAuthRepository.signInAnonymously()
 
                 _uiState.update { it.copy(currentUserUid = uid) }
 
                 val profile = profileRepository.profile.value
-                // 3. Beitreten
                 multiplayerRepository.joinLobby(
-                    lobbyCode = lobbyCode, player = LobbyPlayer(
+                    lobbyCode = lobbyCode,
+                    player = LobbyPlayer(
                         uid = uid,
                         name = profile?.playerName ?: "Spieler",
                         ready = false,
@@ -151,14 +144,13 @@ class LobbyViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e("MULTIPLAYER", "Error joining lobby", e)
                 _uiState.update {
-                    it.copy(
-                        isLoading = false, errorMessage = "Fehler beim Beitreten."
-                    )
+                    it.copy(isLoading = false, errorMessage = "Fehler beim Beitreten.")
                 }
             }
         }
     }
 
+    /** Entfernt den lokalen Nutzer aus der aktuellen Lobby. */
     fun leaveLobby() {
         val code = _uiState.value.lobbyCode
         val uid = _uiState.value.currentUserUid
@@ -169,6 +161,7 @@ class LobbyViewModel @Inject constructor(
         }
     }
 
+    /** Schaltet den Ready-Status des lokalen Nutzers um. */
     fun toggleReady() {
         val code = _uiState.value.lobbyCode
         val uid = _uiState.value.currentUserUid
@@ -179,10 +172,13 @@ class LobbyViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Abonniert Echtzeit-Änderungen der Lobby (neue/entfernte Spieler,
+     * Ready-Status, Moduswechsel, Spielstart).
+     */
     fun observeLobby(lobbyCode: String) {
         viewModelScope.launch {
             multiplayerRepository.observeLobby(lobbyCode).collect { lobby ->
-                Log.d("MULTIPLAYER", "Observed Lobby: $lobby")
                 if (lobby != null) {
                     val remoteMode = try {
                         MultiplayerMode.valueOf(lobby.mode)
@@ -204,32 +200,35 @@ class LobbyViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Startet die Partie: legt eine [MatchSession] mit für alle Spieler
+     * identischen Standorten an, initialisiert den Spielstand jedes
+     * Mitspielers und markiert die Lobby anschließend als gestartet.
+     *
+     * Bricht die Session-Initialisierung eines einzelnen Spielers ab,
+     * wird die zuvor angelegte Session wieder gelöscht, statt eine
+     * halb-initialisierte, verwaiste Session in Firebase zu hinterlassen.
+     */
     fun startLobby() {
-        Log.e("MULTIPLAYER", "startLobby() aufgerufen")
         val players = _uiState.value.players
         if (players.size < 2) {
-            Log.e("MULTIPLAYER", "Zu wenige Spieler: ${players.size}")
             _uiState.update { it.copy(errorMessage = "Zu wenige Spieler! Mindestens 2 Spieler benötigt") }
             return
         }
 
         if (!players.all { it.ready }) {
-            Log.e("MULTIPLAYER", "Nicht alle ready")
             _uiState.update { it.copy(errorMessage = "Nicht alle Spieler sind bereit!") }
             return
         }
 
         viewModelScope.launch {
-            try {
-                val code = _uiState.value.lobbyCode
-                val sessionId = SessionIdGenerator.generate()
-                Log.e("MULTIPLAYER", "Generiere Session: $sessionId")
+            val code = _uiState.value.lobbyCode
+            val sessionId = SessionIdGenerator.generate()
 
-                // 1. Standorte für alle Spieler festlegen
+            try {
                 val locations = getRandomLocations(count = 5)
                 val locationIds = locations.map { it.id }
 
-                // 2. Session Objekt erstellen
                 val session = MatchSession(
                     sessionId = sessionId,
                     hostUid = firebaseAuthRepository.currentUid() ?: "",
@@ -240,38 +239,36 @@ class LobbyViewModel @Inject constructor(
                     currentLocationId = locationIds.firstOrNull() ?: ""
                 )
 
-                // 3. Session in Firebase anlegen
-                Log.e("MULTIPLAYER", "Erstelle Session in Firebase...")
                 sessionRepository.createSession(session)
-                Log.e("MULTIPLAYER", "Session erfolgreich erstellt")
 
-                // 4. Spieler initialisieren
-                val initialLives =
-                    if (_uiState.value.selectedMode == MultiplayerMode.BATTLE_ROYALE) 3 else 5
+                try {
+                    val initialLives =
+                        if (_uiState.value.selectedMode == MultiplayerMode.BATTLE_ROYALE) 3 else 5
 
-                _uiState.value.players.forEach { player ->
-                    sessionRepository.updatePlayerState(
-                        sessionId = sessionId, playerState = MultiplayerPlayerState(
-                            uid = player.uid,
-                            playerName = player.name,
-                            score = 0,
-                            round = 1,
-                            lives = initialLives
+                    _uiState.value.players.forEach { player ->
+                        sessionRepository.updatePlayerState(
+                            sessionId = sessionId,
+                            playerState = MultiplayerPlayerState(
+                                uid = player.uid,
+                                playerName = player.name,
+                                score = 0,
+                                round = 1,
+                                lives = initialLives
+                            )
                         )
-                    )
+                    }
+                } catch (e: Exception) {
+                    Log.e("MULTIPLAYER", "Fehler bei Spieler-Init, räume Session auf", e)
+                    sessionRepository.deleteSession(sessionId)
+                    _uiState.update { it.copy(errorMessage = "Partie konnte nicht gestartet werden. Bitte erneut versuchen.") }
+                    return@launch
                 }
 
-                // 5. Lobby starten
-                Log.e("MULTIPLAYER", "Setze Lobby auf started=true...")
-                multiplayerRepository.startLobby(
-                    lobbyCode = code, sessionId = sessionId
-                )
-                Log.e("MULTIPLAYER", "startLobby() abgeschlossen")
+                multiplayerRepository.startLobby(lobbyCode = code, sessionId = sessionId)
             } catch (e: Exception) {
                 Log.e("MULTIPLAYER", "FEHLER in startLobby", e)
+                _uiState.update { it.copy(errorMessage = "Partie konnte nicht gestartet werden. Bitte erneut versuchen.") }
             }
         }
     }
-
-
 }

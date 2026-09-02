@@ -64,6 +64,18 @@ class SessionRepository @Inject constructor(
     }
 
     /**
+     * Löscht eine Spielsitzung vollständig aus Firebase.
+     *
+     * Wird aktuell ausschließlich als Cleanup in [LobbyViewModel.startLobby]
+     * verwendet: Schlägt die Initialisierung der Spielerzustände nach
+     * erfolgreichem [createSession] fehl, verhindert dieser Aufruf, dass eine
+     * halb-initialisierte, verwaiste Session in Firebase zurückbleibt.
+     */
+    suspend fun deleteSession(sessionId: String) {
+        database.reference.child("sessions").child(sessionId).removeValue().await()
+    }
+
+    /**
      * Aktualisiert den individuellen Spielzustand (z. B. aktueller
      * Score, abgegebener Tipp) eines einzelnen Spielers innerhalb der
      * Sitzung.

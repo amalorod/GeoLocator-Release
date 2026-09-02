@@ -21,9 +21,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
 
+/**
+ * Zeigt den Live-Punktestand aller Mitspieler einer Multiplayer-Partie an.
+ *
+ * Passt sich der Bildschirmbreite an: Auf Tablets (> 600dp, siehe
+ * [isTablet]) werden bis zu vier Spieler nebeneinander in einer [Row]
+ * dargestellt, auf Smartphones bis zu drei Spieler untereinander mit
+ * "VS"-Trennern dazwischen – mehr als drei/vier Spieler werden aus
+ * Platzgründen abgeschnitten ([List.take]).
+ *
+ * @param players Aktueller Spielstand aller Sitzungsteilnehmer.
+ */
 @Composable
 fun MultiplayerScoreboard(
     players: List<MultiplayerPlayerState>,
+    totalRounds,
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -38,6 +50,7 @@ fun MultiplayerScoreboard(
             players.take(4).forEachIndexed { index, player ->
                 MultiplayerPlayerCard(
                     player = player,
+                    totalRounds = totalRounds,
                     color = when (index) {
                         0 -> MaterialTheme.colorScheme.primary
                         1 -> Color(0xFF1565C0)
@@ -56,6 +69,7 @@ fun MultiplayerScoreboard(
             players.take(3).forEachIndexed { index, player ->
                 MultiplayerPlayerCard(
                     player = player,
+                    totalRounds = totalRounds,
                     color = when (index) {
                         0 -> MaterialTheme.colorScheme.primary
                         1 -> Color(0xFF1565C0)
@@ -75,9 +89,11 @@ fun MultiplayerScoreboard(
     }
 }
 
+/** Einzelne Spielerkarte mit Name, Rundenstand, Leben (falls relevant) und Score. */
 @Composable
 private fun MultiplayerPlayerCard(
     player: MultiplayerPlayerState,
+    totalRounds: Int,
     color: Color,
     modifier: Modifier = Modifier
 ) {
@@ -88,8 +104,7 @@ private fun MultiplayerPlayerCard(
         contentColor = Color.White
     ) {
         Row(
-            modifier = Modifier
-                .padding(12.dp),
+            modifier = Modifier.padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -100,11 +115,10 @@ private fun MultiplayerPlayerCard(
                     maxLines = 1
                 )
                 Text(
-                    text = "Runde ${player.round}/5",
+                    text = "Runde ${player.round}/ $totalRounds",
                     style = MaterialTheme.typography.labelSmall
                 )
-                
-                // Show lives as hearts
+
                 if (player.lives > 0) {
                     Text(
                         text = "❤️".repeat(player.lives),
