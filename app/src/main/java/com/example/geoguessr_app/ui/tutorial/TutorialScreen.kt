@@ -38,7 +38,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
-import androidx.compose.ui.layout.ContentScale
 
 /**
  * Klick-Galerie, die die grundlegende Spielsteuerung anhand von
@@ -123,18 +122,12 @@ fun TutorialScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Box(
+            TutorialImagePlaceholder(
+                imageRes = currentStep.imageRes,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f), contentAlignment = Alignment.Center
-            ) {
-                TutorialImagePlaceholder(
-                    imageRes = currentStep.imageRes,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(4f / 3f)
-                )
-            }
+                    .weight(1f)
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -148,10 +141,12 @@ fun TutorialScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 OutlinedButton(
-                    onClick = { currentStepIndex-- }, enabled = currentStepIndex > 0
+                    onClick = { currentStepIndex-- },
+                    enabled = currentStepIndex > 0
                 ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     Spacer(modifier = Modifier.width(4.dp))
@@ -160,7 +155,8 @@ fun TutorialScreen(
 
                 if (isLastStep) {
                     Button(
-                        onClick = onFinish, colors = ButtonDefaults.buttonColors(
+                        onClick = onFinish,
+                        colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
@@ -186,10 +182,12 @@ fun TutorialScreen(
  */
 @Composable
 private fun TutorialImagePlaceholder(
-    imageRes: Int?, modifier: Modifier = Modifier
+    imageRes: Int?,
+    modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
+            .aspectRatio(4f / 3f)
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
@@ -198,7 +196,6 @@ private fun TutorialImagePlaceholder(
             Image(
                 painter = painterResource(id = imageRes),
                 contentDescription = null,
-                contentScale = ContentScale.Fit, // Bild wird sauber eingepasst
                 modifier = Modifier.fillMaxSize()
             )
         } else {
