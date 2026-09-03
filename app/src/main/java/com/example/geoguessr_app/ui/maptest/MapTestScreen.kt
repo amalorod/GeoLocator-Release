@@ -35,8 +35,7 @@ import java.util.Locale
  */
 @Composable
 fun MapTestScreen(
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onBackClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     var selectedPosition by remember {
         mutableStateOf<LatLng?>(null)
@@ -44,8 +43,7 @@ fun MapTestScreen(
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
-            WORLD_CENTER,
-            INITIAL_ZOOM
+            WORLD_CENTER, INITIAL_ZOOM
         )
     }
 
@@ -57,13 +55,11 @@ fun MapTestScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Karten-Testansicht",
-            style = MaterialTheme.typography.headlineSmall
+            text = "Karten-Testansicht", style = MaterialTheme.typography.headlineSmall
         )
 
         Text(
-            text = "Tippe auf einen beliebigen Ort der Karte.",
-            textAlign = TextAlign.Center
+            text = "Tippe auf einen beliebigen Ort der Karte.", textAlign = TextAlign.Center
         )
 
         GoogleMap(
@@ -73,29 +69,24 @@ fun MapTestScreen(
             cameraPositionState = cameraPositionState,
             onMapClick = { clickedPosition ->
                 selectedPosition = clickedPosition
-            }
-        ) {
+            }) {
             selectedPosition?.let { position ->
                 Marker(
                     state = rememberUpdatedMarkerState(
                         position = position
-                    ),
-                    title = "Ausgewählter Tipp",
-                    snippet = formatCoordinates(position)
+                    ), title = "Ausgewählter Tipp", snippet = formatCoordinates(position)
                 )
             }
         }
 
         Text(
-            text = selectedPosition?.let(::formatCoordinates)
-                ?: "Noch keine Position ausgewählt",
+            text = selectedPosition?.let(::formatCoordinates) ?: "Noch keine Position ausgewählt",
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center
         )
 
         Button(
-            onClick = onBackClick,
-            modifier = Modifier
+            onClick = onBackClick, modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
         ) {
@@ -109,16 +100,12 @@ fun MapTestScreen(
  */
 private fun formatCoordinates(position: LatLng): String {
     return String.format(
-        Locale.GERMANY,
-        "Breitengrad: %.4f, Längengrad: %.4f",
-        position.latitude,
-        position.longitude
+        Locale.GERMANY, "Breitengrad: %.4f, Längengrad: %.4f", position.latitude, position.longitude
     )
 }
 
 private val WORLD_CENTER = LatLng(
-    20.0,
-    0.0
+    20.0, 0.0
 )
 
 private const val INITIAL_ZOOM = 1.5f

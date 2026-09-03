@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -36,6 +37,8 @@ import com.example.geoguessr_app.ui.statistics.StatisticsViewModel
 import com.example.geoguessr_app.ui.streetviewtest.StreetViewTestScreen
 import com.example.geoguessr_app.ui.theme.AppThemeMode
 import com.example.geoguessr_app.ui.tutorial.TutorialScreen
+import com.example.geoguessr_app.ui.welcome.OnboardingViewModel
+import com.example.geoguessr_app.ui.welcome.WelcomeScreen
 
 /**
  * Zentraler Navigationsgraph der Anwendung.
@@ -66,6 +69,10 @@ fun GeoGuessrNavHost(
     onExitAppClick: () -> Unit,
 ) {
     val navController = rememberNavController()
+    val onboardingViewModel: OnboardingViewModel = hiltViewModel()
+    val hasSeenTutorial by onboardingViewModel.hasSeenTutorial.collectAsStateWithLifecycle(
+        initialValue = null
+    )
 
     // Über den gesamten NavHost hinweg gültige ViewModels
     val gameViewModel: GameViewModel = hiltViewModel()
@@ -89,11 +96,34 @@ fun GeoGuessrNavHost(
         }
     }
 
+    // Solange hasSeenTutorial noch nicht geladen ist (null), wird kein
+    // NavHost gezeichnet, um ein kurzes Aufblitzen von Home vor dem
+    // eigentlichen Welcome-Screen zu vermeiden.
+    if (hasSeenTutorial == null) return
+
+    // Einmalig eingefrorene Start-Destination: Verhindert, dass eine
+    // Recomposition bei StateFlow-Änderungen (z. B. nach Klick auf "Home"
+    // im Onboarding) eine ungültige NavHost-Graphenrekonfiguration auslöst.
+    val initialStartDestination = remember {
+        if (hasSeenTutorial == true) AppDestination.Home.route else AppDestination.Welcome.route
+    }
+
     NavHost(
         navController = navController,
-        startDestination = AppDestination.Home.route,
+        startDestination = initialStartDestination,
         modifier = modifier,
     ) {
+        // --- Welcome Screen: zentraler Einstiegspunkt der App für neue User ---
+        composable(route = AppDestination.Welcome.route) {
+            WelcomeScreen(
+                onOnboardingFinished = {
+                    onboardingViewModel.markTutorialAsSeen()
+                    navController.navigate(AppDestination.Home.route) {
+                        popUpTo(AppDestination.Welcome.route) { inclusive = true }
+                    }
+                }
+            )
+        }
         // --- Home Screen: zentraler Einstiegspunkt der App ---
         composable(route = AppDestination.Home.route) {
             HomeScreen(
@@ -268,8 +298,12 @@ fun GeoGuessrNavHost(
                 })
         }
 
+
         composable(route = AppDestination.Tutorial.route) {
-            TutorialScreen(onBackClick = navController::popBackStack)
+            TutorialScreen(
+                onFinish = navController::popBackStack,
+                onBackClick = navController::popBackStack
+            )
         }
 
         composable(route = AppDestination.Statistics.route) {

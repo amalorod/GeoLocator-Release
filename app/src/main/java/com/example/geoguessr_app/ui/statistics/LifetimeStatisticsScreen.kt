@@ -2,11 +2,36 @@ package com.example.geoguessr_app.ui.statistics
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -18,9 +43,23 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.example.geoguessr_app.domain.statistics.LifetimeStatistics
+import com.example.geoguessr_app.data.statistics.LeaderboardEntry
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
+import com.example.geoguessr_app.domain.statistics.LifetimeStatistics
 
+/**
+ * Zeigt Lebenszeit-Statistiken, einen Score-Verlauf der letzten Partien
+ * sowie ein globales Leaderboard (als Dialog) an.
+ *
+ * @param statistics Aggregierte Lebenszeit-Werte, von außen übergeben (siehe
+ * [GeoGuessrNavHost], das [StatisticsViewModel.statistics] bereits dort sammelt).
+ * @param isGuest Ob der aktuelle Nutzer ohne Profil spielt; steuert, ob im
+ * Leaderboard-Dialog echte Daten oder ein Login-Hinweis angezeigt werden.
+ * @param onBackClick Navigiert zurück zum vorherigen Bildschirm.
+ * @param viewModel Verwaltet zusätzlich [recentMatches] und [topPlayers],
+ * die hier direkt beobachtet werden (im Gegensatz zu [statistics], das
+ * bereits von außen hereingereicht wird).
+ */
 @Composable
 fun LifetimeStatisticsScreen(
     statistics: LifetimeStatistics,
@@ -31,7 +70,7 @@ fun LifetimeStatisticsScreen(
     val recentMatches by viewModel.recentMatches.collectAsState()
     val topPlayers by viewModel.topPlayers.collectAsState()
     val scrollState = rememberScrollState()
-    
+
     var showLeaderboard by remember { mutableStateOf(false) }
 
     Column(
@@ -39,15 +78,13 @@ fun LifetimeStatisticsScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Einheitlicher Header (bombenfest)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer,
             tonalElevation = 4.dp
         ) {
             Row(
-                modifier = Modifier
-                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(onClick = onBackClick) {
@@ -68,28 +105,37 @@ fun LifetimeStatisticsScreen(
                 .verticalScroll(scrollState)
                 .padding(16.dp)
         ) {
+            // Der Score-Chart wird nur angezeigt, wenn bereits Partien
+            // vorhanden sind – bei einer leeren Liste gäbe es nichts zu zeichnen.
             if (recentMatches.isNotEmpty()) {
                 Text(
                     text = "Score-Verlauf (Letzte 20)",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(180.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.medium)
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            MaterialTheme.shapes.medium
+                        )
                         .padding(20.dp)
                 ) {
+                    // recentMatches liegt neueste-zuerst vor (siehe
+                    // StatisticsRepository); für den Chart wird die
+                    // Reihenfolge umgedreht, damit die Zeitachse von
+                    // links (ältestes Spiel) nach rechts (neuestes Spiel) verläuft.
                     ScoreChart(
                         scores = recentMatches.map { it.score }.reversed(),
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(32.dp))
             }
 
@@ -98,25 +144,53 @@ fun LifetimeStatisticsScreen(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(modifier = Modifier.fillMaxWidth()) {
-                MiniCard(title = "Spiele", value = statistics.gamesPlayed.toString(), modifier = Modifier.weight(1f))
+                MiniCard(
+                    title = "Spiele",
+                    value = statistics.gamesPlayed.toString(),
+                    modifier = Modifier.weight(1f)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                MiniCard(title = "Punkte", value = statistics.totalScore.toString(), modifier = Modifier.weight(1.5f))
+                MiniCard(
+                    title = "Punkte",
+                    value = statistics.totalScore.toString(),
+                    modifier = Modifier.weight(1.5f)
+                )
             }
 
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                MiniCard(title = "Ø Score", value = if (statistics.gamesPlayed > 0) (statistics.totalScore / statistics.gamesPlayed).toString() else "0", modifier = Modifier.weight(1f))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            ) {
+                MiniCard(
+                    title = "Ø Score",
+                    value = averageScore(statistics.totalScore, statistics.gamesPlayed).toString(),
+                    modifier = Modifier.weight(1f)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                MiniCard(title = "Beste", value = statistics.bestGameScore.toString(), modifier = Modifier.weight(1f))
+                MiniCard(
+                    title = "Beste",
+                    value = statistics.bestGameScore.toString(),
+                    modifier = Modifier.weight(1f)
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { showLeaderboard = true },
+                onClick = {
+                    showLeaderboard = true
+                    // Lädt das Leaderboard nur für eingeloggte Nutzer nach –
+                    // Gäste sehen im Dialog ohnehin nur den Login-Hinweis,
+                    // ein Request wäre für sie unnötig. loadLeaderboard()
+                    // selbst verhindert zusätzlich wiederholte Requests,
+                    // falls bereits Daten vorliegen.
+                    if (!isGuest) viewModel.loadLeaderboard()
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.tertiary
@@ -148,7 +222,7 @@ fun LifetimeStatisticsScreen(
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -156,27 +230,36 @@ fun LifetimeStatisticsScreen(
     if (showLeaderboard) {
         AlertDialog(
             onDismissRequest = { showLeaderboard = false },
-            title = { 
+            title = {
                 Text(
-                    "Globales Leaderboard", 
+                    "Globales Leaderboard",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
-                ) 
+                )
             },
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
                 ) {
                     if (isGuest) {
                         Text(
                             "Um das Leaderboard einzusehen, bitte einloggen.",
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp)
                         )
                     } else if (topPlayers.isEmpty()) {
+                        // Zeigt den Ladezustand, solange loadLeaderboard()
+                        // noch keine Daten zurückgeliefert hat.
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                        Text("Lade Top-Spieler...", modifier = Modifier.align(Alignment.CenterHorizontally))
+                        Text(
+                            "Lade Top-Spieler...",
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
                     } else {
                         topPlayers.forEachIndexed { index, entry ->
                             LeaderboardItem(index + 1, entry)
@@ -193,9 +276,15 @@ fun LifetimeStatisticsScreen(
     }
 }
 
+/** Berechnet den Durchschnitts-Score sicher gegen Division durch Null. */
+private fun averageScore(totalScore: Int, gamesPlayed: Int): Int {
+    return if (gamesPlayed > 0) totalScore / gamesPlayed else 0
+}
+
+/** Einzelner Leaderboard-Eintrag mit Rang (Medaille für Top 3), Name und Durchschnittspunkten. */
 @Composable
-private fun LeaderboardItem(rank: Int, entry: com.example.geoguessr_app.data.statistics.LeaderboardEntry) {
-    val medal = when(rank) {
+private fun LeaderboardItem(rank: Int, entry: LeaderboardEntry) {
+    val medal = when (rank) {
         1 -> "🥇"
         2 -> "🥈"
         3 -> "🥉"
@@ -214,7 +303,7 @@ private fun LeaderboardItem(rank: Int, entry: com.example.geoguessr_app.data.sta
         ) {
             Text(text = medal, fontSize = 24.sp)
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = entry.playerName,
@@ -227,9 +316,9 @@ private fun LeaderboardItem(rank: Int, entry: com.example.geoguessr_app.data.sta
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
-            
+
             Column(horizontalAlignment = Alignment.End) {
-                val avgScore = if (entry.stats.gamesPlayed > 0) entry.stats.totalScore / entry.stats.gamesPlayed else 0
+                val avgScore = averageScore(entry.stats.totalScore, entry.stats.gamesPlayed)
                 Text(
                     text = "$avgScore",
                     style = MaterialTheme.typography.titleLarge,
@@ -246,18 +335,26 @@ private fun LeaderboardItem(rank: Int, entry: com.example.geoguessr_app.data.sta
     }
 }
 
+/**
+ * Zeichnet einen einfachen Liniendiagramm-Verlauf der übergebenen Scores
+ * per [Canvas]. Bewusst als eigenes, leichtgewichtiges Zeichnen statt einer
+ * externen Chart-Bibliothek umgesetzt, da nur eine simple Linie mit Punkten
+ * benötigt wird.
+ */
 @Composable
 private fun ScoreChart(scores: List<Int>, modifier: Modifier = Modifier) {
     if (scores.isEmpty()) return
-    
+
     val maxScore = scores.maxOrNull()?.coerceAtLeast(1) ?: 1
     val primaryColor = MaterialTheme.colorScheme.primary
 
     Canvas(modifier = modifier) {
         val width = size.width
         val height = size.height
+        // Bei nur einem Datenpunkt gibt es keinen Abstand zu berechnen;
+        // spacing = width verhindert hier eine Division durch Null.
         val spacing = if (scores.size > 1) width / (scores.size - 1) else width
-        
+
         val points = scores.mapIndexed { index, score ->
             Offset(
                 x = index * spacing,
@@ -272,32 +369,41 @@ private fun ScoreChart(scores: List<Int>, modifier: Modifier = Modifier) {
             }
         }
 
-        drawPath(
-            path = path,
-            color = primaryColor,
-            style = Stroke(width = 3.dp.toPx())
-        )
-        
+        drawPath(path = path, color = primaryColor, style = Stroke(width = 3.dp.toPx()))
+
         points.forEach { point ->
-            drawCircle(
-                color = primaryColor,
-                radius = 4.dp.toPx(),
-                center = point
+            drawCircle(color = primaryColor, radius = 4.dp.toPx(), center = point)
+        }
+    }
+}
+
+/** Kompakte Kachel zur Anzeige eines einzelnen Statistik-Werts (z. B. "Spiele: 12"). */
+@Composable
+private fun MiniCard(title: String, value: String, modifier: Modifier = Modifier) {
+    ElevatedCard(modifier = modifier) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
             )
         }
     }
 }
 
-@Composable
-private fun MiniCard(title: String, value: String, modifier: Modifier = Modifier) {
-    ElevatedCard(modifier = modifier) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(text = title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-            Text(text = value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
+/**
+ * Einzelner Eintrag in der Liste der letzten Partien: Spielart, Modus,
+ * erzielte Punktzahl und – bei Multiplayer-Siegen – eine Sieg-Markierung.
+ *
+ * Verwendet dieselbe feste Grün-Farbe (0xFF2E7D32) wie an anderen Stellen
+ * der App (z. B. MultiplayerLobbyScreen für "BEREIT") als konsistente
+ * "Erfolg"-Farbe, unabhängig vom aktiven Theme.
+ */
 @Composable
 private fun MatchEntry(match: MatchStatistic) {
     Row(
@@ -317,7 +423,7 @@ private fun MatchEntry(match: MatchStatistic) {
                 color = MaterialTheme.colorScheme.secondary
             )
         }
-        
+
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = "${match.score} Pkt.",
@@ -326,7 +432,11 @@ private fun MatchEntry(match: MatchStatistic) {
                 color = if (match.won) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurface
             )
             if (match.multiplayer && match.won) {
-                Text("SIEG 🏆", style = MaterialTheme.typography.labelSmall, color = Color(0xFF2E7D32))
+                Text(
+                    "SIEG 🏆",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF2E7D32)
+                )
             }
         }
     }

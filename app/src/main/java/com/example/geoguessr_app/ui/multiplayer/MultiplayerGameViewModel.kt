@@ -9,7 +9,6 @@ import com.example.geoguessr_app.data.profile.ProfileRepository
 import com.example.geoguessr_app.data.statistics.StatisticsRepository
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
-import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerMode
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 import com.example.geoguessr_app.domain.statistics.RoundStatistics
@@ -28,6 +27,22 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Steuert die laufende Multiplayer-Partie nach Spielbeginn: Rundenwechsel,
+ * eigene Tipp-Abgabe, Sieger-/Verlierer-Ermittlung sowie das
+ * Heartbeat-System zur Erkennung inaktiver Mitspieler.
+ *
+ * Nutzt bewusst denselben [GameUiState] wie der Einzelspieler-[GameViewModel]
+ * (statt eines eigenen Multiplayer-spezifischen States), damit die
+ * zustandslose [GameScreen] für beide Modi identisch bleibt – die
+ * Multiplayer-spezifischen Felder (u. a. [GameUiState.multiplayerPlayers],
+ * [GameUiState.isMultiplayer]) werden nur hier befüllt.
+ *
+ * Rollenverteilung: Nur der Host (`isHost`, ermittelt über
+ * `MatchSession.hostUid`) darf Runden weiterschalten ([startNextRound]) und
+ * inaktive Spieler entfernen; alle anderen Aktionen (Tipp abgeben,
+ * Heartbeat) führt jeder Client für sich selbst aus.
+ */
 @HiltViewModel
 class MultiplayerGameViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
@@ -42,26 +57,39 @@ class MultiplayerGameViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(GameUiState(isMultiplayer = true))
     val uiState = _uiState.asStateFlow()
+
+    /** Für alle Spieler identische Standorte der Session (siehe MatchSession.locationIds). */
     private var gameLocations: List<GeoLocation> = emptyList()
     private var sessionId: String = ""
+
+    /** Lokal zwischengespeicherter Anzeigename, u. a. für Heartbeat-Updates ohne erneuten Profil-Zugriff. */
     private var playerName: String = "Spieler"
+
+    /** Ob der lokale Nutzer aktuell der Host der Session ist (siehe MatchSession.hostUid). */
     private var isHost: Boolean = false
     private var heartbeatJob: Job? = null
 
+    /**
+     * Startet das Laden und Beobachten einer Session: aktiviert den
+     * Heartbeat und abonniert sowohl den Session- als auch den
+     * Spielerzustand parallel über zwei unabhängige Coroutines.
+     */
     fun loadSessionLocations(sessionId: String) {
         this.sessionId = sessionId
         val currentUid = firebaseAuthRepository.currentUid() ?: return
 
         startHeartbeat()
 
-        // Observe Session for round changes
+        // Beobachtet Rundenwechsel, Spielmodus und Spielende auf Session-Ebene.
         viewModelScope.launch {
             sessionRepository.observeSession(sessionId).collect { session ->
                 if (session == null) return@collect
 
                 isHost = session.hostUid == currentUid
 
-                // Map Session Mode to GameMode
+                // Session.mode wird als String gespeichert (siehe Lobby.mode-
+                // Anmerkung); hier erfolgt die Umwandlung in das für GameUiState
+                // benötigte GameMode-Enum, unabhängig von MultiplayerMode.
                 val currentMode = when (session.mode) {
                     "BATTLE_ROYALE" -> GameMode.BATTLE_ROYALE
                     "PRO" -> GameMode.PRO
@@ -71,12 +99,17 @@ class MultiplayerGameViewModel @Inject constructor(
                 val myState = _uiState.value.multiplayerPlayers.find { it.uid == currentUid }
                 val isEliminated = myState != null && myState.lives <= 0
 
+                // Spielende entweder durch Session.finished (Host hat es
+                // z. B. nach letzter Runde gesetzt) oder durch eigene
+                // Elimination im Battle-Royale-Modus.
                 if ((session.finished || isEliminated) && !_uiState.value.isGameFinished) {
                     _uiState.update { it.copy(isGameFinished = true, gameMode = currentMode) }
                     saveMatchResult()
                     return@collect
                 }
 
+                // Standorte werden nur einmal geladen, nicht bei jedem
+                // Session-Update erneut (sonst unnötige wiederholte Abfragen).
                 if (gameLocations.isEmpty()) {
                     val locations = getLocationsByIds(session.locationIds)
                     gameLocations = locations
@@ -84,8 +117,11 @@ class MultiplayerGameViewModel @Inject constructor(
 
                 val nextLocation = gameLocations.find { it.id == session.currentLocationId }
 
-                if (session.currentRound != _uiState.value.currentRound || _uiState.value.currentLocation?.id != session.currentLocationId) {
-
+                // Rundenwechsel wird erkannt, sobald sich Rundennummer oder
+                // Standort-ID gegenüber dem aktuellen UI-State unterscheiden.
+                if (session.currentRound != _uiState.value.currentRound ||
+                    _uiState.value.currentLocation?.id != session.currentLocationId
+                ) {
                     _uiState.update {
                         it.copy(
                             currentRound = session.currentRound,
@@ -101,17 +137,20 @@ class MultiplayerGameViewModel @Inject constructor(
                         )
                     }
 
-                    // Wenn die Runde gewechselt hat, setzen wir unseren eigenen Status zurück,
-                    // falls wir nicht der Host sind (Host hat es schon beim Wechsel getan)
+                    // Der Host setzt den eigenen Spielerzustand bereits in
+                    // startNextRound() zurück (finishedRound = false für alle
+                    // Überlebenden). Nicht-Host-Clients müssen das hier separat
+                    // für sich selbst nachholen, sobald sie den Rundenwechsel
+                    // über die Session-Beobachtung bemerken.
                     if (!isHost) {
                         viewModelScope.launch {
                             val uid = firebaseAuthRepository.currentUid() ?: return@launch
-                            // Wir holen uns die aktuellen Leben aus dem UI State (da dort die Liste der Spieler ist)
                             val currentPlayer =
                                 _uiState.value.multiplayerPlayers.find { it.uid == uid }
 
                             sessionRepository.updatePlayerState(
-                                sessionId = sessionId, playerState = MultiplayerPlayerState(
+                                sessionId = sessionId,
+                                playerState = MultiplayerPlayerState(
                                     uid = uid,
                                     playerName = playerName,
                                     score = _uiState.value.totalScore,
@@ -126,20 +165,30 @@ class MultiplayerGameViewModel @Inject constructor(
             }
         }
 
-        // Observe Players for Scoreboard and Host check
+        // Beobachtet die Spielerliste für Scoreboard, Auto-Win-Erkennung,
+        // Inaktivitäts-Entfernung und den Host-gesteuerten Rundenwechsel.
         viewModelScope.launch {
             sessionRepository.observePlayerStates(sessionId).collect { players ->
                 playerName = players.find { it.uid == currentUid }?.playerName ?: "Spieler"
 
                 _uiState.update { it.copy(multiplayerPlayers = players) }
 
-                // Auto-Win check: Wenn man alleine übrig ist (und es war eine Multiplayer-Runde)
+                // Auto-Win: Ist nur noch ein Spieler in der Session übrig
+                // (z. B. weil alle anderen die Partie verlassen haben oder
+                // entfernt wurden), endet die Partie sofort mit diesem
+                // Spieler als Sieger. Siehe Analyse zum Startzeitpunkt: Da
+                // loadSessionLocations() erst nach Abschluss von
+                // LobbyViewModel.startLobby() (inkl. aller Spieler-Inits)
+                // aufgerufen wird, kann dieser Check nicht fälschlich
+                // während der Spieler-Initialisierung auslösen.
                 if (players.size == 1 && !_uiState.value.isGameFinished) {
                     _uiState.update { it.copy(isGameFinished = true) }
                     saveMatchResult()
                 }
 
-                // Disconnect check (Host only)
+                // Nur der Host überwacht die Erreichbarkeit der übrigen
+                // Spieler und entfernt sie bei Inaktivität (kein Heartbeat
+                // seit mehr als 20 Sekunden, siehe startHeartbeat()).
                 if (isHost) {
                     val now = System.currentTimeMillis()
                     val inactivePlayers = players.filter {
@@ -152,14 +201,18 @@ class MultiplayerGameViewModel @Inject constructor(
                     }
                 }
 
-                // Host check: If all players finished round, host can trigger next round
-                val allPlayersFinished =
-                    players.isNotEmpty() && players.all { it.finishedRound && it.round == _uiState.value.currentRound }
+                // Sobald alle Spieler ihren Tipp für die aktuelle Runde
+                // abgegeben haben, schaltet ausschließlich der Host nach
+                // kurzer Verzögerung zur nächsten Runde weiter, damit alle
+                // Clients kurz das Rundenergebnis sehen können.
+                val allPlayersFinished = players.isNotEmpty() &&
+                        players.all { it.finishedRound && it.round == _uiState.value.currentRound }
 
-                if (isHost && allPlayersFinished && !_uiState.value.isGameFinished && _uiState.value.isRoundFinished) {
-                    // Kurze Verzögerung damit man das Ergebnis sehen kann
+                if (isHost && allPlayersFinished &&
+                    !_uiState.value.isGameFinished && _uiState.value.isRoundFinished
+                ) {
                     viewModelScope.launch {
-                        kotlinx.coroutines.delay(3000)
+                        delay(3000)
                         startNextRound()
                     }
                 }
@@ -180,6 +233,12 @@ class MultiplayerGameViewModel @Inject constructor(
         _uiState.update { it.copy(viewMode = GameViewMode.STREET_VIEW) }
     }
 
+    /**
+     * Verarbeitet den abgegebenen Tipp: berechnet Distanz und Punktzahl,
+     * zieht im Battle-Royale-Modus bei Bedarf ein Leben ab und meldet den
+     * neuen Zustand an Firebase, damit die anderen Spieler den Fortschritt
+     * live sehen (siehe [MultiplayerScoreboard]).
+     */
     fun submitGuess() {
         val state = _uiState.value
         val currentLocation = state.currentLocation ?: return
@@ -197,7 +256,10 @@ class MultiplayerGameViewModel @Inject constructor(
             val roundEntry = RoundStatistics(
                 roundNumber = state.currentRound, score = score, distanceKm = distance
             )
-            // Battle Royale Logic: Leben abziehen bei > 500km
+
+            // Battle-Royale-Regel (siehe Doku 5.1): Ein Leben wird
+            // abgezogen, sobald die Schätzung mehr als 500 km vom
+            // tatsächlichen Ort entfernt liegt.
             if (state.gameMode == GameMode.BATTLE_ROYALE && distance > 500.0) {
                 currentLives = (currentLives - 1).coerceAtLeast(0)
             }
@@ -214,7 +276,8 @@ class MultiplayerGameViewModel @Inject constructor(
             }
 
             sessionRepository.updatePlayerState(
-                sessionId = sessionId, playerState = MultiplayerPlayerState(
+                sessionId = sessionId,
+                playerState = MultiplayerPlayerState(
                     uid = uid,
                     playerName = playerName,
                     score = updatedTotalScore,
@@ -229,6 +292,7 @@ class MultiplayerGameViewModel @Inject constructor(
         }
     }
 
+    /** Prüft nach jedem Tipp, ob dadurch eine Tagesquest erfüllt wurde. */
     private fun checkDailyQuests(distance: Double, score: Int, mode: GameMode) {
         viewModelScope.launch {
             if (distance < 25.0) {
@@ -250,15 +314,25 @@ class MultiplayerGameViewModel @Inject constructor(
         _uiState.update { it.copy(newlyCompletedQuest = null) }
     }
 
+    /**
+     * Schaltet die Session zur nächsten Runde weiter oder beendet die
+     * Partie, falls die letzte Runde erreicht ist oder (im Battle-Royale-
+     * Modus) nur noch ein Spieler überlebt hat. Wirkt nur, wenn der lokale
+     * Nutzer Host ist – alle anderen Clients reagieren stattdessen passiv
+     * auf die Session-Beobachtung in [loadSessionLocations].
+     */
     fun startNextRound() {
-        if (!isHost) return // Nur der Host darf die Session-Runde erhöhen
+        if (!isHost) return
 
         val state = _uiState.value
 
         viewModelScope.launch {
-            // Check if game should end
             val survivors = state.multiplayerPlayers.filter { it.lives > 0 }
-            if (state.currentRound >= state.totalRounds || (state.gameMode == GameMode.BATTLE_ROYALE && survivors.size <= 1)) {
+            val isLastRound = state.currentRound >= state.totalRounds
+            val isBattleRoyaleDecided =
+                state.gameMode == GameMode.BATTLE_ROYALE && survivors.size <= 1
+
+            if (isLastRound || isBattleRoyaleDecided) {
                 sessionRepository.finishSession(sessionId)
                 return@launch
             }
@@ -270,17 +344,19 @@ class MultiplayerGameViewModel @Inject constructor(
                 sessionId = sessionId, nextRound = nextRound, nextLocationId = nextLocation.id
             )
 
-            // Alle Spieler (die noch dabei sind) zurücksetzen
+            // Nur überlebende Spieler werden zurückgesetzt; im Battle-Royale-
+            // Modus bereits eliminierte Spieler (lives <= 0) bleiben
+            // unverändert, da sie ohnehin nicht mehr mitspielen.
             state.multiplayerPlayers.filter { it.lives > 0 }.forEach { p ->
                 sessionRepository.updatePlayerState(
-                    sessionId = sessionId, playerState = p.copy(
-                        round = nextRound, finishedRound = false
-                    )
+                    sessionId = sessionId,
+                    playerState = p.copy(round = nextRound, finishedRound = false)
                 )
             }
         }
     }
 
+    /** Entfernt den lokalen Spieler aus der Session, z. B. beim vorzeitigen Verlassen der Partie. */
     fun leaveGame() {
         viewModelScope.launch {
             val currentUid = firebaseAuthRepository.currentUid() ?: return@launch
@@ -288,6 +364,12 @@ class MultiplayerGameViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Ermittelt Sieg/Niederlage über [determineWinner], speichert das
+     * Matchergebnis in der Statistik und prüft anschließend
+     * siegesabhängige Tagesquests. Stoppt zusätzlich den Heartbeat, da
+     * nach Spielende keine weiteren Zustands-Updates mehr nötig sind.
+     */
     private fun saveMatchResult() {
         heartbeatJob?.cancel()
         val state = _uiState.value
@@ -319,6 +401,11 @@ class MultiplayerGameViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Bestimmt Sieger und Gewinnstatus des lokalen Spielers, abhängig vom
+     * Spielmodus: im Battle-Royale-Modus gewinnt der letzte Überlebende,
+     * ansonsten der Spieler mit der höchsten Gesamtpunktzahl.
+     */
     private fun determineWinner(state: GameUiState, myUid: String): Pair<Boolean, String?> {
         return when (state.gameMode) {
             GameMode.BATTLE_ROYALE -> {
@@ -335,6 +422,16 @@ class MultiplayerGameViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Sendet alle 10 Sekunden ein "Lebenszeichen" (siehe
+     * [MultiplayerPlayerState.lastSeenTimestamp]) an Firebase, solange die
+     * Partie läuft. Der Host nutzt diese Zeitstempel, um inaktive Spieler
+     * zu erkennen und zu entfernen (siehe [loadSessionLocations]).
+     *
+     * Läuft als Endlosschleife im [viewModelScope], bis entweder kein Uid
+     * mehr verfügbar ist (Abbruch der Schleife) oder [heartbeatJob] explizit
+     * abgebrochen wird (Spielende via [saveMatchResult] oder [onCleared]).
+     */
     private fun startHeartbeat() {
         heartbeatJob?.cancel()
         heartbeatJob = viewModelScope.launch {
@@ -346,7 +443,8 @@ class MultiplayerGameViewModel @Inject constructor(
                 val currentPlayer = state.multiplayerPlayers.find { it.uid == uid }
 
                 sessionRepository.updatePlayerState(
-                    sessionId = sessionId, playerState = MultiplayerPlayerState(
+                    sessionId = sessionId,
+                    playerState = MultiplayerPlayerState(
                         uid = uid,
                         playerName = currentName,
                         score = state.totalScore,

@@ -2,6 +2,7 @@ package com.example.geoguessr_app.di
 
 import android.content.Context
 import com.example.geoguessr_app.data.datastore.DailyQuestDataStoreRepository
+import com.example.geoguessr_app.data.datastore.OnboardingDataStoreRepository
 import com.example.geoguessr_app.data.datastore.StatisticsDataStoreRepository
 import com.example.geoguessr_app.data.datastore.ThemeDataStoreRepository
 import dagger.Module
@@ -46,5 +47,14 @@ object DataStoreModule {
         @ApplicationContext context: Context
     ): ThemeDataStoreRepository {
         return ThemeDataStoreRepository(context)
+    }
+
+    
+    @Provides
+    @Singleton
+    fun provideOnboardingDataStoreRepository(
+        @ApplicationContext context: Context
+    ): OnboardingDataStoreRepository {
+        return OnboardingDataStoreRepository(context)
     }
 }

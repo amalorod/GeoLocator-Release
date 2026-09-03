@@ -32,8 +32,7 @@ import com.google.android.gms.maps.model.LatLng
  */
 @Composable
 fun StreetViewTestScreen(
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onBackClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -63,7 +62,8 @@ fun StreetViewTestScreen(
                 Lifecycle.Event.ON_RESUME -> panoramaView.onResume()
                 Lifecycle.Event.ON_PAUSE -> panoramaView.onPause()
                 Lifecycle.Event.ON_STOP -> panoramaView.onStop()
-                else -> { /* Keine Aktion für andere Events */ }
+                else -> { /* Keine Aktion für andere Events */
+                }
             }
         }
 
@@ -89,8 +89,7 @@ fun StreetViewTestScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Street-View-Testansicht",
-            style = MaterialTheme.typography.headlineSmall
+            text = "Street-View-Testansicht", style = MaterialTheme.typography.headlineSmall
         )
 
         Text(
@@ -98,15 +97,13 @@ fun StreetViewTestScreen(
         )
 
         AndroidView(
-            factory = { panoramaView },
-            modifier = Modifier
+            factory = { panoramaView }, modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         )
 
         Button(
-            onClick = onBackClick,
-            modifier = Modifier.fillMaxWidth()
+            onClick = onBackClick, modifier = Modifier.fillMaxWidth()
         ) {
             Text("Zurück zum Hauptmenü")
         }
@@ -117,6 +114,5 @@ fun StreetViewTestScreen(
  * Teststandort am Times Square in New York.
  */
 private val TEST_LOCATION = LatLng(
-    40.7580,
-    -73.9855
+    40.7580, -73.9855
 )

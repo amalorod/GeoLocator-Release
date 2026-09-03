@@ -35,7 +35,7 @@ import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
 @Composable
 fun MultiplayerScoreboard(
     players: List<MultiplayerPlayerState>,
-    totalRounds,
+    totalRounds: Int,
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current

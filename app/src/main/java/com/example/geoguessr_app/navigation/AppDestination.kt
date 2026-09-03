@@ -39,6 +39,7 @@ sealed class AppDestination(
     data object Tutorial : AppDestination("tutorial")
     data object Game : AppDestination("game")
     data object MultiplayerGame : AppDestination("multiplayerGame")
+    data object Welcome : AppDestination("welcome")
 
     // Interne Testrouten zur Entwicklung; nicht über die reguläre
     // Benutzeroberfläche erreichbar, dienen der isolierten Prüfung
