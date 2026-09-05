@@ -1,0 +1,5 @@
+- [ ] Implement atomic round advancement (`advanceRoundAtomic`) in `SessionRepository`
+- [ ] Implement countdown timer (`startTimer`) in `MultiplayerGameViewModel`
+- [ ] Fix lives display in `GameStatusHeader` (`GameScreen.kt`) for multiplayer mode
+- [ ] Update `startNextRound` in `MultiplayerGameViewModel` to use atomic round advancement
+- [ ] Verify build and test multiplayer flow

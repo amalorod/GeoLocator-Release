@@ -133,7 +133,7 @@ object GeoLocationDataSource {
             name = "Toronto",
             country = "Kanada",
             region = Region.NORTH_AMERICA,
-            coordinate = GeoCoordinate(43.6532, -79.3832),
+            coordinate = GeoCoordinate(43.642567, -79.387054),
             hint = "CN Tower"
         ),
         GeoLocation(
@@ -213,7 +213,15 @@ object GeoLocationDataSource {
             name = "Kapstadt",
             country = "Südafrika",
             region = Region.AFRICA,
-            coordinate = GeoCoordinate(-33.9249, 18.4241),
+            coordinate = GeoCoordinate(-34.354000, 18.489716),
+            hint = "Cape Point"
+        ),
+        GeoLocation(
+            id = "cape_town2",
+            name = "Kapstadt",
+            country = "Südafrika",
+            region = Region.AFRICA,
+            coordinate = GeoCoordinate(-33.949371744086605, 18.40541916314918),
             hint = "Tafelberg"
         ),
         GeoLocation(
@@ -229,7 +237,7 @@ object GeoLocationDataSource {
             name = "Tokio",
             country = "Japan",
             region = Region.ASIA,
-            coordinate = GeoCoordinate(35.6762, 139.6503),
+            coordinate = GeoCoordinate(35.65947417051811, 139.7005350666233),
             hint = "Shibuya Crossing"
         ),
         GeoLocation(
@@ -261,8 +269,8 @@ object GeoLocationDataSource {
             name = "Shanghai",
             country = "China",
             region = Region.ASIA,
-            coordinate = GeoCoordinate(31.2304, 121.4737),
-            hint = "Bund-Promenade"
+            coordinate = GeoCoordinate(31.22887768691524, 121.48729952118009),
+            hint = "New-Town"
         ),
         GeoLocation(
             id = "bangkok",
