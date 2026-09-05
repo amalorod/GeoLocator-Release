@@ -283,9 +283,9 @@ object GeoLocationDataSource {
         GeoLocation(
             id = "singapore",
             name = "Singapur",
-            country = "Singapur",
+            country = "Malaysia",
             region = Region.ASIA,
-            coordinate = GeoCoordinate(1.3521, 103.8198),
+            coordinate = GeoCoordinate(1.2787931049130339, 103.85883089218818),
             hint = "Marina Bay Sands"
         ),
         GeoLocation(
