@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
 /**
- * Rotierender Bildbereich am oberen Rand des [HomeScreen] mit diagonaler,
+ * Bildbereich am oberen Rand des [HomeScreen] mit diagonaler,
  * gezackter "Abrisskante" (siehe [TornWallpaperShape]) und einem farbigen
  * Leuchtschatten in der aktuellen Theme-Akzentfarbe.
  *
@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.dp
  * auf dem Startbildschirm.
  */
 @Composable
-fun RotatingTornHeader(
+fun HomeTornHeader(
     @DrawableRes imageId: Int,
     modifier: Modifier = Modifier,
     height: Dp = 220.dp

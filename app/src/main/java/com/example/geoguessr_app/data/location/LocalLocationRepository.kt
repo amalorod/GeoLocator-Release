@@ -17,6 +17,13 @@ import javax.inject.Inject
  * Klasse ohne weitere Abhängigkeiten instanziiert werden kann. Über
  * RepositoryModule (siehe di/) wird sie an das Interface
  * [LocationRepository] gebunden.
+ *
+ * Der aktuelle, statische Standort-Datenbestand könnte als Erweiterung
+ * durch offene Geodaten-Datensätze angereichert werden, wobei Land- und
+ * Regionszuordnung einmalig offline über eine Reverse-Geocoding-Bibliothek vorberechnet
+ * und in das bestehende GeoLocation-Format überführt würden, ohne dass sich das
+ * [LocationRepository]-Interface oder aufrufende Klassen wie [GetRandomLocationsUseCase]
+ * ändern müssten.
  */
 class LocalLocationRepository @Inject constructor() : LocationRepository {
 

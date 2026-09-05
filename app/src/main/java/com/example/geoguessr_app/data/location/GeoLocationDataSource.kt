@@ -86,15 +86,39 @@ object GeoLocationDataSource {
             country = "USA",
             region = Region.NORTH_AMERICA,
             coordinate = GeoCoordinate(40.7128, -74.0060),
-            hint = "Freiheitsstatue und Wolkenkratzer"
+            hint = "City Hall Park"
+        ),
+        GeoLocation(
+            id = "new_york2",
+            name = "New York",
+            country = "USA",
+            region = Region.NORTH_AMERICA,
+            coordinate = GeoCoordinate(40.68875236646943, -74.04378912021065),
+            hint = "American Cookies"
         ),
         GeoLocation(
             id = "los_angeles",
             name = "Los Angeles",
             country = "USA",
             region = Region.NORTH_AMERICA,
-            coordinate = GeoCoordinate(34.0522, -118.2437),
+            coordinate = GeoCoordinate(34.13096949056064, -118.32409766915146),
             hint = "Hollywood"
+        ),
+        GeoLocation(
+            id = "los_angeles2",
+            name = "Los Angeles",
+            country = "USA",
+            region = Region.NORTH_AMERICA,
+            coordinate = GeoCoordinate(34.00652426934249, -118.49497301929661),
+            hint = "WestCoaster"
+        ),
+        GeoLocation(
+            id = "navajo_nation_reservation",
+            name = "Arizona",
+            country = "USA",
+            region = Region.NORTH_AMERICA,
+            coordinate = GeoCoordinate(36.729610972306446, -110.10733801194735),
+            hint = "Unendliche Straßen"
         ),
         GeoLocation(
             id = "chicago",
@@ -110,6 +134,14 @@ object GeoLocationDataSource {
             country = "Kanada",
             region = Region.NORTH_AMERICA,
             coordinate = GeoCoordinate(43.6532, -79.3832),
+            hint = "CN Tower"
+        ),
+        GeoLocation(
+            id = "philadelphia",
+            name = "Philadelphia",
+            country = "America",
+            region = Region.NORTH_AMERICA,
+            coordinate = GeoCoordinate(39.93395503549924, -75.17742661972696),
             hint = "CN Tower"
         ),
         GeoLocation(
@@ -205,7 +237,7 @@ object GeoLocationDataSource {
             name = "Osaka",
             country = "Japan",
             region = Region.ASIA,
-            coordinate = GeoCoordinate(34.6937, 135.5023),
+            coordinate = GeoCoordinate(34.6930597, 135.4957532),
             hint = "Takoyaki"
         ),
         GeoLocation(
@@ -221,7 +253,7 @@ object GeoLocationDataSource {
             name = "Peking",
             country = "China",
             region = Region.ASIA,
-            coordinate = GeoCoordinate(39.9042, 116.4074),
+            coordinate = GeoCoordinate(39.916389, 116.396393),
             hint = "Verbotene Stadt"
         ),
         GeoLocation(

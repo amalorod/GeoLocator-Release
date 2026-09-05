@@ -25,7 +25,7 @@ import com.google.android.gms.maps.model.LatLng
 /**
  * Isolierte Testansicht für Google Street View.
  *
- * Die Ansicht prüft zunächst unabhängig vom Spielablauf:
+ * Die Ansicht prüft unabhängig vom Spielablauf:
  * - Laden eines Panoramas
  * - Drehen und Zoomen
  * - Bewegung zwischen verbundenen Panoramaaufnahmen
