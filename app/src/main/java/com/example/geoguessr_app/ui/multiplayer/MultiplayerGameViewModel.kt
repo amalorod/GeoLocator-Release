@@ -67,7 +67,66 @@ class MultiplayerGameViewModel @Inject constructor(
 
     /** Ob der lokale Nutzer aktuell der Host der Session ist (siehe MatchSession.hostUid). */
     private var isHost: Boolean = false
+    private var hasSeenMultiplePlayers: Boolean = false
     private var heartbeatJob: Job? = null
+    private var timerJob: Job? = null
+
+    private fun startTimer() {
+        timerJob?.cancel()
+        timerJob = viewModelScope.launch {
+            while (_uiState.value.remainingSeconds > 0 && !_uiState.value.isRoundFinished && !_uiState.value.isGameFinished) {
+                delay(1_000)
+                val state = _uiState.value
+                if (!state.isPaused && !state.isRoundFinished && !state.isGameFinished) {
+                    _uiState.update { it.copy(remainingSeconds = it.remainingSeconds - 1) }
+                }
+            }
+
+            if (_uiState.value.remainingSeconds == 0 && !_uiState.value.isRoundFinished && !_uiState.value.isGameFinished) {
+                finishRoundWithoutGuess()
+            }
+        }
+    }
+
+    private fun finishRoundWithoutGuess() {
+        timerJob?.cancel()
+        val state = _uiState.value
+        val roundEntry = RoundStatistics(
+            roundNumber = state.currentRound, score = 0, distanceKm = 10000.0
+        )
+
+        _uiState.update {
+            it.copy(
+                roundScore = 0,
+                roundDistanceKilometers = 10000.0,
+                isRoundFinished = true,
+                waitingForPlayers = true,
+                roundStatistics = it.roundStatistics + roundEntry
+            )
+        }
+
+        viewModelScope.launch {
+            val uid = firebaseAuthRepository.currentUid() ?: return@launch
+            val currentPlayerState = state.multiplayerPlayers.find { it.uid == uid }
+            var currentLives = currentPlayerState?.lives ?: 5
+            if (state.gameMode == GameMode.BATTLE_ROYALE) {
+                currentLives = (currentLives - 1).coerceAtLeast(0)
+            }
+
+            sessionRepository.updatePlayerState(
+                sessionId = sessionId,
+                playerState = MultiplayerPlayerState(
+                    uid = uid,
+                    playerName = playerName,
+                    score = state.totalScore,
+                    round = state.currentRound,
+                    lives = currentLives,
+                    finishedRound = true,
+                    currentGuessScore = 0
+                )
+            )
+        }
+    }
 
     /**
      * Startet das Laden und Beobachten einer Session: aktiviert den
@@ -76,6 +135,7 @@ class MultiplayerGameViewModel @Inject constructor(
      */
     fun loadSessionLocations(sessionId: String) {
         this.sessionId = sessionId
+        hasSeenMultiplePlayers = false
         val currentUid = firebaseAuthRepository.currentUid() ?: return
 
         startHeartbeat()
@@ -120,13 +180,15 @@ class MultiplayerGameViewModel @Inject constructor(
                 // Rundenwechsel wird erkannt, sobald sich Rundennummer oder
                 // Standort-ID gegenüber dem aktuellen UI-State unterscheiden.
                 if (session.currentRound != _uiState.value.currentRound ||
-                    _uiState.value.currentLocation?.id != session.currentLocationId
+                    _uiState.value.currentLocation?.id != session.currentLocationId ||
+                    (_uiState.value.isLoading && nextLocation != null)
                 ) {
                     _uiState.update {
                         it.copy(
                             currentRound = session.currentRound,
                             currentLocation = nextLocation,
                             totalRounds = session.totalRounds,
+                            remainingSeconds = currentMode.roundDurationSeconds,
                             isRoundFinished = false,
                             guessedLocation = null,
                             roundScore = null,
@@ -136,6 +198,7 @@ class MultiplayerGameViewModel @Inject constructor(
                             gameMode = currentMode
                         )
                     }
+                    startTimer()
 
                     // Der Host setzt den eigenen Spielerzustand bereits in
                     // startNextRound() zurück (finishedRound = false für alle
@@ -173,15 +236,9 @@ class MultiplayerGameViewModel @Inject constructor(
 
                 _uiState.update { it.copy(multiplayerPlayers = players) }
 
-                // Auto-Win: Ist nur noch ein Spieler in der Session übrig
-                // (z. B. weil alle anderen die Partie verlassen haben oder
-                // entfernt wurden), endet die Partie sofort mit diesem
-                // Spieler als Sieger. Siehe Analyse zum Startzeitpunkt: Da
-                // loadSessionLocations() erst nach Abschluss von
-                // LobbyViewModel.startLobby() (inkl. aller Spieler-Inits)
-                // aufgerufen wird, kann dieser Check nicht fälschlich
-                // während der Spieler-Initialisierung auslösen.
-                if (players.size == 1 && !_uiState.value.isGameFinished) {
+                // Auto-Win: Greift erst ab Runde 2 (currentRound > 1), um jegliche
+                // Race Conditions oder Fluktuationen beim Spielstart in Runde 1 auszuschließen.
+                if (_uiState.value.currentRound > 1 && players.size == 1 && !_uiState.value.isGameFinished) {
                     _uiState.update { it.copy(isGameFinished = true) }
                     saveMatchResult()
                 }
@@ -240,6 +297,7 @@ class MultiplayerGameViewModel @Inject constructor(
      * live sehen (siehe [MultiplayerScoreboard]).
      */
     fun submitGuess() {
+        timerJob?.cancel()
         val state = _uiState.value
         val currentLocation = state.currentLocation ?: return
         val guessedLocation = state.guessedLocation ?: return
@@ -340,19 +398,20 @@ class MultiplayerGameViewModel @Inject constructor(
             val nextRound = state.currentRound + 1
             val nextLocation = gameLocations.getOrNull(nextRound - 1) ?: return@launch
 
-            sessionRepository.advanceRound(
-                sessionId = sessionId, nextRound = nextRound, nextLocationId = nextLocation.id
-            )
-
-            // Nur überlebende Spieler werden zurückgesetzt; im Battle-Royale-
-            // Modus bereits eliminierte Spieler (lives <= 0) bleiben
-            // unverändert, da sie ohnehin nicht mehr mitspielen.
-            state.multiplayerPlayers.filter { it.lives > 0 }.forEach { p ->
-                sessionRepository.updatePlayerState(
-                    sessionId = sessionId,
-                    playerState = p.copy(round = nextRound, finishedRound = false)
-                )
+            val updatedPlayers = state.multiplayerPlayers.map { p ->
+                if (p.lives > 0) {
+                    p.copy(round = nextRound, finishedRound = false)
+                } else {
+                    p
+                }
             }
+
+            sessionRepository.advanceRoundAtomic(
+                sessionId = sessionId,
+                nextRound = nextRound,
+                nextLocationId = nextLocation.id,
+                updatedPlayers = updatedPlayers
+            )
         }
     }
 
@@ -371,6 +430,7 @@ class MultiplayerGameViewModel @Inject constructor(
      * nach Spielende keine weiteren Zustands-Updates mehr nötig sind.
      */
     private fun saveMatchResult() {
+        timerJob?.cancel()
         heartbeatJob?.cancel()
         val state = _uiState.value
         val myUid = firebaseAuthRepository.currentUid() ?: return
@@ -462,6 +522,7 @@ class MultiplayerGameViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        timerJob?.cancel()
         heartbeatJob?.cancel()
     }
 }

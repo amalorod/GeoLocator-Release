@@ -34,9 +34,15 @@ private const val HEADER_ROTATION_INTERVAL_MS = 4_000L
 private const val TABLET_BREAKPOINT_DP = 600
 
 private val HEADER_IMAGES = listOf(
-    R.drawable.home_header_berlin,
-    R.drawable.home_header_france,
-    R.drawable.home_header_italy
+    R.drawable.map_picture_1,
+    R.drawable.map_picture_2,
+    R.drawable.map_picture_3,
+    R.drawable.map_picture_4,
+    R.drawable.map_picture_5,
+    R.drawable.map_picture_6,
+    R.drawable.map_picture_7,
+    R.drawable.map_picture_8,
+    R.drawable.map_picture_9,
 )
 
 /**
@@ -118,7 +124,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .align(Alignment.Center)
                             .offset(y = if (isTablet) 40.dp else 0.dp)
-                            .widthIn(max = 600.dp)
+                            .widthIn(max = if (isTablet) 800.dp else 600.dp)
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)
                             .height(430.dp)
@@ -129,6 +135,7 @@ fun HomeScreen(
                         )
                         HomeMapActionButtons(
                             hasActiveGame = hasActiveGame,
+                            isTablet = isTablet,
                             currentTheme = currentTheme,
                             currentDynamicColorEnabled = currentDynamicColorEnabled,
                             onThemeSelected = onThemeSelected,

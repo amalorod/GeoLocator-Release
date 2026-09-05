@@ -3,9 +3,13 @@ package com.example.geoguessr_app.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,8 +35,11 @@ fun AppTopBar(
     onDynamicColorToggled: (Boolean) -> Unit,
     onHomeClick: () -> Unit,
     onPauseClick: () -> Unit,
+    showPauseButton: Boolean = true,
+    onPauseGame: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+
     val actionButtonColors: ButtonColors = ButtonDefaults.buttonColors(
         containerColor = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary
@@ -43,16 +50,24 @@ fun AppTopBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Button(onClick = onHomeClick, modifier = Modifier.weight(1f), colors = actionButtonColors) {
-            Text("Home")
+            Icon(
+                imageVector = Icons.Default.Home,
+                contentDescription = "Home"
+            )
         }
 
-        Button(
-            onClick = onPauseClick,
-            enabled = isPauseEnabled,
-            modifier = Modifier.weight(1f),
-            colors = actionButtonColors
-        ) {
-            Text("Pause")
+        if (showPauseButton) {
+            Button(
+                onClick = onPauseClick,
+                enabled = isPauseEnabled,
+                modifier = Modifier.weight(1f),
+                colors = actionButtonColors
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Pause,
+                    contentDescription = "Pause"
+                )
+            }
         }
 
         ThemeSelectorMenu(

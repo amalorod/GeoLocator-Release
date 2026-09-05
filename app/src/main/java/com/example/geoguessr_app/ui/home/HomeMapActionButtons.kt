@@ -1,5 +1,6 @@
 package com.example.geoguessr_app.ui.home
 
+import android.R.attr.label
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.geoguessr_app.ui.components.ThemeSelectorMenu
 import com.example.geoguessr_app.ui.theme.AppThemeMode
+import com.google.android.gms.common.util.DeviceProperties.isTablet
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -45,6 +47,7 @@ import kotlin.math.sin
 @Composable
 fun BoxScope.HomeMapActionButtons(
     hasActiveGame: Boolean,
+    isTablet: Boolean,
     currentTheme: AppThemeMode,
     currentDynamicColorEnabled: Boolean,
     onThemeSelected: (AppThemeMode) -> Unit,
@@ -54,6 +57,16 @@ fun BoxScope.HomeMapActionButtons(
     onTutorialClick: () -> Unit,
     onExitAppClick: () -> Unit,
 ) {
+
+    // Auf Tablets rücken die Buttons weiter Richtung Bildschirmrand statt
+    // dicht an der Kartenmitte zu kleben – die Karte selbst bleibt über
+    // widthIn(max = 600.dp) in HomeScreen unverändert kompakt.
+    val edgeOffset = if (isTablet) 48.dp else 0.dp
+    val startButtonWidth = if (isTablet) 190.dp else 158.dp
+    val endButtonWidth = if (isTablet) 190.dp else 158.dp
+    val bottomButtonWidth = if (isTablet) 180.dp else 150.dp
+
+
     AnimatedVisibility(
         enter = fadeIn() + expandIn(),
         exit = fadeOut() + shrinkOut(),
@@ -81,8 +94,8 @@ fun BoxScope.HomeMapActionButtons(
         onClick = onStartGameClick,
         modifier = Modifier
             .align(Alignment.CenterStart)
-            .offset(y = (-60).dp)
-            .width(158.dp)
+            .offset(x = -edgeOffset, y = (-60).dp)
+            .width(startButtonWidth)
             .countryMotion(seed = 7)
             .height(78.dp),
         shape = RoundedCornerShape(
@@ -96,8 +109,8 @@ fun BoxScope.HomeMapActionButtons(
         onClick = onTutorialClick,
         modifier = Modifier
             .align(Alignment.CenterEnd)
-            .offset(y = 20.dp)
-            .width(158.dp)
+            .offset(x = edgeOffset, y = 20.dp)
+            .width(endButtonWidth)
             .countryMotion(seed = 6)
             .height(74.dp),
         shape = RoundedCornerShape(
@@ -113,8 +126,8 @@ fun BoxScope.HomeMapActionButtons(
         onDynamicColorToggled = onDynamicColorToggled,
         modifier = Modifier
             .align(Alignment.BottomStart)
-            .offset(y = (-45).dp)
-            .width(150.dp)
+            .offset(x = -edgeOffset, y = (-45).dp)
+            .width(bottomButtonWidth)
             .countryMotion(seed = 6)
             .height(72.dp),
         buttonContent = { expandMenu, previewColor, label ->
@@ -135,8 +148,8 @@ fun BoxScope.HomeMapActionButtons(
         onClick = onExitAppClick,
         modifier = Modifier
             .align(Alignment.BottomEnd)
-            .offset(y = (-18).dp)
-            .width(150.dp)
+            .offset(x = edgeOffset, y = (-18).dp)
+            .width(bottomButtonWidth)
             .countryMotion(seed = 5)
             .height(72.dp),
         shape = RoundedCornerShape(

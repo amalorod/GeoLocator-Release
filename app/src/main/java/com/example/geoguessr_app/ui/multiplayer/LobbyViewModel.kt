@@ -229,6 +229,19 @@ class LobbyViewModel @Inject constructor(
                 val locations = getRandomLocations(count = 5)
                 val locationIds = locations.map { it.id }
 
+                val initialLives =
+                    if (_uiState.value.selectedMode == MultiplayerMode.BATTLE_ROYALE) 3 else 5
+
+                val initialPlayers = _uiState.value.players.map { player ->
+                    MultiplayerPlayerState(
+                        uid = player.uid,
+                        playerName = player.name,
+                        score = 0,
+                        round = 1,
+                        lives = initialLives
+                    )
+                }
+
                 val session = MatchSession(
                     sessionId = sessionId,
                     hostUid = firebaseAuthRepository.currentUid() ?: "",
@@ -239,26 +252,10 @@ class LobbyViewModel @Inject constructor(
                     currentLocationId = locationIds.firstOrNull() ?: ""
                 )
 
-                sessionRepository.createSession(session)
-
                 try {
-                    val initialLives =
-                        if (_uiState.value.selectedMode == MultiplayerMode.BATTLE_ROYALE) 3 else 5
-
-                    _uiState.value.players.forEach { player ->
-                        sessionRepository.updatePlayerState(
-                            sessionId = sessionId,
-                            playerState = MultiplayerPlayerState(
-                                uid = player.uid,
-                                playerName = player.name,
-                                score = 0,
-                                round = 1,
-                                lives = initialLives
-                            )
-                        )
-                    }
+                    sessionRepository.createSessionWithPlayers(session, initialPlayers)
                 } catch (e: Exception) {
-                    Log.e("MULTIPLAYER", "Fehler bei Spieler-Init, räume Session auf", e)
+                    Log.d("MULTIPLAYER", "Fehler bei Session-Init mit Spielern", e)
                     sessionRepository.deleteSession(sessionId)
                     _uiState.update { it.copy(errorMessage = "Partie konnte nicht gestartet werden. Bitte erneut versuchen.") }
                     return@launch

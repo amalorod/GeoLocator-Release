@@ -64,6 +64,45 @@ class SessionRepository @Inject constructor(
     }
 
     /**
+     * Legt eine neue Spielsitzung inklusive aller Spieler initial in einer
+     * einzigen atomaren Operation an, um Race Conditions beim Spielstart zu verhindern.
+     */
+    suspend fun createSessionWithPlayers(session: MatchSession, players: List<MultiplayerPlayerState>) {
+        try {
+            val playersMap = players.associateBy { it.uid }
+            val sessionMap = mapOf(
+                "sessionId" to session.sessionId,
+                "hostUid" to session.hostUid,
+                "lobbyCode" to session.lobbyCode,
+                "mode" to session.mode,
+                "currentRound" to session.currentRound,
+                "totalRounds" to session.totalRounds,
+                "currentLocationId" to session.currentLocationId,
+                "roundStartTimestamp" to session.roundStartTimestamp,
+                "started" to session.started,
+                "finished" to session.finished,
+                "locationIds" to session.locationIds,
+                "players" to playersMap
+            )
+
+            database.reference.child("sessions").child(session.sessionId).setValue(sessionMap)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        Log.d("MULTIPLAYER", "Session mit Spielern erfolgreich erstellt")
+                    } else {
+                        Log.e(
+                            "MULTIPLAYER",
+                            "Session mit Spielern fehlgeschlagen: ${task.exception?.message}"
+                        )
+                    }
+                }.await()
+        } catch (e: Exception) {
+            Log.e("MULTIPLAYER", "Fehler beim Erstellen der Session mit Spielern", e)
+            throw e
+        }
+    }
+
+    /**
      * Löscht eine Spielsitzung vollständig aus Firebase.
      *
      * Wird aktuell ausschließlich als Cleanup in [LobbyViewModel.startLobby]
@@ -127,6 +166,29 @@ class SessionRepository @Inject constructor(
 
         database.reference.child("sessions").child(sessionId).child("roundStartTimestamp")
             .setValue(System.currentTimeMillis())
+    }
+
+    /**
+     * Schaltet die Sitzung atomar auf die nächste Runde weiter: aktualisiert
+     * Rundennummer, neuen Standort, Startzeitpunkt sowie die Spielerzustände
+     * (z. B. zurückgesetztes finishedRound) in einem einzigen updateChildren()-Aufruf,
+     * um Race Conditions und mehrfaches Triggern zu verhindern.
+     */
+    suspend fun advanceRoundAtomic(
+        sessionId: String,
+        nextRound: Int,
+        nextLocationId: String,
+        updatedPlayers: List<MultiplayerPlayerState>
+    ) {
+        val sessionRef = database.reference.child("sessions").child(sessionId)
+        val playersMap = updatedPlayers.associateBy { it.uid }
+        val updates = mapOf(
+            "currentRound" to nextRound,
+            "currentLocationId" to nextLocationId,
+            "roundStartTimestamp" to System.currentTimeMillis(),
+            "players" to playersMap
+        )
+        sessionRef.updateChildren(updates).await()
     }
 
     /**

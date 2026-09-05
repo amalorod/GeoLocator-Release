@@ -84,7 +84,7 @@ dependencies {
 
     // icons
     implementation("androidx.compose.material:material-icons-core")
-
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
 
     // Add the dependencies for any other desired Firebase products
     // https://firebase.google.com/docs/android/setup#available-libraries

@@ -189,7 +189,7 @@ object GeoLocationDataSource {
             name = "Santiago",
             country = "Chile",
             region = Region.SOUTH_AMERICA,
-            coordinate = GeoCoordinate(-33.4489, -70.6693),
+            coordinate = GeoCoordinate(-26.736308888215632, -70.73559911686097),
             hint = "Anden"
         ),
         GeoLocation(
@@ -293,7 +293,7 @@ object GeoLocationDataSource {
             name = "Melbourne",
             country = "Australien",
             region = Region.OCEANIA,
-            coordinate = GeoCoordinate(-37.8136, 144.9631),
+            coordinate = GeoCoordinate(-37.815021608645516, 144.96638280288556),
             hint = "Australisches Kulturzentrum"
         ),
         GeoLocation(

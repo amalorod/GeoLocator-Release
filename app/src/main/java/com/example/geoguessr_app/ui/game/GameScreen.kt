@@ -1,5 +1,6 @@
 package com.example.geoguessr_app.ui.game
 
+import androidx.activity.compose.BackHandler
 import com.example.geoguessr_app.ui.multiplayer.WaitingForPlayersOverlay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,10 +12,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -25,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +50,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
 import com.example.geoguessr_app.ui.components.AppTopBar
@@ -94,6 +104,10 @@ fun GameRoute(
     modifier: Modifier = Modifier,
     viewModel: GameViewModel
 ) {
+
+    BackHandler(enabled = true) {
+
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -178,6 +192,11 @@ fun MultiplayerGameRoute(
     modifier: Modifier = Modifier,
     viewModel: MultiplayerGameViewModel = hiltViewModel()
 ) {
+
+    BackHandler(enabled = true) {
+        // Bewusst leer: Zurückwischen während des Spiels wird ignoriert.
+
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val sessionViewModel: SessionViewModel = hiltViewModel()
     val sessionUiState by sessionViewModel.uiState.collectAsStateWithLifecycle()
@@ -259,6 +278,55 @@ private fun GameScreen(
     onDismissQuest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+
+
+    var isStreetViewFullscreen by rememberSaveable { mutableStateOf(false) }
+    // Im Vollbildmodus wird bewusst ausschließlich die Street-View-Ansicht
+    // ohne Score-Header, Hint-Panel oder AppTopBar gerendert, damit die
+    // Aufnahme tatsächlich den kompletten Bildschirm einnimmt. Ein early
+    // return verhindert, dass die restliche Column-Struktur parallel
+    // mitkomponiert wird (spart zusätzliche native StreetViewPanoramaView-
+    // Instanzen und vermeidet Layout-Konflikte).
+
+    BackHandler(enabled = true) {
+        if (isStreetViewFullscreen) {
+            isStreetViewFullscreen = false
+        }
+        // sonst: bewusst weiterhin ignorieren
+    }
+    if (isStreetViewFullscreen && uiState.viewMode == GameViewMode.STREET_VIEW) {
+        val currentLocation = uiState.currentLocation
+        if (currentLocation != null) {
+            Box(modifier = modifier.fillMaxSize()) {
+                GameStreetView(
+                    location = currentLocation,
+                    isUserNavigationEnabled = uiState.isStreetViewNavigationEnabled,
+                    modifier = Modifier.fillMaxSize()
+                )
+                FilledIconButton(
+                    onClick = { isStreetViewFullscreen = false },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        // Nutzt die gewünschte Farbe aus dem aktuellen Farbschema
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        // Bestimmt die Farbe des Icons (automatisch die passende Kontrastfarbe)
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FullscreenExit,
+                        contentDescription = "Vollbild verlassen",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
+        return
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -296,6 +364,8 @@ private fun GameScreen(
             onThemeSelected = onThemeSelected,
             onDynamicColorToggled = onDynamicColorToggled,
             onHomeClick = onHomeClick,
+            showPauseButton = !uiState.isMultiplayer,
+            onPauseGame = onPauseGame,
             onPauseClick = onPauseGame,
             isPauseEnabled = !uiState.isLoading && !uiState.isRoundFinished && !uiState.isGameFinished && !uiState.isPaused,
         )
@@ -306,7 +376,8 @@ private fun GameScreen(
             totalRounds = uiState.totalRounds,
             remainingSeconds = uiState.remainingSeconds,
             gameMode = uiState.gameMode,
-            lives = uiState.lives
+            lives = uiState.lives,
+            isMultiplayer = uiState.isMultiplayer
         )
 
         if (uiState.isMultiplayer) {
@@ -354,11 +425,38 @@ private fun GameScreen(
                 val currentLocation = uiState.currentLocation
 
                 if (currentLocation != null) {
-                    GameStreetView(
-                        location = currentLocation,
-                        isUserNavigationEnabled = uiState.isStreetViewNavigationEnabled,
-                        modifier = Modifier.weight(1f)
-                    )
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
+                        GameStreetView(
+                            location = currentLocation,
+                            isUserNavigationEnabled = uiState.isStreetViewNavigationEnabled,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+
+                        FilledIconButton(
+                            onClick = { isStreetViewFullscreen = true },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                // Nutzt die gewünschte Farbe aus deinem aktuellen Farbschema
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                // Bestimmt die Farbe des Icons (automatisch die passende Kontrastfarbe)
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Fullscreen,
+                                contentDescription = "Vollbild"
+                            )
+                        }
+                    }
 
                     Button(
                         onClick = onShowGuessMap, modifier = Modifier.fillMaxWidth()
@@ -518,9 +616,7 @@ private fun GameResult(
  */
 @Composable
 private fun GameStreetView(
-    location: GeoLocation,
-    isUserNavigationEnabled: Boolean,
-    modifier: Modifier = Modifier
+    location: GeoLocation, isUserNavigationEnabled: Boolean, modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -553,8 +649,7 @@ private fun GameStreetView(
             panorama.isUserNavigationEnabled = isUserNavigationEnabled
             panorama.isStreetNamesEnabled = false
             panorama.setPosition(
-                LatLng(location.latitude, location.longitude),
-                STREET_VIEW_SEARCH_RADIUS_METERS
+                LatLng(location.latitude, location.longitude), STREET_VIEW_SEARCH_RADIUS_METERS
             )
         }
     }
@@ -651,9 +746,6 @@ private fun RoundResultMap(
     }
 }
 
-/** Schwelle, unterhalb der Lebenspunkte im Custom-Modus überhaupt angezeigt werden. */
-private const val CUSTOM_MODE_LIVES_DISPLAY_THRESHOLD = 100
-
 @Composable
 private fun GameStatusHeader(
     score: Int,
@@ -661,7 +753,8 @@ private fun GameStatusHeader(
     totalRounds: Int,
     remainingSeconds: Int,
     gameMode: GameMode,
-    lives: Int = Int.MAX_VALUE
+    lives: Int = Int.MAX_VALUE,
+    isMultiplayer: Boolean = false
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -684,7 +777,7 @@ private fun GameStatusHeader(
                 Text("Score: $score")
 
                 val showLives =
-                    (gameMode == GameMode.BATTLE_ROYALE || (lives < 100 && gameMode == GameMode.CUSTOM))
+                    !isMultiplayer && (gameMode == GameMode.BATTLE_ROYALE || (lives < 100 && gameMode == GameMode.CUSTOM))
                 if (showLives) {
                     Text("❤️ $lives")
                 }

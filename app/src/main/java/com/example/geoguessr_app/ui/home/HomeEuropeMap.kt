@@ -48,7 +48,7 @@ fun HomeEuropeMap(
             // der Schattenwurf nutzt die vereinfachte Form.
             .shadow(
                 elevation = 24.dp,
-                shape = RoundedCornerShape(40),
+                shape = RoundedCornerShape(50),
                 clip = false,
                 ambientColor = accentColor.copy(alpha = 0.75f),
                 spotColor = accentColor.copy(alpha = 0.85f)
@@ -91,7 +91,7 @@ fun HomeEuropeMap(
                             Color.Transparent
                         ),
                         start = Offset(0f, 0f),
-                        end = Offset(400f, 400f)
+                        end = Offset(700f, 700f)
                     )
                 )
         )
