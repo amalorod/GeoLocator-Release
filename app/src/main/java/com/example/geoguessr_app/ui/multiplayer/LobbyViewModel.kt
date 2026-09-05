@@ -71,10 +71,7 @@ class LobbyViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val code = LobbyCodeGenerator.generate()
-
-                _uiState.update {
-                    it.copy(lobbyCode = code, isLoading = true, errorMessage = null)
-                }
+                _uiState.update { it.copy(lobbyCode = code, isLoading = true, errorMessage = null) }
 
                 val uid = firebaseAuthRepository.currentUid()
                     ?: firebaseAuthRepository.signInAnonymously()
@@ -94,7 +91,7 @@ class LobbyViewModel @Inject constructor(
                 }
 
                 multiplayerRepository.createLobby(lobbyCode = code, hostPlayer = hostPlayer)
-
+                multiplayerRepository.registerLobbyPresence(code, uid)
                 observeLobby(code)
 
                 _uiState.update { it.copy(players = listOf(hostPlayer), isLoading = false) }
@@ -125,11 +122,13 @@ class LobbyViewModel @Inject constructor(
 
                 val uid = firebaseAuthRepository.currentUid()
                     ?: firebaseAuthRepository.signInAnonymously()
+                
+                Log.d("MULTIPLAYER_DEBUG", "join uid=$uid")
 
                 _uiState.update { it.copy(currentUserUid = uid) }
 
                 val profile = profileRepository.profile.value
-                multiplayerRepository.joinLobby(
+                val joined = multiplayerRepository.joinLobby(
                     lobbyCode = lobbyCode,
                     player = LobbyPlayer(
                         uid = uid,
@@ -139,6 +138,17 @@ class LobbyViewModel @Inject constructor(
                     )
                 )
 
+                if (!joined) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "Lobby ist bereits voll (max. 4 Spieler)."
+                        )
+                    }
+                    return@launch
+                }
+
+                multiplayerRepository.registerLobbyPresence(lobbyCode, uid)
                 observeLobby(lobbyCode)
                 _uiState.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
@@ -189,7 +199,7 @@ class LobbyViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             lobbyCode = lobby.lobbyCode.ifEmpty { lobbyCode },
-                            players = lobby.players,
+                            players = lobby.players.values.toList(),
                             started = lobby.started,
                             sessionId = lobby.sessionId,
                             selectedMode = remoteMode

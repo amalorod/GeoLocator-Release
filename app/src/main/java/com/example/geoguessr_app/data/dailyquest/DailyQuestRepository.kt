@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,10 +26,8 @@ import javax.inject.Singleton
  * keine Abhängigkeit zu dieser Klasse, wodurch keine zirkuläre
  * Abhängigkeit entsteht.
  *
- * GAST-PERSISTENZ: Im Gegensatz zur ursprünglichen Implementierung
- * (siehe Doku-Historie) wird der Quest-Fortschritt von Gast-Nutzern
- * jetzt über DailyQuestDataStoreRepository persistiert und überlebt
- * damit einen App-Neustart, analog zu StatisticsRepository.
+ * GAST-PERSISTENZ: Gast-Nutzer persistieren ihren Fortschritt lokal
+ * über DailyQuestDataStoreRepository inklusive automatischem Tages-Reset.
  */
 @Singleton
 class DailyQuestRepository @Inject constructor(
@@ -35,21 +36,9 @@ class DailyQuestRepository @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val dataStoreRepository: DailyQuestDataStoreRepository
 ) {
-
     private val _quests = MutableStateFlow<List<DailyQuest>>(emptyList())
     val quests: StateFlow<List<DailyQuest>> = _quests.asStateFlow()
 
-    /**
-     * Feste Liste der aktuell verfügbaren Tagesherausforderungen.
-     *
-     * ARCHITEKTUR-HINWEIS: Trotz des Namens "Daily" wird die Auswahl
-     * hier statisch im Code hinterlegt, statt sich täglich zufällig
-     * oder serverseitig zu ändern. Ein neuer Nutzer bzw. ein neuer
-     * Firebase-Datensatz erhält daher stets exakt dieselben fünf
-     * Quests (siehe loadQuests(), Zweig "snapshot existiert nicht").
-     * Eine echte Rotation wäre ein guter Kandidat für den
-     * Erweiterungshorizont.
-     */
     private val DEFAULT_QUESTS = listOf(
         DailyQuest(
             id = "europe_explorer",
@@ -88,81 +77,81 @@ class DailyQuestRepository @Inject constructor(
         )
     )
 
+    private fun getTodayDateString(): String {
+        return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    }
+
     /**
-     * Lädt die Quests des aktuell angemeldeten Nutzers aus Firebase,
-     * oder setzt für Gäste die Standard-Quests zurück.
-     *
-     * Existiert für einen angemeldeten Nutzer noch kein Quest-Datensatz
-     * (z. B. erster Login), werden die DEFAULT_QUESTS einmalig sowohl
-     * lokal gesetzt als auch in Firebase persistiert, damit der Nutzer
-     * ab diesem Zeitpunkt einen eigenen, unabhängig fortschreibbaren
-     * Datensatz besitzt.
+     * Lädt die Quests des aktuell angemeldeten Nutzers aus Firebase (oder lokal für Gäste)
+     * und prüft dabei automatisch, ob ein neuer Tag (nach 00:00 Uhr) begonnen hat,
+     * um die Quests ggf. tagesaktuell zurückzusetzen.
      */
     suspend fun loadQuests() {
         val currentProfile = profileRepository.profile.value
         val isGuest = currentProfile == null
+        val today = getTodayDateString()
 
         if (isGuest) {
             val localQuests = dataStoreRepository.loadQuests()
-            if (localQuests.isNotEmpty()) {
+            val lastReset = dataStoreRepository.loadLastResetDate()
+            if (localQuests.isNotEmpty() && lastReset == today) {
                 _quests.value = localQuests
             } else {
-                resetQuests()
+                val freshQuests = DEFAULT_QUESTS.map { it.copy(progress = 0, completed = false) }
+                saveQuests(freshQuests)
+                dataStoreRepository.saveLastResetDate(today)
             }
             return
         }
 
         try {
             val uid = currentProfile.playerId
-            val snapshot = database.reference
-                .child("users")
-                .child(uid)
-                .child("quests")
-                .get()
-                .await()
+            val userRef = database.reference.child("users").child(uid)
+            val questsSnapshot = userRef.child("quests").get().await()
+            val lastResetSnapshot = userRef.child("lastResetDate").get().await()
+            val lastResetDate = lastResetSnapshot.getValue(String::class.java)
 
-            if (snapshot.exists()) {
+            if (questsSnapshot.exists() && lastResetDate == today) {
                 val loadedQuests =
-                    snapshot.children.mapNotNull { it.getValue(DailyQuest::class.java) }
+                    questsSnapshot.children.mapNotNull { it.getValue(DailyQuest::class.java) }
                 _quests.value = loadedQuests
             } else {
-                _quests.value = DEFAULT_QUESTS
-                saveQuests(DEFAULT_QUESTS)
+                val freshQuests = DEFAULT_QUESTS.map { it.copy(progress = 0, completed = false) }
+                _quests.value = freshQuests
+                userRef.child("quests").setValue(freshQuests).await()
+                userRef.child("lastResetDate").setValue(today).await()
             }
         } catch (e: Exception) {
             Log.e("QUESTS", "Fehler beim Laden", e)
             if (_quests.value.isEmpty()) {
-                _quests.value = DEFAULT_QUESTS
+                _quests.value = DEFAULT_QUESTS.map { it.copy(progress = 0, completed = false) }
             }
         }
     }
 
     /**
-     * Aktualisiert den lokalen Quest-Zustand und synchronisiert ihn
-     * bei angemeldeten Nutzern zusätzlich mit Firebase. Für Gäste
-     * bleibt die Aktualisierung ausschließlich im Speicher (siehe
-     * Klassendokumentation zur fehlenden Gast-Persistenz).
+     * Aktualisiert den Quest-Zustand und synchronisiert ihn mit Firebase bzw. DataStore
+     * inklusive des heutigen Datums.
      */
     suspend fun saveQuests(quests: List<DailyQuest>) {
         _quests.value = quests
+        val today = getTodayDateString()
 
         val currentProfile = profileRepository.profile.value
         val isGuest = currentProfile == null
 
         if (isGuest) {
             dataStoreRepository.saveQuests(quests)
+            dataStoreRepository.saveLastResetDate(today)
             return
         }
 
         if (currentProfile != null) {
             val uid = currentProfile.playerId.ifEmpty { authRepository.currentUid() } ?: return
             try {
-                database.reference
-                    .child("users")
-                    .child(uid)
-                    .child("quests")
-                    .setValue(quests)
-                    .await()
+                val userRef = database.reference.child("users").child(uid)
+                userRef.child("quests").setValue(quests).await()
+                userRef.child("lastResetDate").setValue(today).await()
             } catch (e: Exception) {
                 Log.e("QUESTS", "Fehler beim Speichern", e)
             }
@@ -172,14 +161,6 @@ class DailyQuestRepository @Inject constructor(
     /**
      * Erhöht den Fortschritt einer einzelnen Quest um den angegebenen
      * Wert und markiert sie bei Erreichen des Ziels als abgeschlossen.
-     *
-     * Bereits abgeschlossene Quests werden ignoriert (early return
-     * über null), um ein versehentliches Überschreiten des Ziels oder
-     * eine erneute "Abschluss"-Benachrichtigung zu verhindern.
-     *
-     * @return die aktualisierte Quest, falls sie durch diesen Aufruf
-     *   neu abgeschlossen wurde (z. B. für eine Erfolgs-Anzeige im
-     *   UI), sonst null.
      */
     suspend fun updateQuestProgress(questId: String, increment: Int = 1): DailyQuest? {
         val currentQuests = _quests.value.toMutableList()
@@ -203,24 +184,19 @@ class DailyQuestRepository @Inject constructor(
     }
 
     /**
-     * Setzt den Quest-Zustand auf die Standard-Quests zurück, ohne
-     * Firebase zu kontaktieren. Wird für den Gast-Modus sowie beim
-     * Übergang zwischen Login-Zuständen verwendet (siehe
-     * ProfileRepository).
+     * Setzt den Quest-Zustand auf die Standard-Quests zurück.
      */
     fun resetQuests() {
-        _quests.value = DEFAULT_QUESTS
+        _quests.value = DEFAULT_QUESTS.map { it.copy(progress = 0, completed = false) }
     }
 
     /**
-     * Setzt die Quests vollständig zurück – sowohl den In-Memory-Zustand
-     * als auch die lokal persistierten Gast-Daten. Wird beim Übergang
-     * von Gast zu angemeldetem Nutzer aufgerufen, um sicherzustellen,
-     * dass keine alten Gast-Quests nach einem Login weiterbestehen
-     * ("Verwerfen-beim-Login"-Strategie).
+     * Setzt die Quests vollständig zurück und aktualisiert das Reset-Datum.
      */
     suspend fun clearLocalQuests() {
-        _quests.value = DEFAULT_QUESTS
-        dataStoreRepository.saveQuests(DEFAULT_QUESTS)
+        val freshQuests = DEFAULT_QUESTS.map { it.copy(progress = 0, completed = false) }
+        _quests.value = freshQuests
+        dataStoreRepository.saveQuests(freshQuests)
+        dataStoreRepository.saveLastResetDate(getTodayDateString())
     }
 }

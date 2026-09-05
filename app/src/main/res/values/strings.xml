@@ -1,5 +1,32 @@
 <resources>
+
     <string name="app_name">GeoGuessr_App</string>
     <string name="app_logo_description">App Logo</string>
     <string name="geo_guessr_title">GEO\nGUESSR</string>
+
+
+    <!-- Schritt 1 -->
+    <string name="tutorial_title_1">Schritt 1: Spiel starten</string>
+    <string name="tutorial_desc_1">Wähle auf dem Startbildschirm einen Spielmodus aus und tippe auf \"Spiel starten\".</string>
+
+    <!-- Schritt 2 -->
+    <string name="tutorial_title_2">Schritt 2: Standort untersuchen</string>
+    <string name="tutorial_desc_2">Sieh dich in der Street-View-Umgebung um und suche nach
+        Hinweisen wie Schildern, Vegetation oder Fahrbahnmarkierungen.
+        Du kannst auch die Street-View-Navigation nutzen, um dich zu bewegen, dir Tipps geben lassen,
+        in den Full-Screen Modus gehen oder eine Pause einlegen.</string>
+
+    <!-- Schritt 3 -->
+    <string name="tutorial_title_3">Schritt 3: Tipp abgeben</string>
+    <string name="tutorial_desc_3">Markiere den vermuteten Standort auf der Weltkarte und bestätige deinen Tipp.</string>
+
+    <!-- Schritt 4 -->
+    <string name="tutorial_title_4">Schritt 4: Punkte sammeln</string>
+    <string name="tutorial_desc_4">Je näher dein Tipp am tatsächlichen Standort liegt, desto mehr Punkte erhältst du.</string>
+
+    <!-- Schritt 5 -->
+    <string name="tutorial_title_5">Schritt 5: Fünf Runden spielen</string>
+    <string name="tutorial_desc_5">Nach fünf Standorten wird dein Gesamtergebnis angezeigt.
+        Zudem kannst du über den HomeScreen auch deine Langzeitstatistik einsehen.
+        Wenn du eingeloggt bist, dann werden diese Daten in der Cloud gesichert.</string>
 </resources>

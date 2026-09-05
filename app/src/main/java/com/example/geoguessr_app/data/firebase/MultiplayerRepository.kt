@@ -6,12 +6,16 @@ import com.example.geoguessr_app.domain.model.multiplayer.LobbyPlayer
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.MutableData
+import com.google.firebase.database.Transaction
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import kotlin.collections.copy
 
 /**
  * Verwaltet Multiplayer-Lobbys in Firebase Realtime Database (siehe
@@ -44,23 +48,15 @@ class MultiplayerRepository @Inject constructor(
     suspend fun createLobby(
         lobbyCode: String, hostPlayer: LobbyPlayer
     ) {
-        Log.e("MULTIPLAYER", "Repo: createLobby($lobbyCode)")
+        Log.d("MULTIPLAYER", "Repo: createLobby($lobbyCode)")
         try {
             val lobby = Lobby(
-                lobbyCode = lobbyCode, hostUid = hostPlayer.uid, players = listOf(hostPlayer)
+                lobbyCode = lobbyCode,
+                hostUid = hostPlayer.uid,
+                players = mapOf(hostPlayer.uid to hostPlayer)
             )
 
-            database.reference.child("lobbies").child(lobbyCode).setValue(lobby)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        Log.e("MULTIPLAYER", "Schreibvorgang ERFOLGREICH")
-                    } else {
-                        Log.e(
-                            "MULTIPLAYER",
-                            "Schreibvorgang FEHLGESCHLAGEN: ${task.exception?.message}"
-                        )
-                    }
-                }.await()
+            database.reference.child("lobbies").child(lobbyCode).setValue(lobby).await()
         } catch (e: Exception) {
             Log.e("MULTIPLAYER", "EXCEPTION", e)
         }
@@ -73,14 +69,38 @@ class MultiplayerRepository @Inject constructor(
      */
     suspend fun joinLobby(
         lobbyCode: String, player: LobbyPlayer
-    ) {
-        val lobbyRef = database.reference.child("lobbies").child(lobbyCode)
-        val snapshot = lobbyRef.get().await()
-        val lobby = snapshot.getValue(Lobby::class.java) ?: return
+    ): Boolean {
+        val playersRef = database.reference.child("lobbies").child(lobbyCode).child("players")
 
-        if (lobby.players.none { it.uid == player.uid }) {
-            val updatedPlayers = lobby.players + player
-            lobbyRef.child("players").setValue(updatedPlayers).await()
+        return suspendCancellableCoroutine { continuation ->
+            playersRef.runTransaction(object : Transaction.Handler {
+                override fun doTransaction(currentData: MutableData): Transaction.Result {
+                    val playersMap = currentData.value as? Map<*, *> ?: emptyMap<String, Any>()
+
+                    if (playersMap.containsKey(player.uid)) {
+                        return Transaction.success(currentData)
+                    }
+                    if (playersMap.size >= 4) {
+                        return Transaction.abort()
+                    }
+
+                    currentData.child(player.uid).value = mapOf(
+                        "uid" to player.uid,
+                        "name" to player.name,
+                        "ready" to player.ready,
+                        "host" to player.host
+                    )
+                    return Transaction.success(currentData)
+                }
+
+                override fun onComplete(
+                    error: DatabaseError?,
+                    committed: Boolean,
+                    currentData: DataSnapshot?
+                ) {
+                    continuation.resume(committed) {}
+                }
+            })
         }
     }
 
@@ -98,25 +118,22 @@ class MultiplayerRepository @Inject constructor(
         val snapshot = lobbyRef.get().await()
         val lobby = snapshot.getValue(Lobby::class.java) ?: return
 
-        val updatedPlayers = lobby.players.filter { it.uid != uid }
+        val remainingPlayers = lobby.players - uid
 
-        if (updatedPlayers.isEmpty()) {
+        if (remainingPlayers.isEmpty()) {
             lobbyRef.removeValue().await()
         } else {
-            val finalPlayers = if (lobby.hostUid == uid) {
-                updatedPlayers.mapIndexed { index, p ->
-                    if (index == 0) p.copy(host = true) else p
-                }
+            if (lobby.hostUid == uid) {
+                val newHostUid = remainingPlayers.keys.first()
+                val updates = mapOf(
+                    "players/$uid" to null,
+                    "players/$newHostUid/host" to true,
+                    "hostUid" to newHostUid
+                )
+                lobbyRef.updateChildren(updates).await()
             } else {
-                updatedPlayers
+                lobbyRef.child("players").child(uid).removeValue().await()
             }
-
-            val newHostUid = if (lobby.hostUid == uid) finalPlayers.first().uid else lobby.hostUid
-
-            val updates = mapOf(
-                "players" to finalPlayers, "hostUid" to newHostUid
-            )
-            lobbyRef.updateChildren(updates).await()
         }
     }
 
@@ -128,15 +145,37 @@ class MultiplayerRepository @Inject constructor(
     suspend fun toggleReadyStatus(
         lobbyCode: String, uid: String
     ) {
-        val lobbyRef = database.reference.child("lobbies").child(lobbyCode)
-        val snapshot = lobbyRef.get().await()
-        val lobby = snapshot.getValue(Lobby::class.java) ?: return
+        val playerRef = database.reference.child("lobbies").child(lobbyCode)
+            .child("players").child(uid)
+        val snapshot = playerRef.get().await()
+        val player = snapshot.getValue(LobbyPlayer::class.java) ?: return
 
-        val updatedPlayers = lobby.players.map { player ->
-            if (player.uid == uid) player.copy(ready = !player.ready) else player
-        }
+        playerRef.child("ready").setValue(!player.ready).await()
+    }
 
-        lobbyRef.child("players").setValue(updatedPlayers).await()
+    /**
+     * Registriert eine serverseitige Aufräumaktion: Verliert der Client die
+     * Verbindung (App-Crash, Netzwerkverlust, Task-Kill), entfernt Firebase
+     * den Spieler automatisch aus der Lobby, ohne dass der Client selbst
+     * noch aktiv werden muss (siehe Doku 3.2 „Leave-System“).
+     *
+     * Muss nach createLobby()/joinLobby() aufgerufen werden, da onDisconnect()
+     * pro aktiver Socket-Verbindung neu gesetzt werden muss.
+     */
+    fun registerLobbyPresence(lobbyCode: String, uid: String) {
+        val playerRef = database.reference.child("lobbies").child(lobbyCode)
+            .child("players").child(uid)
+        val connectedRef = database.reference.child(".info/connected")
+
+        connectedRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.getValue(Boolean::class.java) == true) {
+                    playerRef.onDisconnect().removeValue()
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        })
     }
 
     /**

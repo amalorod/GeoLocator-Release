@@ -1,6 +1,7 @@
 package com.example.geoguessr_app.ui.multiplayer
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.geoguessr_app.domain.model.multiplayer.LobbyPlayer
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerMode
 
@@ -97,9 +99,6 @@ fun MultiplayerLobbyScreen(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                // Getrennt von onBackClick: onLeaveClick meldet den Spieler
-                // aktiv aus der Lobby ab (siehe LobbyViewModel.leaveLobby),
-                // während onBackClick nur navigiert, ohne die Lobby zu verlassen.
                 TextButton(
                     onClick = onLeaveClick,
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
@@ -159,7 +158,7 @@ fun MultiplayerLobbyScreen(
                     textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Feste Obergrenze von 4 Spielern, analog zu
                 // MultiplayerScoreboard.players.take(4) für Tablets.
@@ -169,18 +168,18 @@ fun MultiplayerLobbyScreen(
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 players.forEach { player ->
                     ElevatedCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp)
+                            .padding(vertical = 3.dp)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -208,7 +207,7 @@ fun MultiplayerLobbyScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
                     text = "Spielmodus",
@@ -216,68 +215,112 @@ fun MultiplayerLobbyScreen(
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Alle Modi werden angezeigt (auch BATTLE_ROYALE, das laut
-                // GameMode.isAvailable im Einzelspieler-Kontext noch nicht
-                // spielbar ist) – im Multiplayer-Kontext gilt eine eigene,
-                // von GameMode unabhängige Verfügbarkeit über MultiplayerMode.
-                MultiplayerMode.entries.forEach { mode ->
-                    ModeButton(
-                        mode = mode,
-                        selected = mode == selectedMode,
-                        // Nur der Host darf den Modus ändern; bei Nicht-Host
-                        // ist der Klick ein No-Op, der Button bleibt aber
-                        // sichtbar, damit alle Teilnehmer den aktuell
-                        // gewählten Modus sehen.
-                        onClick = { if (isHost) onModeSelected(mode) }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                // Spielmodus-Auswahl in einem ansprechenden horizontalen Raster mit Icons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    MultiplayerMode.entries.forEach { mode ->
+                        val icon = when (mode) {
+                            MultiplayerMode.FREEPLAY -> "🌍"
+                            MultiplayerMode.PRO -> "⚡"
+                            MultiplayerMode.BATTLE_ROYALE -> "👑"
+                        }
+                        val selected = mode == selectedMode
+
+                        ElevatedCard(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(enabled = isHost) {
+                                    onModeSelected(mode)
+                                },
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = if (selected) {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                }
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(10.dp)
+                                    .fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(text = icon, fontSize = 24.sp)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = mode.displayName,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (selected) {
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
+                // Bereit / Nicht bereit Button: Hardcoded Rot / Grün
                 Button(
                     onClick = onReadyClick,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(52.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isReady) Color.DarkGray else Color(0xFF1565C0)
+                        containerColor = if (isReady) Color(0xFFC62828) else Color(0xFF2E7D32),
+                        contentColor = Color.White
                     ),
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Text(
-                        if (isReady) "Nicht bereit" else "Ich bin bereit!",
-                        style = MaterialTheme.typography.titleMedium
+                        text = if (isReady) "❌ Nicht mehr bereit" else "✅ Ich bin bereit!",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
                 }
 
                 if (isHost) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    val allReady = players.size >= 2 && players.all { it.ready }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    val allReady = players.size >= 2 && players.all { player -> player.ready }
                     Button(
                         onClick = onStartGameClick,
                         enabled = allReady,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
+                            .height(52.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (allReady) Color(0xFFC62828) else Color.Gray
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                alpha = 0.5f
+                            )
                         ),
                         shape = MaterialTheme.shapes.medium
                     ) {
-                        Text("Spiel starten", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = "🚀 Spiel starten",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 } else {
-                    // Nicht-Host-Spieler sehen statt des Start-Buttons nur
-                    // einen Hinweis, da ausschließlich der Host die Partie
-                    // starten darf (siehe LobbyViewModel.startLobby).
                     Text(
                         text = "Warte auf den Host...",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 12.dp),
+                            .padding(top = 10.dp),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary
@@ -285,36 +328,5 @@ fun MultiplayerLobbyScreen(
                 }
             }
         }
-    }
-}
-
-/** Einzelner, umschaltbarer Modus-Button innerhalb der Spielmodus-Auswahl. */
-@Composable
-private fun ModeButton(
-    mode: MultiplayerMode,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp),
-        shape = MaterialTheme.shapes.medium,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-            contentColor = if (selected) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-        ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = if (selected) 4.dp else 0.dp)
-    ) {
-        Text(mode.displayName, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
     }
 }

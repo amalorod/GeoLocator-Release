@@ -34,6 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -113,7 +115,7 @@ fun TutorialScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = currentStep.title,
+                text = stringResource(id = currentStep.titleRes),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -132,7 +134,7 @@ fun TutorialScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = currentStep.description,
+                text = stringResource(id = currentStep.descriptionRes),
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -187,7 +189,6 @@ private fun TutorialImagePlaceholder(
 ) {
     Box(
         modifier = modifier
-            .aspectRatio(4f / 3f)
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
@@ -196,7 +197,8 @@ private fun TutorialImagePlaceholder(
             Image(
                 painter = painterResource(id = imageRes),
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
             )
         } else {
             Text(

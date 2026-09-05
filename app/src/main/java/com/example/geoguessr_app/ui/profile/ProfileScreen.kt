@@ -192,13 +192,7 @@ fun ProfileScreen(
                 fontWeight = FontWeight.Bold
             )
 
-            if (!isGuest) {
-                Text(
-                    text = "ID: ${profile.playerId.take(12)}...",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }
+            
 
             Spacer(modifier = Modifier.height(32.dp))
 

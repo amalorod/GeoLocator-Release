@@ -67,7 +67,10 @@ class SessionRepository @Inject constructor(
      * Legt eine neue Spielsitzung inklusive aller Spieler initial in einer
      * einzigen atomaren Operation an, um Race Conditions beim Spielstart zu verhindern.
      */
-    suspend fun createSessionWithPlayers(session: MatchSession, players: List<MultiplayerPlayerState>) {
+    suspend fun createSessionWithPlayers(
+        session: MatchSession,
+        players: List<MultiplayerPlayerState>
+    ) {
         try {
             val playersMap = players.associateBy { it.uid }
             val sessionMap = mapOf(
@@ -181,13 +184,22 @@ class SessionRepository @Inject constructor(
         updatedPlayers: List<MultiplayerPlayerState>
     ) {
         val sessionRef = database.reference.child("sessions").child(sessionId)
-        val playersMap = updatedPlayers.associateBy { it.uid }
-        val updates = mapOf(
+
+        val updates = mutableMapOf<String, Any?>(
             "currentRound" to nextRound,
             "currentLocationId" to nextLocationId,
-            "roundStartTimestamp" to System.currentTimeMillis(),
-            "players" to playersMap
+            "roundStartTimestamp" to System.currentTimeMillis()
         )
+
+        // Granulare Pfad-Updates statt kompletter players-Map-Überschreibung:
+        // Nur round und finishedRound werden pro Spieler gezielt gesetzt,
+        // alle anderen Felder (z.B. lastSeenTimestamp aus dem Heartbeat)
+        // bleiben von parallelen Writes unberührt.
+        updatedPlayers.forEach { player ->
+            updates["players/${player.uid}/round"] = player.round
+            updates["players/${player.uid}/finishedRound"] = player.finishedRound
+        }
+
         sessionRef.updateChildren(updates).await()
     }
 
@@ -232,5 +244,27 @@ class SessionRepository @Inject constructor(
 
         reference.addValueEventListener(listener)
         awaitClose { reference.removeEventListener(listener) }
+    }
+
+    /**
+     * Registriert eine serverseitige Aufräumaktion für die laufende
+     * Session: Verliert der Client die Verbindung, entfernt Firebase den
+     * Spieler automatisch aus session/players, ohne auf den lokalen
+     * Heartbeat-Timeout warten zu müssen.
+     */
+    fun registerSessionPresence(sessionId: String, uid: String) {
+        val playerRef = database.reference.child("sessions").child(sessionId)
+            .child("players").child(uid)
+        val connectedRef = database.reference.child(".info/connected")
+
+        connectedRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.getValue(Boolean::class.java) == true) {
+                    playerRef.onDisconnect().removeValue()
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        })
     }
 }

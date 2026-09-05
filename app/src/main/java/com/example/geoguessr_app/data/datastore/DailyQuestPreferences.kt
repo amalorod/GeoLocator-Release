@@ -7,4 +7,5 @@ import androidx.datastore.preferences.core.stringPreferencesKey
  */
 object DailyQuestPreferences {
     val QUESTS_JSON = stringPreferencesKey("daily_quests_json")
+    val LAST_RESET_DATE = stringPreferencesKey("daily_quest_last_reset")
 }

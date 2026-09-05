@@ -63,9 +63,25 @@ enum class GameMode(
         isAvailable = true
     ),
 
-    /** Modus mit täglich wechselnden, festen Standorten (siehe Daily-Quest-System). */
-    DAILY_QUEST(
-        displayName = "Daily Quest",
+    /** Entspanntes Erkunden ohne Hektik mit großzügigem Zeitlimit und voller Navigation. */
+    ENTDECKER(
+        displayName = "Entdecker",
+        roundDurationSeconds = 300,
+        streetViewNavigationEnabled = true,
+        isAvailable = true
+    ),
+
+    /** Detektiv-Modus: normale Zeit, aber keine freie Bewegung (statische Beobachtung). */
+    DETECTIVE(
+        displayName = "Detektiv",
+        roundDurationSeconds = 60,
+        streetViewNavigationEnabled = false,
+        isAvailable = true
+    ),
+
+    /** Vorgefertigte Herausforderungen mit spezifischen Regeln und Regionen. */
+    CHALLENGE(
+        displayName = "Challenges",
         roundDurationSeconds = 60,
         streetViewNavigationEnabled = true,
         isAvailable = true

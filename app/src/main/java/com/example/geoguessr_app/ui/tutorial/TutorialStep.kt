@@ -1,6 +1,8 @@
 package com.example.geoguessr_app.ui.tutorial
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
+import com.example.geoguessr_app.R
 
 /**
  * Ein einzelner Schritt der Tutorial-Klick-Galerie.
@@ -11,8 +13,8 @@ import androidx.annotation.DrawableRes
  * UI zeigt in diesem Fall einen gestrichelten Platzhalter-Rahmen an.
  */
 data class TutorialStep(
-    val title: String,
-    val description: String,
+    @StringRes val titleRes: Int,
+    @StringRes val descriptionRes: Int,
     @DrawableRes val imageRes: Int? = null
 )
 
@@ -23,23 +25,28 @@ data class TutorialStep(
  */
 val tutorialSteps = listOf(
     TutorialStep(
-        title = "Schritt 1: Spiel starten",
-        description = "Wähle auf dem Startbildschirm einen Spielmodus aus und tippe auf \"Spiel starten\"."
+        titleRes = R.string.tutorial_title_1,
+        descriptionRes = R.string.tutorial_desc_1,
+        imageRes = R.drawable.tutorial_screen_1
     ),
     TutorialStep(
-        title = "Schritt 2: Standort untersuchen",
-        description = "Sieh dich in der Street-View-Umgebung um und suche nach Hinweisen wie Schildern, Vegetation oder Fahrbahnmarkierungen."
+        titleRes = R.string.tutorial_title_2,
+        descriptionRes = R.string.tutorial_desc_2,
+        imageRes = R.drawable.tutorial_screen_2
     ),
     TutorialStep(
-        title = "Schritt 3: Tipp abgeben",
-        description = "Markiere den vermuteten Standort auf der Weltkarte und bestätige deinen Tipp."
+        titleRes = R.string.tutorial_title_3,
+        descriptionRes = R.string.tutorial_desc_3,
+        imageRes = R.drawable.tutorial_screen_3
     ),
     TutorialStep(
-        title = "Schritt 4: Punkte sammeln",
-        description = "Je näher dein Tipp am tatsächlichen Standort liegt, desto mehr Punkte erhältst du."
+        titleRes = R.string.tutorial_title_4,
+        descriptionRes = R.string.tutorial_desc_4,
+        imageRes = R.drawable.tutorial_screen_4
     ),
     TutorialStep(
-        title = "Schritt 5: Fünf Runden spielen",
-        description = "Nach fünf Standorten wird dein Gesamtergebnis angezeigt."
+        titleRes = R.string.tutorial_title_5,
+        descriptionRes = R.string.tutorial_desc_5,
+        imageRes = R.drawable.tutorial_screen_5
     )
 )

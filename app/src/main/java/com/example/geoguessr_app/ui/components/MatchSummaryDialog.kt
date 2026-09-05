@@ -58,8 +58,8 @@ fun MatchSummaryDialog(
                 }
                 Text(text = resultText)
             }
-            Text(text = "Gesamtpunkte: ${statistics.totalScore}")
-            Text(text = "Beste Runde: ${bestRound?.score ?: 0}")
+            Text(text = "Deine Punkte: ${statistics.totalScore}")
+            Text(text = "Deine Beste Runde: ${bestRound?.score ?: 0}")
             Text(text = "Ø Punkte: $averageScore")
         }
     }, confirmButton = {

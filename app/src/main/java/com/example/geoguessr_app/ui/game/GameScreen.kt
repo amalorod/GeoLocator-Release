@@ -18,7 +18,9 @@ import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -220,11 +222,7 @@ fun MultiplayerGameRoute(
             onShowGuessMap = viewModel::showGuessMap,
             onShowStreetView = viewModel::showStreetView,
             onHomeClick = onHomeClick,
-            // TODO: Pause-Funktion für den Multiplayer-Modus ist fachlich noch
-            // nicht definiert (z. B. sollte Pausieren andere Spieler blockieren
-            // oder nur lokal die Ansicht einfrieren?). Bewusst als No-Op belassen,
-            // bis diese Entscheidung getroffen ist – AppTopBar zeigt den
-            // Pause-Button im MP-Fall daher idealerweise gar nicht erst an.
+            // AppTopBar zeigt den Pause-Button im Multiplayer nicht an.
             onPauseGame = { },
             onSubmitGuess = viewModel::submitGuess,
             onNextRound = viewModel::startNextRound,
@@ -369,21 +367,28 @@ private fun GameScreen(
             onPauseClick = onPauseGame,
             isPauseEnabled = !uiState.isLoading && !uiState.isRoundFinished && !uiState.isGameFinished && !uiState.isPaused,
         )
-
-        GameStatusHeader(
-            score = uiState.totalScore,
-            currentRound = uiState.currentRound,
-            totalRounds = uiState.totalRounds,
-            remainingSeconds = uiState.remainingSeconds,
-            gameMode = uiState.gameMode,
-            lives = uiState.lives,
-            isMultiplayer = uiState.isMultiplayer
-        )
-
+        if (!uiState.isMultiplayer) {
+            GameStatusHeader(
+                score = uiState.totalScore,
+                currentRound = uiState.currentRound,
+                totalRounds = uiState.totalRounds,
+                remainingSeconds = uiState.remainingSeconds,
+                gameMode = uiState.gameMode,
+                lives = uiState.lives
+            )
+        } else {
+            GameStatusHeader(
+                score = uiState.totalScore,
+                currentRound = uiState.currentRound,
+                totalRounds = uiState.totalRounds,
+                remainingSeconds = uiState.remainingSeconds,
+                gameMode = uiState.gameMode
+            )
+        }
         if (uiState.isMultiplayer) {
             MultiplayerScoreboard(
                 players = sessionUiState.players,
-                totalRounds = uiState.totalRounds,
+                gameMode = uiState.gameMode,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -522,32 +527,85 @@ private fun RoundResult(
             )
         }
 
-        Text(
-            text = "Runde abgeschlossen!",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
+        // Hervorgehobene Box für Runden-Ergebnisse
+        ElevatedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            ),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "🎯 Runde abgeschlossen!",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
 
-        Text(
-            text = "Entfernung: ${
-                uiState.roundDistanceKilometers?.let {
-                    "%.2f".format(
-                        Locale.US, it
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Entfernung:",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                } ?: "0"
-            } km", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = uiState.roundDistanceKilometers?.let {
+                            "%.2f km".format(Locale.US, it)
+                        } ?: "0 km",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
 
-        Text(
-            text = "Punkte in dieser Runde: ${uiState.roundScore ?: 0}",
-            style = MaterialTheme.typography.bodyLarge
-        )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Punkte in dieser Runde:",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = "+${uiState.roundScore ?: 0} Pkt.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
 
-        uiState.currentLocation?.let { location ->
-            Text(
-                text = "Der Ort war: ${location.name}, ${location.country}",
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+                uiState.currentLocation?.let { location ->
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f)
+                    )
+                    Text(
+                        text = "📍 Der Ort war: ${location.name}, ${location.country}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
         }
 
         if (uiState.isMultiplayer) {
@@ -555,18 +613,24 @@ private fun RoundResult(
             Text(
                 text = "⏳ Warte auf Mitspieler...",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.secondary
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
         } else {
             Button(
-                onClick = onNextRound, modifier = Modifier.padding(top = 16.dp)
+                onClick = onNextRound,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
+                    .height(50.dp)
             ) {
                 Text(
-                    if (uiState.currentRound == uiState.totalRounds) {
+                    text = if (uiState.currentRound == uiState.totalRounds) {
                         "Gesamtergebnis anzeigen"
                     } else {
                         "Nächste Runde"
-                    }
+                    },
+                    style = MaterialTheme.typography.titleMedium
                 )
             }
         }
@@ -753,8 +817,7 @@ private fun GameStatusHeader(
     totalRounds: Int,
     remainingSeconds: Int,
     gameMode: GameMode,
-    lives: Int = Int.MAX_VALUE,
-    isMultiplayer: Boolean = false
+    lives: Int = Int.MAX_VALUE
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -768,16 +831,15 @@ private fun GameStatusHeader(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(
-                        horizontal = 14.dp, vertical = 7.dp
-                    ),
+                    .padding(horizontal = 14.dp, vertical = 7.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Score: $score")
 
-                val showLives =
-                    !isMultiplayer && (gameMode == GameMode.BATTLE_ROYALE || (lives < 100 && gameMode == GameMode.CUSTOM))
+                // Nur Einzelspieler-Custom-Modus: Battle Royale existiert
+                // ausschließlich im Multiplayer und wird daher hier nie geprüft.
+                val showLives = gameMode == GameMode.CUSTOM && lives < 100
                 if (showLives) {
                     Text("❤️ $lives")
                 }
@@ -793,9 +855,10 @@ private fun GameStatusHeader(
             shape = RoundedCornerShape(50)
         ) {
             Text(
-                text = gameMode.displayName, modifier = Modifier.padding(
-                    horizontal = 14.dp, vertical = 3.dp
-                ), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold
+                text = gameMode.displayName,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
             )
         }
     }

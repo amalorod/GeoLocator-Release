@@ -71,4 +71,25 @@ class DailyQuestDataStoreRepository(
             emptyList()
         }
     }
+
+    suspend fun saveLastResetDate(date: String) {
+        try {
+            context.dataStore.edit { preferences ->
+                preferences[DailyQuestPreferences.LAST_RESET_DATE] = date
+            }
+        } catch (e: Exception) {
+            Log.e("DAILYQUEST_DS", "Fehler beim Speichern des Reset-Datums", e)
+        }
+    }
+
+    suspend fun loadLastResetDate(): String? {
+        return try {
+            context.dataStore.data
+                .map { it[DailyQuestPreferences.LAST_RESET_DATE] }
+                .first()
+        } catch (e: Exception) {
+            Log.e("DAILYQUEST_DS", "Fehler beim Laden des Reset-Datums", e)
+            null
+        }
+    }
 }

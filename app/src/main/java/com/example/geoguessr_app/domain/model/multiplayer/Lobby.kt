@@ -20,7 +20,7 @@ import com.google.firebase.database.PropertyName
  *   String statt des Enums direkt verwendet, vermutlich zur
  *   einfacheren Firebase-Serialisierung; die Umwandlung in/aus
  *   MultiplayerMode müsste an der Verwendungsstelle erfolgen.
- * @property players Liste aller aktuell in der Lobby befindlichen
+ * @property players Map für alle aktuell in der Lobby befindlichen
  *   Spieler (siehe [LobbyPlayer]).
  * @property started Kennzeichnet, ob der Host das Spiel bereits
  *   gestartet hat. Explizit mit @PropertyName annotiert (im Gegensatz
@@ -36,7 +36,7 @@ data class Lobby(
     val lobbyCode: String = "",
     val hostUid: String = "",
     val mode: String = "FREEPLAY",
-    val players: List<LobbyPlayer> = emptyList(),
+    val players: Map<String, LobbyPlayer> = emptyMap(),
     @get:PropertyName("started")
     @set:PropertyName("started")
     var started: Boolean = false,

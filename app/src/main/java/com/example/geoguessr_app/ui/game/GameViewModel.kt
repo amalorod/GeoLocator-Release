@@ -288,10 +288,10 @@ class GameViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isGameFinished = true)
         }
 
-        checkDailyQuests(distance, score, state.gameMode)
+        checkDailyQuests(distance, score, state.gameMode, actualLocation.region)
     }
 
-    private fun checkDailyQuests(distance: Double, score: Int, mode: GameMode) {
+    private fun checkDailyQuests(distance: Double, score: Int, mode: GameMode, region: Region) {
         viewModelScope.launch {
             // Quest: Präzision (< 25km)
             if (distance < 25.0) {
@@ -300,8 +300,8 @@ class GameViewModel @Inject constructor(
                     _uiState.value.copy(newlyCompletedQuest = completed)
             }
 
-            // Quest: Europa Experte (< 100km)
-            if (distance < 100.0) {
+            // Quest: Europa Experte (< 100km & Region Europa)
+            if (distance < 100.0 && region == Region.EUROPE) {
                 val completed = dailyQuestRepository.updateQuestProgress("europe_explorer")
                 if (completed != null) _uiState.value =
                     _uiState.value.copy(newlyCompletedQuest = completed)

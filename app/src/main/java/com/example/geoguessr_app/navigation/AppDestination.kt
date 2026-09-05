@@ -32,6 +32,7 @@ sealed class AppDestination(
     data object JoinLobby : AppDestination("joinLobby")
     data object MultiplayerLobby : AppDestination("multiplayerLobby")
     data object IndividualSettings : AppDestination("individualSettings")
+    data object ChallengeSelection : AppDestination("challengeSelection")
     data object DailyQuest : AppDestination("dailyQuest")
     data object Profile : AppDestination("profile")
 

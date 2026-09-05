@@ -22,6 +22,7 @@ import com.example.geoguessr_app.ui.game.GameMode
 import com.example.geoguessr_app.ui.game.GameRoute
 import com.example.geoguessr_app.ui.game.GameViewModel
 import com.example.geoguessr_app.ui.game.IndividualSettingsScreen
+import com.example.geoguessr_app.ui.game.ChallengeSelectionScreen
 import com.example.geoguessr_app.ui.game.MultiplayerGameRoute
 import com.example.geoguessr_app.ui.home.HomeScreen
 import com.example.geoguessr_app.ui.dailyquest.DailyQuestScreen
@@ -154,6 +155,8 @@ fun GeoGuessrNavHost(
                         navController.navigate(AppDestination.MultiplayerHome.route)
                     } else if (selectedGameMode == GameMode.CUSTOM) {
                         navController.navigate(AppDestination.IndividualSettings.route)
+                    } else if (selectedGameMode == GameMode.CHALLENGE) {
+                        navController.navigate(AppDestination.ChallengeSelection.route)
                     } else {
                         gameViewModel.startNewGame(selectedGameMode)
                         navController.navigate(AppDestination.Game.route)
@@ -356,6 +359,23 @@ fun GeoGuessrNavHost(
                 // (sollte durch die feste Navigationsstruktur der App
                 // eigentlich nicht auftreten, dient aber als
                 // Absicherung gegen Abstürze).
+                try {
+                    navController.popBackStack()
+                } catch (e: Exception) {
+                    Log.d("NAVHOST", "Fehler beim Zurückgehen", e)
+                }
+            }, onStartGame = { settings: CustomGameSettings ->
+                try {
+                    gameViewModel.startCustomGame(settings)
+                    navController.navigate(AppDestination.Game.route)
+                } catch (e: Exception) {
+                    Log.d("NAVHOST", "Fehler beim Spielstart", e)
+                }
+            })
+        }
+
+        composable(route = AppDestination.ChallengeSelection.route) {
+            ChallengeSelectionScreen(onBackClick = {
                 try {
                     navController.popBackStack()
                 } catch (e: Exception) {

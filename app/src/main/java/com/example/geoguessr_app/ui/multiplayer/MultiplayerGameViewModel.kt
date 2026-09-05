@@ -1,5 +1,6 @@
 package com.example.geoguessr_app.ui.multiplayer
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.geoguessr_app.data.dailyquest.DailyQuestRepository
@@ -10,6 +11,7 @@ import com.example.geoguessr_app.data.statistics.StatisticsRepository
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
+import com.example.geoguessr_app.domain.model.custom.Region
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 import com.example.geoguessr_app.domain.statistics.RoundStatistics
 import com.example.geoguessr_app.domain.usecase.CalculateDistanceUseCase
@@ -71,6 +73,11 @@ class MultiplayerGameViewModel @Inject constructor(
     private var heartbeatJob: Job? = null
     private var timerJob: Job? = null
 
+    companion object {
+        private const val HEARTBEAT_INTERVAL_MS = 10_000L
+        private const val HEARTBEAT_TIMEOUT_MS = 40_000L // 4x Intervall, toleriert Jitter/Doze
+    }
+
     private fun startTimer() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
@@ -122,7 +129,8 @@ class MultiplayerGameViewModel @Inject constructor(
                     round = state.currentRound,
                     lives = currentLives,
                     finishedRound = true,
-                    currentGuessScore = 0
+                    currentGuessScore = 0,
+                    lastSeenTimestamp = System.currentTimeMillis()
                 )
             )
         }
@@ -137,6 +145,8 @@ class MultiplayerGameViewModel @Inject constructor(
         this.sessionId = sessionId
         hasSeenMultiplePlayers = false
         val currentUid = firebaseAuthRepository.currentUid() ?: return
+
+        sessionRepository.registerSessionPresence(sessionId, currentUid)
 
         startHeartbeat()
 
@@ -179,10 +189,7 @@ class MultiplayerGameViewModel @Inject constructor(
 
                 // Rundenwechsel wird erkannt, sobald sich Rundennummer oder
                 // Standort-ID gegenüber dem aktuellen UI-State unterscheiden.
-                if (session.currentRound != _uiState.value.currentRound ||
-                    _uiState.value.currentLocation?.id != session.currentLocationId ||
-                    (_uiState.value.isLoading && nextLocation != null)
-                ) {
+                if (session.currentRound != _uiState.value.currentRound || _uiState.value.currentLocation?.id != session.currentLocationId || (_uiState.value.isLoading && nextLocation != null)) {
                     _uiState.update {
                         it.copy(
                             currentRound = session.currentRound,
@@ -212,14 +219,14 @@ class MultiplayerGameViewModel @Inject constructor(
                                 _uiState.value.multiplayerPlayers.find { it.uid == uid }
 
                             sessionRepository.updatePlayerState(
-                                sessionId = sessionId,
-                                playerState = MultiplayerPlayerState(
+                                sessionId = sessionId, playerState = MultiplayerPlayerState(
                                     uid = uid,
                                     playerName = playerName,
                                     score = _uiState.value.totalScore,
                                     round = session.currentRound,
                                     lives = currentPlayer?.lives ?: 5,
-                                    finishedRound = false
+                                    finishedRound = false,
+                                    lastSeenTimestamp = System.currentTimeMillis()
                                 )
                             )
                         }
@@ -249,7 +256,7 @@ class MultiplayerGameViewModel @Inject constructor(
                 if (isHost) {
                     val now = System.currentTimeMillis()
                     val inactivePlayers = players.filter {
-                        it.uid != currentUid && (now - it.lastSeenTimestamp > 20000)
+                        it.uid != currentUid && (now - it.lastSeenTimestamp > HEARTBEAT_TIMEOUT_MS)
                     }
                     inactivePlayers.forEach { inactive ->
                         viewModelScope.launch {
@@ -262,12 +269,11 @@ class MultiplayerGameViewModel @Inject constructor(
                 // abgegeben haben, schaltet ausschließlich der Host nach
                 // kurzer Verzögerung zur nächsten Runde weiter, damit alle
                 // Clients kurz das Rundenergebnis sehen können.
-                val allPlayersFinished = players.isNotEmpty() &&
-                        players.all { it.finishedRound && it.round == _uiState.value.currentRound }
+                val activePlayers = players.filter { it.lives > 0 }
+                val allPlayersFinished = activePlayers.isNotEmpty() &&
+                        activePlayers.all { it.finishedRound && it.round == _uiState.value.currentRound }
 
-                if (isHost && allPlayersFinished &&
-                    !_uiState.value.isGameFinished && _uiState.value.isRoundFinished
-                ) {
+                if (isHost && allPlayersFinished && !_uiState.value.isGameFinished && _uiState.value.isRoundFinished) {
                     viewModelScope.launch {
                         delay(3000)
                         startNextRound()
@@ -334,30 +340,30 @@ class MultiplayerGameViewModel @Inject constructor(
             }
 
             sessionRepository.updatePlayerState(
-                sessionId = sessionId,
-                playerState = MultiplayerPlayerState(
+                sessionId = sessionId, playerState = MultiplayerPlayerState(
                     uid = uid,
                     playerName = playerName,
                     score = updatedTotalScore,
                     round = state.currentRound,
                     lives = currentLives,
                     finishedRound = true,
-                    currentGuessScore = score
+                    currentGuessScore = score,
+                    lastSeenTimestamp = System.currentTimeMillis()
                 )
             )
 
-            checkDailyQuests(distance, score, state.gameMode)
+            checkDailyQuests(distance, score, state.gameMode, currentLocation.region)
         }
     }
 
     /** Prüft nach jedem Tipp, ob dadurch eine Tagesquest erfüllt wurde. */
-    private fun checkDailyQuests(distance: Double, score: Int, mode: GameMode) {
+    private fun checkDailyQuests(distance: Double, score: Int, mode: GameMode, region: Region) {
         viewModelScope.launch {
             if (distance < 25.0) {
                 val completed = dailyQuestRepository.updateQuestProgress("perfect_guess")
                 if (completed != null) _uiState.update { it.copy(newlyCompletedQuest = completed) }
             }
-            if (distance < 100.0) {
+            if (distance < 100.0 && region == Region.EUROPE) {
                 val completed = dailyQuestRepository.updateQuestProgress("europe_explorer")
                 if (completed != null) _uiState.update { it.copy(newlyCompletedQuest = completed) }
             }
@@ -389,6 +395,18 @@ class MultiplayerGameViewModel @Inject constructor(
             val isLastRound = state.currentRound >= state.totalRounds
             val isBattleRoyaleDecided =
                 state.gameMode == GameMode.BATTLE_ROYALE && survivors.size <= 1
+
+            Log.d(
+                "MULTIPLAYER_DEBUG",
+                "currentRound=${state.currentRound}, " +
+                        "totalRounds=${state.totalRounds}, " +
+                        "players=${
+                            state.multiplayerPlayers.map {
+                                "${it.playerName}:lives=${it.lives}," +
+                                        "round=${it.round},finished=${it.finishedRound}"
+                            }
+                        }"
+            )
 
             if (isLastRound || isBattleRoyaleDecided) {
                 sessionRepository.finishSession(sessionId)
@@ -515,7 +533,7 @@ class MultiplayerGameViewModel @Inject constructor(
                         lastSeenTimestamp = System.currentTimeMillis()
                     )
                 )
-                delay(10000)
+                delay(HEARTBEAT_INTERVAL_MS)
             }
         }
     }
