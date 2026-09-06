@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.geoguessr_app.domain.model.multiplayer.LobbyPlayer
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerMode
+import com.example.geoguessr_app.navigation.GeoGuessrNavHost
 
 /**
  * Lobby-Warteraum vor Spielbeginn: zeigt den Beitritts-Code, alle
@@ -45,13 +46,13 @@ import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerMode
  *
  * @param lobbyCode Anzuzeigender, kopierbarer Beitritts-Code.
  * @param players Aktueller Teilnehmerstatus aller Lobby-Mitglieder.
- * @param currentUserUid UID des lokalen Nutzers; bestimmt [isHost]/[isReady].
+ * @param currentUserUid UID des lokalen Nutzers; bestimmt Host- und Bereit-Status.
  * @param selectedMode Aktuell vom Host gewählter Spielmodus.
  * @param errorMessage Fehlermeldung (z. B. Lobby nicht gefunden); ersetzt bei
  * Vorhandensein den gesamten Lobby-Inhalt durch eine Fehleransicht mit
  * Rückkehr-Button, da eine fehlerhafte Lobby ohnehin nicht weiter bedienbar ist.
  * @param onModeSelected Callback bei Moduswahl; wirkt nur, wenn der lokale
- * Nutzer Host ist (siehe [ModeButton]-Aufruf).
+ * Nutzer Host ist.
  * @param onBackClick Navigiert zurück (auch im Fehlerfall verwendet).
  * @param onLeaveClick Verlässt die Lobby aktiv über den "Verlassen"-Button im Header.
  * @param onReadyClick Schaltet den eigenen Ready-Status um.

@@ -37,7 +37,7 @@ import com.example.geoguessr_app.domain.model.custom.PredefinedChallenges
  * Rein zustandslos (stateless) im Sinne von State Hoisting: Der
  * Screen besitzt selbst keinen veränderlichen Zustand, sondern
  * reicht Nutzerinteraktionen ausschließlich über die beiden
- * Callback-Parameter nach oben an den Aufrufer (z. B. NavHost oder
+ * Callback-Parameter nach oben an den Aufrufer (NavHost oder
  * ViewModel) weiter. Dadurch bleibt der Composable leicht testbar
  * und unabhängig von der konkreten Navigations- oder Spiellogik.
  *
@@ -60,7 +60,7 @@ fun ChallengeSelectionScreen(
             .background(MaterialTheme.colorScheme.surface)
     ) {
         // Kopfzeile mit Zurück-Button und Titel, konsistent zum
-        // restlichen App-Design (z. B. TutorialScreen) gestaltet.
+        // restlichen App-Design gestaltet.
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer,

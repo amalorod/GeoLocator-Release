@@ -2,10 +2,11 @@ package com.example.geoguessr_app.ui.multiplayer
 
 import com.example.geoguessr_app.domain.model.multiplayer.LobbyPlayer
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerMode
+import com.example.geoguessr_app.navigation.GeoGuessrNavHost
 
 /**
  * Zustand der Lobby-Phase vor Spielbeginn: Warteraum, in dem Spielende
- * ihre Bereitschaft signalisieren und der Host den Spielmodus festlegt.
+ * warten bis alle den Bereit-Button gedrückt haben und der Host den Spielmodus festlegt.
  *
  * Sobald [started] auf true wechselt und [sessionId] befüllt ist,
  * navigiert [GeoGuessrNavHost] automatisch zum eigentlichen

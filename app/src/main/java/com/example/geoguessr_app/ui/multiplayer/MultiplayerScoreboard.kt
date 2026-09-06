@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.geoguessr_app.data.firebase.MultiplayerRepository
 import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
 import com.example.geoguessr_app.ui.game.GameMode
 
@@ -23,7 +24,7 @@ import com.example.geoguessr_app.ui.game.GameMode
  * Zeigt den Live-Punktestand aller Mitspieler einer Multiplayer-Partie an.
  *
  * Passt sich der Bildschirmbreite an: Auf Tablets (> 600dp, siehe
- * [isTablet]) werden bis zu vier Spieler nebeneinander in einer [Row]
+ * isTablet) werden bis zu vier Spieler nebeneinander in einer [Row]
  * dargestellt, wobei sich die verfügbare Breite gleichmäßig auf alle
  * vorhandenen Spieler aufteilt (2 Spieler = 2 Kacheln zu je 50%, 4 Spieler
  * = 4 Kacheln zu je 25%). Auf Smartphones werden die Spieler stattdessen

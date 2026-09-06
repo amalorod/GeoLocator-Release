@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.geoguessr_app.navigation.GeoGuessrNavHost
 
 /**
  * Bindet [OnboardingDataStoreRepository] an [GeoGuessrNavHost], um beim
@@ -18,7 +19,7 @@ class OnboardingViewModel @Inject constructor(
     private val onboardingDataStoreRepository: OnboardingDataStoreRepository
 ) : ViewModel() {
 
-    
+
     val hasSeenTutorial: StateFlow<Boolean?> = onboardingDataStoreRepository.hasSeenTutorial
         .stateIn(
             scope = viewModelScope,

@@ -3,14 +3,16 @@ package com.example.geoguessr_app.ui.tutorial
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.example.geoguessr_app.R
+import com.example.geoguessr_app.ui.welcome.WelcomeScreen
 
 /**
  * Ein einzelner Schritt der Tutorial-Klick-Galerie.
  *
  * @property imageRes Platzhalter für einen später einzufügenden
- * Screenshot (z. B. HomeScreen mit rot eingekreistem "Spiel starten"-
- * Button). Bleibt vorerst `null`, bis echte Screenshots vorliegen – die
+ * Screenshot. Bleibt vorerst `null`, bis echte Screenshots vorliegen. die
  * UI zeigt in diesem Fall einen gestrichelten Platzhalter-Rahmen an.
+ * Dieses Konzept wurde nach Einfügen der Screenshots nicht geändert, damit weitere
+ * Bilder oder Beschreibungen unabhängig voneinander eingefügt werden können
  */
 data class TutorialStep(
     @StringRes val titleRes: Int,

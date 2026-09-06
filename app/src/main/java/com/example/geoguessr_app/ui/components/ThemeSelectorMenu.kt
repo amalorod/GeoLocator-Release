@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.geoguessr_app.ui.theme.AppThemeMode
+import com.example.geoguessr_app.ui.home.HomeEuropeMap
 
 
 /** Mindestbreite/-höhe der Dropdown-Einträge für ausreichend große Touch-Targets. */
@@ -117,13 +118,12 @@ private fun ThemeGridTile(
 /**
  * Wiederverwendbarer Auslöser-Button mit angehängtem Dropdown-Menü zur
  * Auswahl des App-weiten Farbschemas. Wird identisch sowohl in [AppTopBar]
- * (GameScreen) als auch in [EuropeMenuMap] (Teil des HomeScreens)
- * eingebunden, damit die Auswahllogik nur einmal existiert und beide Screens
- * dasselbe Bedienkonzept anbieten.
+ * (GameScreen) als auch in [HomeEuropeMap] eingebunden, damit die Auswahllogik
+ * nur einmal existiert und beide Screens dasselbe Bedienkonzept anbieten.
  *
- * Der Button-Inhalt (Farbpunkt + Text) kann über [buttonContent] individuell
+ * Der Button-Inhalt kann über [buttonContent] individuell
  * gestaltet werden, da HomeScreen und GameScreen unterschiedliche
- * Trigger-Optiken benötigen (z. B. eigene Button-Form auf dem HomeScreen);
+ * Trigger-Optiken benötigen (z. B. eigene Button-Form auf dem HomeScreen),
  * das Dropdown-Menü selbst bleibt dabei identisch.
  *
  * @param currentTheme Aktuell aktives, festes Farbschema.
@@ -162,10 +162,7 @@ fun ThemeSelectorMenu(
         )
 
         // Einziger DropdownMenu-Container: enthält den Systemfarbe-Switch
-        // und darunter das Theme-Grid. Der frühere zweite, separate
-        // AppThemeMode.entries.forEach-Block mit Punkt+Text-Einträgen wurde
-        // entfernt, da er sich mit dem neuen LazyVerticalGrid überlagerte
-        // (zwei parallele Darstellungen derselben Auswahl im selben Menü).
+        // und darunter das Theme-Grid.
         DropdownMenu(
             expanded = isThemeMenuExpanded, onDismissRequest = { isThemeMenuExpanded = false }) {
             DropdownMenuItem(
@@ -260,7 +257,7 @@ private fun DefaultThemeSelectorButton(
 
 /**
  * Liefert eine feste, repräsentative Vorschaufarbe je Farbschema. Bewusst
- * unabhängig von [com.example.geoguessr_app.ui.theme.Theme.kt] hart kodiert,
+ * unabhängig von Theme.kt hart kodiert,
  * da sie eine stabile visuelle Wiedererkennung liefern soll, unabhängig vom
  * aktuell angewendeten MaterialTheme.
  *

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.geoguessr_app.domain.model.dailyquest.DailyQuest
+import com.example.geoguessr_app.ui.theme.AppThemeMode
 
 /**
  * Übersicht aller Daily Quests mit Fortschrittsanzeige.
@@ -98,7 +99,7 @@ fun DailyQuestScreen(
  *
  * Farben werden ausschließlich über [MaterialTheme.colorScheme] bezogen,
  * damit abgeschlossene Quests auch bei aktivem Dynamic Color oder einem der
- * fünf festen Farbschemata (siehe [com.example.geoguessr_app.ui.theme.AppThemeMode])
+ * fünf festen Farbschemata (siehe [AppThemeMode])
  * konsistent als "positiv/erfolgreich" erkennbar bleiben, statt mit fest
  * kodiertem Grün zu kollidieren.
  */

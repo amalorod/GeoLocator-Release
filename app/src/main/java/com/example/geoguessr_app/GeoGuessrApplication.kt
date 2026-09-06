@@ -9,6 +9,7 @@ import dagger.hilt.android.HiltAndroidApp
  * Die Annotation [HiltAndroidApp] löst zur Kompilierzeit die Codegenerierung
  * des anwendungsweiten Dependency-Graphen aus. Dabei wird eine Basisklasse
  * (Hilt_GeoGuessrApplication) erzeugt, von der diese Klasse implizit erbt.
+ *
  * Dieser Graph bildet die Wurzel-Komponente, aus der sich alle weiteren,
  * kleineren Komponenten (z. B. ActivityComponent, ViewModelComponent)
  * ableiten. Ohne diese Klasse könnten @AndroidEntryPoint (Activities) und

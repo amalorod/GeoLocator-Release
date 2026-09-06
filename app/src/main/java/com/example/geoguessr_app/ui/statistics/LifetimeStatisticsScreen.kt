@@ -46,6 +46,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.geoguessr_app.data.statistics.LeaderboardEntry
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 import com.example.geoguessr_app.domain.statistics.LifetimeStatistics
+import com.example.geoguessr_app.navigation.GeoGuessrNavHost
 
 /**
  * Zeigt Lebenszeit-Statistiken, einen Score-Verlauf der letzten Partien
@@ -56,9 +57,9 @@ import com.example.geoguessr_app.domain.statistics.LifetimeStatistics
  * @param isGuest Ob der aktuelle Nutzer ohne Profil spielt; steuert, ob im
  * Leaderboard-Dialog echte Daten oder ein Login-Hinweis angezeigt werden.
  * @param onBackClick Navigiert zurück zum vorherigen Bildschirm.
- * @param viewModel Verwaltet zusätzlich [recentMatches] und [topPlayers],
- * die hier direkt beobachtet werden (im Gegensatz zu [statistics], das
- * bereits von außen hereingereicht wird).
+ * @param viewModel Verwaltet zusätzlich [StatisticsViewModel.recentMatches] und [
+ * StatisticsViewModel.topPlayers], die hier direkt beobachtet werden (im Gegensatz zu [statistics],
+ * das bereits von außen hereingereicht wird).
  */
 @Composable
 fun LifetimeStatisticsScreen(
@@ -106,7 +107,7 @@ fun LifetimeStatisticsScreen(
                 .padding(16.dp)
         ) {
             // Der Score-Chart wird nur angezeigt, wenn bereits Partien
-            // vorhanden sind – bei einer leeren Liste gäbe es nichts zu zeichnen.
+            // vorhanden sind
             if (recentMatches.isNotEmpty()) {
                 Text(
                     text = "Score-Verlauf (Letzte 20)",
@@ -127,7 +128,7 @@ fun LifetimeStatisticsScreen(
                         .padding(20.dp)
                 ) {
                     // recentMatches liegt neueste-zuerst vor (siehe
-                    // StatisticsRepository); für den Chart wird die
+                    // StatisticsRepository). Für den Chart wird die
                     // Reihenfolge umgedreht, damit die Zeitachse von
                     // links (ältestes Spiel) nach rechts (neuestes Spiel) verläuft.
                     ScoreChart(
@@ -184,8 +185,8 @@ fun LifetimeStatisticsScreen(
             Button(
                 onClick = {
                     showLeaderboard = true
-                    // Lädt das Leaderboard nur für eingeloggte Nutzer nach –
-                    // Gäste sehen im Dialog ohnehin nur den Login-Hinweis,
+                    // Lädt das Leaderboard nur für eingeloggte Nutzer nach.
+                    // Gäste sehen im Dialog nur den Login-Hinweis,
                     // ein Request wäre für sie unnötig. loadLeaderboard()
                     // selbst verhindert zusätzlich wiederholte Requests,
                     // falls bereits Daten vorliegen.
@@ -401,8 +402,8 @@ private fun MiniCard(title: String, value: String, modifier: Modifier = Modifier
  * erzielte Punktzahl und – bei Multiplayer-Siegen – eine Sieg-Markierung.
  *
  * Verwendet dieselbe feste Grün-Farbe (0xFF2E7D32) wie an anderen Stellen
- * der App (z. B. MultiplayerLobbyScreen für "BEREIT") als konsistente
- * "Erfolg"-Farbe, unabhängig vom aktiven Theme.
+ * der App (z. B. MultiplayerLobbyScreen für "BEREIT") als konsistente Farbe,
+ * unabhängig vom aktiven Theme.
  */
 @Composable
 private fun MatchEntry(match: MatchStatistic) {

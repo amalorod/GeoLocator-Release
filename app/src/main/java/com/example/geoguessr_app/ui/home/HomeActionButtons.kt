@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.example.geoguessr_app.ui.game.GameMode
 
 /**
- * Modus-Auswahl-Button ("MODUS: ..."), öffnet [GameModeDialog]. Als
+ * Modus-Auswahl-Button öffnet [GameModeDialog]. Als
  * [BoxScope]-Erweiterung, damit die Positionierung innerhalb des
  * umgebenden Box-Bereichs in [HomeScreen] erhalten bleibt.
  */

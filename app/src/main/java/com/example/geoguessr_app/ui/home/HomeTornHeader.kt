@@ -52,7 +52,7 @@ fun HomeTornHeader(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
-            // Der Schatten wird bewusst VOR dem .clip() angewendet und mit
+            // Der Schatten wird vor dem .clip() angewendet und mit
             // clip = false gerendert, damit der farbige Leuchteffekt über
             // die gezackte Kontur hinausragen darf, statt an ihr
             // abgeschnitten zu werden.

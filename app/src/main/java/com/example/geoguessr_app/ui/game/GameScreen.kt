@@ -283,8 +283,10 @@ private fun GameScreen(
     // mitkomponiert wird (spart zusätzliche native StreetViewPanoramaView-
     // Instanzen und vermeidet Layout-Konflikte).
 
-    // Die Gerätenavigation bleibt im GameScreen ausgeschalter, damit man nicht versehentlich beim umschauen in der StreetView-Ansicht
-    // zurück zum Home-Bildschirm gelangt. Im FullScreen kann jedoch mittels zurück-Button des Geräts auf den GameScreen zurückgeschaltet werden.
+    // Die Gerätenavigation bleibt im GameScreen ausgeschalter,
+    // damit man nicht versehentlich beim umschauen in der StreetView-Ansicht
+    // zurück zum Home-Bildschirm gelangt.
+    // Im FullScreen kann jedoch mittels zurück-Button des Geräts auf den GameScreen zurückgeschaltet werden.
     // Damit wird sichergestellt, dass der Nutzer nicht versehentlich den Spielbereich verlässt.
     BackHandler(enabled = true) {
         if (isStreetViewFullscreen) {
@@ -677,8 +679,8 @@ private fun GameResult(
 /**
  * Bettet die native Google-Street-View-Panorama-View über [AndroidView] in
  * Compose ein. Da [StreetViewPanoramaView] eine klassische View mit eigenem
- * Lifecycle ist, müssen dessen Lifecycle-Methoden (onCreate/onStart/...)
- * manuell an den Compose-Lifecycle gekoppelt werden – Compose selbst
+ * Lifecycle ist, müssen dessen Lifecycle-Methoden wie onCreate/onStart()
+ * manuell an den Compose-Lifecycle gekoppelt werden. Compose selbst
  * propagiert Lifecycle-Events nicht automatisch an eingebettete Views.
  *
  * @param location Zu zeigender Standort (Latitude/Longitude).
@@ -799,7 +801,7 @@ private fun RoundResultMap(
     }
 
     // Umschließendes Rechteck (Bounds), das beide Punkte (tatsächlicher Ort
-    // und Tipp) enthält – wird neu berechnet, sobald sich einer der beiden
+    // und Tipp) enthält. Wird neu berechnet, sobald sich einer der beiden
     // Punkte ändert (z. B. bei einer neuen Runde).
     val bounds = remember(
         actualPosition, guessedPosition
@@ -815,7 +817,7 @@ private fun RoundResultMap(
     }
 
     // Startet die Kamera-Animation erst, wenn die Karte geladen ist, und
-    // erneut, falls sich die Bounds (also einer der beiden Standorte) ändern.
+    // erneut, falls sich die Bounds, also einer der beiden Standorte ändern.
     LaunchedEffect(isMapLoaded, bounds) {
         if (isMapLoaded) {
             cameraPositionState.animate(

@@ -67,7 +67,9 @@ private val RoseColorScheme = lightColorScheme(
  * mindestens auf Android 12 (API 31, Build.VERSION_CODES.S): In diesem Fall
  * wird stattdessen die vom System aus dem Wallpaper abgeleitete
  * Material-You-Farbpalette verwendet ([dynamicLightColorScheme]/
- * [dynamicDarkColorScheme]). Auf älteren Android-Versionen ist dynamicColor
+ * [dynamicDarkColorScheme]).
+ *
+ * Auf älteren Android-Versionen ist dynamicColor
  * technisch nicht verfügbar, weshalb dort trotz aktiviertem Flag automatisch
  * auf [themeMode] zurückgefallen wird.
  *

@@ -5,7 +5,7 @@ package com.example.geoguessr_app.ui.game
  *
  * Steuert innerhalb von [GameScreen] die Umschaltung zwischen der
  * Street-View-Ansicht (Erkundung des Standorts) und der Weltkarte
- * (Abgabe des Tipps). Beide Zustände sind exklusiv – es existiert kein
+ * (Abgabe des Tipps). Beide Zustände sind exklusiv: Es existiert kein
  * dritter Modus, da eine Runde funktional immer entweder im Erkundungs-
  * oder im Tipp-Abgabe-Schritt ist.
  */

@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
  * höhere Werte (80) stehen für hellere, im Dark Theme verwendete Akzent-
  * farben, niedrigere Werte (40) für kräftigere Farben im Light Theme.
  * Alle projektspezifischen Farbschemata (Beige, Blau, Rosé) werden direkt
- * in [Theme.kt] über [androidx.compose.material3.Color]-Literale definiert
+ * in Theme.kt über [Color]-Literale definiert
  * und referenzieren diese Basisfarben nicht weiter.
  */
 

@@ -16,14 +16,14 @@ import androidx.compose.ui.text.font.FontWeight
 
 /**
  * Vollflächiges, halbtransparentes Overlay während einer Pause im
- * Spielbildschirm ([GameScreen]).
+ * Spielbildschirm ([com.example.geoguessr_app.ui.game.GameScreen]).
  *
- * Verdunkelt den gesamten Bildschirminhalt darunter (Street View bzw.
- * Weltkarte bleiben dabei im Hintergrund unverändert im Compose-Baum
+ * Verdunkelt den gesamten Bildschirminhalt darunter (Street View bleibt
+ * dabei im Hintergrund unverändert im Compose-Baum
  * erhalten, nur optisch überdeckt). Ein Tipp auf eine beliebige Stelle
  * innerhalb des Overlays löst [onResume] aus und setzt die Partie fort.
  *
- * @param onResume Setzt die pausierte Partie fort (typischerweise [GameViewModel.resumeGame]).
+ * @param onResume Setzt die pausierte Partie fort (typischerweise [GameViewModel.resumeGame()]).
  * @param modifier Modifier für den äußeren Container.
  */
 @Composable

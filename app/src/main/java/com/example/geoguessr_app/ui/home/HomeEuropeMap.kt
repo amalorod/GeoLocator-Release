@@ -38,7 +38,7 @@ fun HomeEuropeMap(
 
     Box(
         modifier = modifier
-            // Der Schatten nutzt bewusst NICHT die exakte EuropeShape,
+            // Der Schatten nutzt nicht die exakte EuropeShape,
             // sondern eine stark abgerundete, konvexe Annäherung: echte
             // Elevation-/Blur-Schatten (Modifier.shadow) berechnen ihre
             // Outline zuverlässig nur für konvexe Formen. Bei der stark

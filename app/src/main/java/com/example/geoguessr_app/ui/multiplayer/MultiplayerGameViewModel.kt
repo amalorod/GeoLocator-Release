@@ -20,6 +20,7 @@ import com.example.geoguessr_app.domain.usecase.GetLocationsByIdsUseCase
 import com.example.geoguessr_app.ui.game.GameMode
 import com.example.geoguessr_app.ui.game.GameUiState
 import com.example.geoguessr_app.ui.game.GameViewMode
+import com.example.geoguessr_app.ui.game.GameViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -36,8 +37,8 @@ import javax.inject.Inject
  *
  * Nutzt bewusst denselben [GameUiState] wie der Einzelspieler-[GameViewModel]
  * (statt eines eigenen Multiplayer-spezifischen States), damit die
- * zustandslose [GameScreen] für beide Modi identisch bleibt – die
- * Multiplayer-spezifischen Felder (u. a. [GameUiState.multiplayerPlayers],
+ * zustandslose GameScreen-Oberfläche für beide Modi identisch bleibt – die
+ * Multiplayer-spezifischen Felder, wie etwa [GameUiState.multiplayerPlayers],
  * [GameUiState.isMultiplayer]) werden nur hier befüllt.
  *
  * Rollenverteilung: Nur der Host (`isHost`, ermittelt über

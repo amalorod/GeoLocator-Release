@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.geoguessr_app.R
 import kotlinx.coroutines.delay
+import com.example.geoguessr_app.navigation.GeoGuessrNavHost
 
 /** Anzeigedauer des eigenen Logo-Splash-Screens in Millisekunden. */
 private const val SPLASH_DURATION_MS = 1_200L
@@ -29,7 +30,7 @@ private const val SPLASH_DURATION_MS = 1_200L
  * ergänzt, analog zur organisatorischen Vorgabe der Aufgabenstellung.
  *
  * @param onFinished Wird nach [SPLASH_DURATION_MS] ausgelöst und leitet
- * in MainActivity zum eigentlichen App-Inhalt (GeoGuessrNavHost) weiter.
+ * in MainActivity zum eigentlichen App-Inhalt [GeoGuessrNavHost] weiter.
  */
 @Composable
 fun AppLogoSplashScreen(onFinished: () -> Unit) {

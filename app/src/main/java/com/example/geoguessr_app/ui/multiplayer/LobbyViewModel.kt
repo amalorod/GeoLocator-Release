@@ -26,7 +26,7 @@ import javax.inject.Inject
  * Steuert die Lobby-Phase: Erstellen, Beitreten, Ready-Status und den
  * Übergang zur laufenden Partie via [startLobby].
  *
- * BEKANNTER PUNKT (zurückgestellt): [observeLobby] besitzt aktuell keinen
+ * Hinweis: [observeLobby] besitzt aktuell keinen
  * Schutz gegen mehrfaches gleichzeitiges Beobachten derselben Lobby
  * (im Gegensatz zu [SessionViewModel.observeSession] mit seinem
  * isObserving-Flag). Solange [createLobby]/[joinLobby] nur einmal pro
@@ -122,7 +122,7 @@ class LobbyViewModel @Inject constructor(
 
                 val uid = firebaseAuthRepository.currentUid()
                     ?: firebaseAuthRepository.signInAnonymously()
-                
+
                 Log.d("MULTIPLAYER_DEBUG", "join uid=$uid")
 
                 _uiState.update { it.copy(currentUserUid = uid) }

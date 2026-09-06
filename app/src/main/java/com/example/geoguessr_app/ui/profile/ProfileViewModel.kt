@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.geoguessr_app.navigation.GeoGuessrNavHost
 
 /**
  * Verwaltet Profil-, Login- und Logout-Zustand sowie das Nachladen von
@@ -20,7 +21,7 @@ import javax.inject.Inject
  * Gast zu eingeloggtem Account werden zuerst alle lokal gespeicherten
  * Gast-Statistiken/-Quests verworfen ([StatisticsRepository.clearLocalStatistics],
  * [DailyQuestRepository.clearLocalQuests]), bevor die Server-Daten des nun
- * aktiven Accounts geladen werden – so vermischen sich Gast- und
+ * aktiven Accounts geladen werden. Somit vermischen sich Gast- und
  * Account-Fortschritt nicht.
  */
 @HiltViewModel
@@ -37,9 +38,7 @@ class ProfileViewModel @Inject constructor(
      * Initialer Ladevorgang beim App-Start (siehe [GeoGuessrNavHost]).
      *
      * Lädt je nachdem, ob ein eingeloggtes Profil existiert, entweder die
-     * Server-Statistiken des Nutzers oder die rein lokalen Gast-Statistiken;
-     * das globale Leaderboard wird in beiden Fällen geladen, damit auch
-     * Gäste das Ranking einsehen können, ohne selbst darin zu erscheinen.
+     * Server-Statistiken des Nutzers oder die rein lokalen Gast-Statistiken.
      */
     fun loadInitialData() {
         viewModelScope.launch {

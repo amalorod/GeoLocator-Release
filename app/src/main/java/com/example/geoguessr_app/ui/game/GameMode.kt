@@ -1,18 +1,22 @@
 package com.example.geoguessr_app.ui.game
 
+import com.example.geoguessr_app.ui.home.GameModeDialog
+import com.example.geoguessr_app.ui.multiplayer.LobbyViewModel
+
 /**
  * Konfiguration der verfügbaren Spielmodi.
  *
  * Jeder Modus bündelt sämtliche Regel-Parameter (Rundendauer, Street-View-
  * Navigation, Verfügbarkeit) an einer Stelle, statt diese Werte verstreut
  * im [GameViewModel] oder in der UI abzufragen – das entspricht dem
- * Single-Source-of-Truth-Prinzip für Spielregeln.
+ * Single Source of Truth - Prinzip für Spielregeln.
  *
  * [BATTLE_ROYALE] ist ausschließlich im Multiplayer-Kontext spielbar und wird
  * daher im regulären Einzelspieler-Auswahldialog
- * ([com.example.geoguessr_app.ui.home.GameModeDialog]) bewusst herausgefiltert
- * und nicht angezeigt. Die eigene Auswahl erfolgt stattdessen über die
- * Multiplayer-Lobby (siehe [com.example.geoguessr_app.ui.multiplayer.LobbyViewModel]).
+ * ([GameModeDialog]) bewusst herausgefiltert und nicht angezeigt.
+ * Die eigene Auswahl erfolgt stattdessen über die Multiplayer-Lobby
+ * (siehe [LobbyViewModel]).
+ *
  * Das Feld [isAvailable] betrifft daher aktuell keinen Modus mehr, bleibt aber
  * als genereller Mechanismus für künftige, noch nicht fertiggestellte Modi
  * bestehen.

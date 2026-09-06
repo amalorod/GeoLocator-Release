@@ -172,6 +172,9 @@ private fun CountryMenuButton(
     }
 }
 
+/**
+ * Sorgt für die Bewegung der Buttons um die EuropeMap herum und macht den HomeScreen dymischer.
+ */
 @Composable
 private fun Modifier.countryMotion(seed: Int): Modifier {
     val transition = rememberInfiniteTransition(label = "countryMotion$seed")

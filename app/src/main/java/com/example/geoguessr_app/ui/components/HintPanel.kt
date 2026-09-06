@@ -25,18 +25,19 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.geoguessr_app.ui.game.GameViewModel
 
 /**
  * Seitlich angeheftete, ausfahrbare Hinweisleiste für die aktuelle Runde.
  *
  * Der Auf-/Zu-Zustand wird über `remember(roundNumber)` an die Rundennummer
- * gekoppelt, statt global für die gesamte Partie zu gelten – dadurch klappt
+ * gekoppelt, statt global für die gesamte Partie zu gelten. Ddadurch klappt
  * sich der Hinweis bei jedem Rundenwechsel automatisch wieder ein, ohne dass
  * [GameViewModel] diesen rein visuellen UI-Zustand kennen oder zurücksetzen
  * müsste.
  *
  * @param hint Der anzuzeigende Hinweistext zum aktuellen Standort.
- * @param roundNumber Aktuelle Rundennummer; Änderungen setzen [isExpanded] zurück.
+ * @param roundNumber Aktuelle Rundennummer; Änderungen setzen [isExpanded()] zurück.
  * @param modifier Modifier für den äußeren Container.
  */
 @Composable

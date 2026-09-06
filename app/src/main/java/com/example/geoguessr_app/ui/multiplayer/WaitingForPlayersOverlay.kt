@@ -13,6 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.geoguessr_app.ui.game.GameUiState
+import com.example.geoguessr_app.ui.game.GameViewModel
 
 /**
  * Vollflächiges Overlay, das eingeblendet wird, während auf die Tipps
@@ -20,9 +22,6 @@ import androidx.compose.ui.unit.dp
  * gesetzt in [GameViewModel.submitGuess] bzw.
  * [MultiplayerGameViewModel.submitGuess]).
  *
- * Diese Version in ui.multiplayer ist die einzig verwendete – eine zuvor
- * doppelt vorhandene, identische Definition in GameScreen.kt (ui.game)
- * wurde entfernt.
  */
 @Composable
 fun WaitingForPlayersOverlay() {

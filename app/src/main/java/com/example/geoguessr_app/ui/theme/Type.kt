@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.sp
 /**
  * Zentrale Typografie-Definition für das App-weite Material 3 Theme.
  *
- * Aktuell wird lediglich [bodyLarge] individuell gesetzt; alle übrigen
+ * Aktuell wird lediglich [Typography.bodyLarge] individuell gesetzt; alle übrigen
  * Textrollen (titleLarge, labelSmall, ...) verwenden bewusst die
  * Material-3-Standardwerte, um den Definitionsaufwand gering zu halten
  * und ein konsistentes Erscheinungsbild mit dem Betriebssystem zu wahren.

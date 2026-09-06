@@ -21,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import com.example.geoguessr_app.data.datastore.OnboardingDataStoreRepository
+import com.example.geoguessr_app.navigation.GeoGuessrNavHost
 import com.example.geoguessr_app.ui.tutorial.TutorialScreen
 import kotlinx.coroutines.delay
 
@@ -30,8 +32,8 @@ import kotlinx.coroutines.delay
  * [GeoGuessrNavHost]).
  *
  * Ablauf: Zeigt kurz einen Begrüßungstext, der per Fly-out-Animation
- * seitlich herausgleitet ([showWelcomeText]), und blendet danach direkt
- * in [TutorialScreen] über – der Nutzer landet also nahtlos in der
+ * seitlich herausgleitet (showWelcomeText), und blendet danach direkt
+ * in [TutorialScreen] über. Der Nutzer landet also nahtlos in der
  * Klick-Galerie, ohne zusätzliche Navigation. Erst nach vollständigem
  * Durchklicken des Tutorials (letzter Button "Home") wird
  * [onOnboardingFinished] ausgelöst.

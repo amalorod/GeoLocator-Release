@@ -38,6 +38,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.geoguessr_app.navigation.GeoGuessrNavHost
+import com.example.geoguessr_app.ui.welcome.WelcomeScreen
 
 /**
  * Klick-Galerie, die die grundlegende Spielsteuerung anhand von
@@ -60,10 +62,10 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun TutorialScreen(
+    modifier: Modifier = Modifier,
     onFinish: () -> Unit,
     onBackClick: (() -> Unit)? = null,
     isWelcomeFlow: Boolean = false,
-    modifier: Modifier = Modifier
 ) {
     var currentStepIndex by remember { mutableIntStateOf(0) }
     val currentStep = tutorialSteps[currentStepIndex]

@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.geoguessr_app.ui.theme.AppThemeMode
+import com.example.geoguessr_app.ui.home.HomeEuropeMap
 
 /**
  * Gemeinsame Steuerleiste für den Spielbildschirm: Rücksprung zur Startseite,
@@ -22,11 +23,12 @@ import com.example.geoguessr_app.ui.theme.AppThemeMode
  *
  * Die eigentliche Theme-Auswahl-Logik ist nach [ThemeSelectorMenu]
  * ausgelagert, da dieselbe Auswahl auch im HomeScreen
- * ([com.example.geoguessr_app.ui.home.EuropeMenuMap]) angeboten wird und so
- * nicht doppelt implementiert werden muss.
+ * ([HomeEuropeMap]) angeboten wird und so nicht doppelt
+ * implementiert werden muss.
  */
 @Composable
 fun AppTopBar(
+    modifier: Modifier = Modifier,
     currentTheme: AppThemeMode,
     currentDynamicColorEnabled: Boolean,
     isPauseEnabled: Boolean,
@@ -36,7 +38,6 @@ fun AppTopBar(
     onPauseClick: () -> Unit,
     showPauseButton: Boolean = true,
     onPauseGame: () -> Unit,
-    modifier: Modifier = Modifier
 ) {
 
     val actionButtonColors: ButtonColors = ButtonDefaults.buttonColors(

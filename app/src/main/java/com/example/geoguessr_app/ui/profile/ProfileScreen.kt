@@ -58,7 +58,7 @@ import java.util.Locale
  * gespeicherter Fortschritt, Login-Aufforderung) und eingeloggter Nutzer
  * (Account-Details, Profilbild-Upload, Logout).
  *
- * @param profile Aktuell aktives Profil; unterscheidet über [isGuest]
+ * @param profile Aktuell aktives Profil; unterscheidet über [isGuest()]
  * zwischen Gast- und Account-Ansicht.
  * @param onBackClick Navigiert zurück zum Startbildschirm.
  */

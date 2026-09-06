@@ -33,6 +33,7 @@ import kotlinx.coroutines.delay
 private const val HEADER_ROTATION_INTERVAL_MS = 4_000L
 private const val TABLET_BREAKPOINT_DP = 600
 
+// Bilder innerhalb der EuropeMap
 private val HEADER_IMAGES = listOf(
     R.drawable.map_picture_1,
     R.drawable.map_picture_2,
@@ -50,7 +51,7 @@ private val HEADER_IMAGES = listOf(
  * visuellen UI-Zustand (Bildrotation, Modus-Dialog-Sichtbarkeit) und
  * setzt [HomeTornHeader], [HomeEuropeMap], [HomeMapActionButtons],
  * [HomeGameModeButton] und [HomeShortcutButtonsRow] zusammen. Fachliche
- * Zustände werden weiterhin ausschließlich über Parameter/Callbacks
+ * Zustände werden  ausschließlich über Parameter/Callbacks
  * gereicht.
  */
 @Composable
