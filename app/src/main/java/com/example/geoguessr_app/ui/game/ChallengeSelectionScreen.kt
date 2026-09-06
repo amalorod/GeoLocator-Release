@@ -32,6 +32,26 @@ import com.example.geoguessr_app.domain.model.custom.CustomGameSettings
 import com.example.geoguessr_app.domain.model.custom.PredefinedChallenges
 import com.example.geoguessr_app.domain.model.custom.Region
 
+/**
+ * Zeigt eine scrollbare Liste aller vorgefertigten Challenges
+ * ([PredefinedChallenges.all]) an, aus denen der Nutzer eine Challenge
+ * auswählen und direkt starten kann.
+ *
+ * Rein zustandslos (stateless) im Sinne von State Hoisting: Der
+ * Screen besitzt selbst keinen veränderlichen Zustand, sondern
+ * reicht Nutzerinteraktionen ausschließlich über die beiden
+ * Callback-Parameter nach oben an den Aufrufer (z. B. NavHost oder
+ * ViewModel) weiter. Dadurch bleibt der Composable leicht testbar
+ * und unabhängig von der konkreten Navigations- oder Spiellogik.
+ *
+ * @param onBackClick Wird ausgelöst, wenn der Nutzer über den
+ * "Zurück"-Button den Screen verlassen möchte (typischerweise
+ * `navController.popBackStack()` im Aufrufer).
+ * @param onStartGame Wird mit den [CustomGameSettings] der ausgewählten
+ * Challenge aufgerufen, sobald der Nutzer auf "Challenge starten"
+ * klickt. Der Aufrufer ist dafür verantwortlich, mit diesen
+ * Einstellungen die eigentliche Spielrunde zu starten.
+ */
 @Composable
 fun ChallengeSelectionScreen(
     onBackClick: () -> Unit,
@@ -42,6 +62,8 @@ fun ChallengeSelectionScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
+        // Kopfzeile mit Zurück-Button und Titel, konsistent zum
+        // restlichen App-Design (z. B. TutorialScreen) gestaltet.
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer,
@@ -63,6 +85,9 @@ fun ChallengeSelectionScreen(
             }
         }
 
+        // LazyColumn statt Column verwendet, um bei einer wachsenden
+        // Anzahl an Challenges nur die sichtbaren Karten zu rendern
+        // (Performance-Vorteil bei langen Listen).
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -71,6 +96,8 @@ fun ChallengeSelectionScreen(
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             items(PredefinedChallenges.all) { challenge ->
+                // Jede Challenge wird als eigenständige Karte dargestellt,
+                // die Icon, Titel, Beschreibung und einen Start-Button enthält.
                 ElevatedCard(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.elevatedCardColors(
@@ -98,6 +125,9 @@ fun ChallengeSelectionScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
+                        // Beim Klick werden die vordefinierten Settings der
+                        // Challenge direkt an den Aufrufer übergeben, ohne
+                        // dass der Screen selbst Spiellogik kennen muss.
                         Button(
                             onClick = { onStartGame(challenge.settings) },
                             modifier = Modifier.align(Alignment.End)

@@ -1,7 +1,32 @@
 // domain/model/custom/PredefinedChallenges.kt
 package com.example.geoguessr_app.domain.model.custom
 
+/**
+ * Statische, im Code fest definierte Sammlung an vorgefertigten
+ * Challenges für den Challenge-Modus der App.
+ *
+ * Gehört zur Domain-Layer im Sinne von Clean Architecture: Diese
+ * Objekt-Deklaration enthält reine, unveränderliche Fachdaten
+ * ([ChallengeItem]) ohne Abhängigkeit zu Android-Framework-Klassen,
+ * UI oder Persistenz. Dadurch bleibt sie unabhängig testbar und
+ * wiederverwendbar (z. B. sowohl in Compose-Screens als auch in
+ * ViewModels).
+ *
+ * Jede Challenge kombiniert Anzeige-Informationen (Titel, Beschreibung,
+ * Icon) mit den tatsächlichen Spieleinstellungen ([CustomGameSettings]),
+ * die beim Start der Challenge direkt an die Spiellogik übergeben werden.
+ */
 object PredefinedChallenges {
+
+    /**
+     * Vollständige Liste aller vordefinierten Challenges, die im
+     * [ChallengeSelectionScreen] zur Auswahl angezeigt werden.
+     *
+     * Jeder Eintrag deckt eine andere Kombination aus Region,
+     * Schwierigkeitsgrad und Zeitlimit ab, um unterschiedliche
+     * Spielerfahrungen ohne manuelle Konfiguration durch den Nutzer
+     * anzubieten.
+     */
     val all: List<ChallengeItem> = listOf(
         ChallengeItem(
             title = "Nordamerika Challenge",
