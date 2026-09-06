@@ -1,5 +1,7 @@
 package com.example.geoguessr_app.domain.statistics
 
+import com.example.geoguessr_app.ui.components.MatchSummaryDialog
+
 /**
  * Fasst das Ergebnis einer einzelnen, abgeschlossenen Partie zusammen.
  *

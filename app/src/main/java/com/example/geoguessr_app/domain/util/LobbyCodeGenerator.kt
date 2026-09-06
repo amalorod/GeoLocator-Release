@@ -1,5 +1,6 @@
 package com.example.geoguessr_app.domain.util
 
+import com.example.geoguessr_app.domain.util.LobbyCodeGenerator.CHARSET
 import kotlin.random.Random
 
 /**
@@ -13,7 +14,7 @@ import kotlin.random.Random
  * Der verwendete CHARSET enthält bewusst nicht das vollständige
  * Alphabet und alle Ziffern: Verwechslungsanfällige Zeichen wie I/1,
  * O/0 oder L wurden entfernt, um Tippfehler beim manuellen Weitergeben
- * eines Codes (z. B. mündlich oder per Nachricht) zu vermeiden.
+ * eines Codes zu vermeiden.
  */
 object LobbyCodeGenerator {
 

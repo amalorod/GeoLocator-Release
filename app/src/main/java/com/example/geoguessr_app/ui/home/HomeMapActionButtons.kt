@@ -1,6 +1,5 @@
 package com.example.geoguessr_app.ui.home
 
-import android.R.attr.label
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -14,9 +13,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -31,7 +30,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.geoguessr_app.ui.components.ThemeSelectorMenu
 import com.example.geoguessr_app.ui.theme.AppThemeMode
-import com.google.android.gms.common.util.DeviceProperties.isTablet
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin

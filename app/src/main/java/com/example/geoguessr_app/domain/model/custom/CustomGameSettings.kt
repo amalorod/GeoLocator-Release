@@ -1,5 +1,10 @@
 package com.example.geoguessr_app.domain.model.custom
 
+import com.example.geoguessr_app.navigation.AppDestination.IndividualSettings
+import com.example.geoguessr_app.navigation.GeoGuessrNavHost
+import com.example.geoguessr_app.ui.game.GameViewModel
+import com.example.geoguessr_app.ui.game.IndividualSettingsScreen
+
 /**
  * Kapselt sämtliche vom Nutzer konfigurierbaren Parameter des
  * individuellen Spielmodus (siehe Doku, Kapitel 5.3 „Individueller

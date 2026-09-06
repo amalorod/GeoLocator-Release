@@ -26,11 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.geoguessr_app.domain.model.custom.ChallengeItem
-import com.example.geoguessr_app.domain.model.custom.CustomDifficulty
 import com.example.geoguessr_app.domain.model.custom.CustomGameSettings
 import com.example.geoguessr_app.domain.model.custom.PredefinedChallenges
-import com.example.geoguessr_app.domain.model.custom.Region
 
 /**
  * Zeigt eine scrollbare Liste aller vorgefertigten Challenges

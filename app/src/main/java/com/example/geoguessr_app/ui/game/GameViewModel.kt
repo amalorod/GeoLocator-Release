@@ -2,27 +2,27 @@ package com.example.geoguessr_app.ui.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.geoguessr_app.data.dailyquest.DailyQuestRepository
+import com.example.geoguessr_app.data.statistics.StatisticsRepository
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
 import com.example.geoguessr_app.domain.model.custom.CustomDifficulty
 import com.example.geoguessr_app.domain.model.custom.CustomGameSettings
 import com.example.geoguessr_app.domain.model.custom.Region
+import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
+import com.example.geoguessr_app.domain.statistics.GameStatistics
+import com.example.geoguessr_app.domain.statistics.RoundStatistics
 import com.example.geoguessr_app.domain.usecase.CalculateDistanceUseCase
 import com.example.geoguessr_app.domain.usecase.CalculateScoreUseCase
 import com.example.geoguessr_app.domain.usecase.GetRandomLocationsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.example.geoguessr_app.data.dailyquest.DailyQuestRepository
-import com.example.geoguessr_app.data.statistics.StatisticsRepository
-import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
-import com.example.geoguessr_app.domain.statistics.GameStatistics
-import com.example.geoguessr_app.domain.statistics.RoundStatistics
+import javax.inject.Inject
 
 
 /**

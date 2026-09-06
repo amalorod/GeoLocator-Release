@@ -14,12 +14,13 @@ package com.example.geoguessr_app.navigation
  * wie ein Singleton mit automatisch generierten equals()/toString()-
  * Implementierungen.
  *
- * ARCHITEKTUR-HINWEIS: Aktuell werden Argumente (z. B. lobbyCode,
+ * HINWEIS: Aktuell werden Argumente (z. B. lobbyCode,
  * sessionId) manuell als String-Interpolation an die Route angehängt
- * (siehe GeoGuessrNavHost). Seit Navigation-Compose 2.8 empfiehlt Google
+ * (siehe GeoGuessrNavHost).
+ *
+ * Seit Navigation-Compose 2.8 empfiehlt Google
  * stattdessen typsichere, serialisierbare Routen-Klassen. Für dieses
- * Projekt wurde aus Zeitgründen bei der klassischen String-basierten
- * Navigation geblieben.
+ * Projekt wurde aus Zeitgründen die klassische String-basierte Navigation genutzt.
  */
 sealed class AppDestination(
 

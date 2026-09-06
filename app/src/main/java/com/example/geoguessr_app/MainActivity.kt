@@ -8,21 +8,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Modifier
-import com.example.geoguessr_app.navigation.GeoGuessrNavHost
-import com.example.geoguessr_app.ui.theme.GeoGuessr_AppTheme
-import dagger.hilt.android.AndroidEntryPoint
-
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.example.geoguessr_app.ui.theme.AppThemeMode
+import com.example.geoguessr_app.navigation.GeoGuessrNavHost
 import com.example.geoguessr_app.ui.game.GameMode
 import com.example.geoguessr_app.ui.splash.AppLogoSplashScreen
+import com.example.geoguessr_app.ui.theme.GeoGuessr_AppTheme
 import com.example.geoguessr_app.ui.theme.ThemeViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
 
 /**

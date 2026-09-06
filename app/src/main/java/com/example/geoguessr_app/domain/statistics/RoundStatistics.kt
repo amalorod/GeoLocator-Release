@@ -1,5 +1,8 @@
 package com.example.geoguessr_app.domain.statistics
 
+import com.example.geoguessr_app.domain.usecase.CalculateDistanceUseCase
+import com.example.geoguessr_app.domain.usecase.CalculateScoreUseCase
+
 /**
  * Repräsentiert das Ergebnis einer einzelnen Spielrunde.
  *
@@ -10,8 +13,7 @@ package com.example.geoguessr_app.domain.statistics
  * @property distanceKm Entfernung zwischen geschätztem und
  *   tatsächlichem Standort in Kilometern (siehe
  *   [CalculateDistanceUseCase]), zusätzlich zum Score gespeichert, um
- *   im UI beide Werte separat anzeigen zu können (z. B. auch als
- *   Bananen-Maßstab, siehe Aufgabenstellung Kernfunktionen).
+ *   im UI beide Werte separat anzeigen zu können.
  */
 data class RoundStatistics(
     val roundNumber: Int,

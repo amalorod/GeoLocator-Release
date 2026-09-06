@@ -1,5 +1,7 @@
 package com.example.geoguessr_app.domain.model.custom
 
+import com.example.geoguessr_app.domain.model.GeoLocation
+
 /**
  * Repräsentiert die geografischen Regionen, in die alle spielbaren
  * Standorte ([GeoLocation]) eingeteilt werden können.

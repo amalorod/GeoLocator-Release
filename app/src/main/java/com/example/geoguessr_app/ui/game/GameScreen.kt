@@ -1,7 +1,6 @@
 package com.example.geoguessr_app.ui.game
 
 import androidx.activity.compose.BackHandler
-import com.example.geoguessr_app.ui.multiplayer.WaitingForPlayersOverlay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,13 +16,11 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -52,20 +49,19 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
+import com.example.geoguessr_app.domain.statistics.GameStatistics
 import com.example.geoguessr_app.ui.components.AppTopBar
 import com.example.geoguessr_app.ui.components.HintPanel
+import com.example.geoguessr_app.ui.components.MatchSummaryDialog
 import com.example.geoguessr_app.ui.components.PauseOverlay
 import com.example.geoguessr_app.ui.multiplayer.MultiplayerGameViewModel
 import com.example.geoguessr_app.ui.multiplayer.MultiplayerScoreboard
 import com.example.geoguessr_app.ui.multiplayer.SessionUiState
 import com.example.geoguessr_app.ui.multiplayer.SessionViewModel
-import com.example.geoguessr_app.ui.components.MatchSummaryDialog
-import com.example.geoguessr_app.ui.theme.AppThemeMode
-import com.example.geoguessr_app.domain.statistics.GameStatistics
 import com.example.geoguessr_app.ui.multiplayer.WaitingForPlayersOverlay
+import com.example.geoguessr_app.ui.theme.AppThemeMode
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.StreetViewPanoramaView
 import com.google.android.gms.maps.model.CameraPosition

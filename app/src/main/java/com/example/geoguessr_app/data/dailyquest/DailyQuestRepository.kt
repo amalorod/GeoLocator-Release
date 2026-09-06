@@ -2,9 +2,9 @@ package com.example.geoguessr_app.data.dailyquest
 
 import android.util.Log
 import com.example.geoguessr_app.data.datastore.DailyQuestDataStoreRepository
+import com.example.geoguessr_app.data.firebase.FirebaseAuthRepository
 import com.example.geoguessr_app.data.profile.ProfileRepository
 import com.example.geoguessr_app.domain.model.dailyquest.DailyQuest
-import com.example.geoguessr_app.data.firebase.FirebaseAuthRepository
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

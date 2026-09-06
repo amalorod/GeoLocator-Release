@@ -1,6 +1,8 @@
 package com.example.geoguessr_app.domain.usecase
 
+import com.example.geoguessr_app.data.location.LocalLocationRepository
 import com.example.geoguessr_app.domain.model.GeoLocation
+import com.example.geoguessr_app.domain.model.multiplayer.MatchSession
 import com.example.geoguessr_app.domain.repository.LocationRepository
 import javax.inject.Inject
 
@@ -21,7 +23,8 @@ import javax.inject.Inject
  * Repository-Implementierung zu, sondern ausschließlich auf das
  * [LocationRepository]-Interface. Dadurch bleibt der UseCase unabhängig
  * davon, ob die Standorte lokal ([LocalLocationRepository]) oder
- * zukünftig über eine Remote-Quelle geladen werden.
+ * zukünftig über eine Remote-Quelle geladen werden, was eine Grundlage
+ * für den Erweiterungshorizont der App bildet.
  */
 class GetLocationsByIdsUseCase @Inject constructor(
     private val locationRepository: LocationRepository

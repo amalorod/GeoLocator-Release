@@ -1,19 +1,19 @@
 package com.example.geoguessr_app.domain.statistics
 
+import com.example.geoguessr_app.ui.profile.ProfileScreen
+
 /**
- * Repräsentiert die Statistik eines Spielers im Kontext eines
- * Leaderboards bzw. Vergleichs mit anderen Spielern.
+ * Repräsentiert die Statistik eines Spielers im Leaderboard, welches über
+ * den [ProfileScreen] aufgerufen werden kann.
  *
- * ARCHITEKTUR-HINWEIS: Diese Klasse überschneidet sich inhaltlich mit
+ * HINWEIS: Diese Klasse überschneidet sich inhaltlich mit
  * [LifetimeStatistics] (beide erfassen gamesPlayed, totalScore sowie
- * einen Bestwert). Der Unterschied liegt vermutlich im
- * Verwendungskontext: [LifetimeStatistics] beschreibt die eigenen,
- * privaten Statistiken im Statistics Screen, während
- * [PlayerStatistics] für eine Rangliste mehrerer Spieler (inkl.
- * playerName) gedacht ist, z. B. für ein zukünftiges Leaderboard-
- * Feature. Sollte dieser Anwendungsfall aktuell nicht umgesetzt sein,
- * ist diese Klasse ein guter Kandidat für den Erweiterungshorizont
- * (Ranglisten-Feature) statt für aktiven Code.
+ * einen Bestwert).
+ *
+ * Der Unterschied liegt darin, dass [LifetimeStatistics]  die eigenen,
+ * privaten Statistiken im StatisticsScreen beschreibt, während
+ * [PlayerStatistics] für eine Rangliste mehrerer Spieler für das Leaderboard
+ * gedacht ist.
  *
  * @property playerName Anzeigename des Spielers.
  * @property gamesPlayed Anzahl gespielter Partien.

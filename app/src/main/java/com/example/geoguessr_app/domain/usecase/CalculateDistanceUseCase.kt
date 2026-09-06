@@ -1,11 +1,11 @@
 package com.example.geoguessr_app.domain.usecase
 
 import com.example.geoguessr_app.domain.model.GeoCoordinate
+import javax.inject.Inject
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
-import javax.inject.Inject
 
 /**
  * Berechnet die Luftlinienentfernung zwischen zwei Koordinaten.

@@ -1,6 +1,10 @@
 package com.example.geoguessr_app.domain.repository
 
+import com.example.geoguessr_app.data.location.LocalLocationRepository
 import com.example.geoguessr_app.domain.model.GeoLocation
+import com.example.geoguessr_app.domain.model.multiplayer.MatchSession
+import com.example.geoguessr_app.domain.usecase.GetLocationsByIdsUseCase
+import com.example.geoguessr_app.domain.usecase.GetRandomLocationsUseCase
 
 /**
  * Definiert, welche Standortdaten die Anwendung benötigt.

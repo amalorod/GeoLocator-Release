@@ -1,6 +1,8 @@
 // domain/model/custom/PredefinedChallenges.kt
 package com.example.geoguessr_app.domain.model.custom
 
+import com.example.geoguessr_app.ui.game.ChallengeSelectionScreen
+
 /**
  * Statische, im Code fest definierte Sammlung an vorgefertigten
  * Challenges für den Challenge-Modus der App.

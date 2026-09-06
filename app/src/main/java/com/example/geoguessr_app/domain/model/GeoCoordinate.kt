@@ -27,7 +27,7 @@ data class GeoCoordinate(
      * IllegalArgumentException geworfen, sobald ungültige Werte
      * übergeben werden – dadurch können an keiner Stelle im Programm
      * fachlich unsinnige Koordinatenobjekte existieren, was nachfolgende
-     * Berechnungen (z. B. Distanzmessung) zuverlässiger macht.
+     * Berechnungen zuverlässiger macht.
      */
     init {
         require(latitude in -90.0..90.0) {

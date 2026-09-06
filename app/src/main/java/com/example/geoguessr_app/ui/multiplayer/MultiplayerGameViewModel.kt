@@ -10,8 +10,8 @@ import com.example.geoguessr_app.data.profile.ProfileRepository
 import com.example.geoguessr_app.data.statistics.StatisticsRepository
 import com.example.geoguessr_app.domain.model.GeoCoordinate
 import com.example.geoguessr_app.domain.model.GeoLocation
-import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
 import com.example.geoguessr_app.domain.model.custom.Region
+import com.example.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 import com.example.geoguessr_app.domain.statistics.RoundStatistics
 import com.example.geoguessr_app.domain.usecase.CalculateDistanceUseCase

@@ -1,5 +1,7 @@
 package com.example.geoguessr_app.domain.statistics
 
+import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
+
 /**
  * Aggregiert die Statistik eines Spielers über dessen gesamte
  * Nutzungshistorie hinweg (siehe Doku, Kapitel 4.4 „Statistics
@@ -7,8 +9,8 @@ package com.example.geoguessr_app.domain.statistics
  *
  * Im Gegensatz zu [GameStatistics] (eine einzelne Partie) bildet diese
  * Klasse die langfristig in Firebase gespeicherte, kumulierte Bilanz
- * ab und wird vermutlich aus einer Liste von [MatchStatistic]-Einträgen
- * berechnet oder direkt aktualisiert nach jeder abgeschlossenen Partie.
+ * ab und wird aus den [MatchStatistic]-Einträgen nach jeder abgeschlossenen
+ * Partie aktualisiert.
  *
  * @property gamesPlayed Gesamtzahl gespielter Partien.
  * @property roundsPlayed Gesamtzahl gespielter Einzelrunden über alle

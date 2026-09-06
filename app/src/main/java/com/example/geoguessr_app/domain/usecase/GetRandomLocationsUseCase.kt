@@ -1,6 +1,7 @@
 package com.example.geoguessr_app.domain.usecase
 
 import com.example.geoguessr_app.domain.model.GeoLocation
+import com.example.geoguessr_app.domain.model.custom.CustomGameSettings
 import com.example.geoguessr_app.domain.model.custom.Region
 import com.example.geoguessr_app.domain.repository.LocationRepository
 import javax.inject.Inject
@@ -9,12 +10,10 @@ import javax.inject.Inject
  * Wählt eine gewünschte Anzahl unterschiedlicher Zufallsstandorte aus,
  * optional eingeschränkt auf eine bestimmte [Region].
  *
- * Dient als zentrale Anlaufstelle für die Standortauswahl in mehreren
- * Spielmodi: dem klassischen Einzelspieler-Modus (ohne Regionsfilter,
- * da region einen Standardwert von Region.WORLD besitzt) sowie dem
- * individuellen Modus, in dem der Nutzer über [CustomGameSettings.region]
- * gezielt eine Region vorgeben kann (siehe Doku, Kapitel 5.3
- * „Individueller Modus“).
+ * Dient als zentrale Anlaufstelle für die Standortauswahl im klassischen
+ * Einzelspieler-Modus (ohne Regionsfilter,da region einen Standardwert von Region.WORLD besitzt)
+ * sowie dem individuellen Modus, in dem der Nutzer über [CustomGameSettings.region]
+ * gezielt eine Region vorgeben kann (siehe Doku, Kapitel 5.3 „Individueller Modus“).
  */
 class GetRandomLocationsUseCase @Inject constructor(
     private val locationRepository: LocationRepository

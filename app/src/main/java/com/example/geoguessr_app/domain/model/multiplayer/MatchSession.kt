@@ -1,5 +1,7 @@
 package com.example.geoguessr_app.domain.model.multiplayer
 
+import com.example.geoguessr_app.domain.model.GeoLocation
+
 /**
  * Repräsentiert eine laufende Multiplayer-Spielsitzung, die nach dem
  * Start einer Lobby erzeugt wird (siehe Doku, Kapitel 3.4

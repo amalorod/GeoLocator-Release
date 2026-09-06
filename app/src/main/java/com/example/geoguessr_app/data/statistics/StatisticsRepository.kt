@@ -3,10 +3,10 @@ package com.example.geoguessr_app.data.statistics
 
 import android.util.Log
 import com.example.geoguessr_app.data.datastore.StatisticsDataStoreRepository
+import com.example.geoguessr_app.data.firebase.FirebaseAuthRepository
 import com.example.geoguessr_app.data.profile.ProfileRepository
 import com.example.geoguessr_app.domain.model.statistics.MatchStatistic
 import com.example.geoguessr_app.domain.statistics.LifetimeStatistics
-import com.example.geoguessr_app.data.firebase.FirebaseAuthRepository
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

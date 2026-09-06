@@ -1,5 +1,8 @@
 package com.example.geoguessr_app.domain.model.statistics
 
+import com.example.geoguessr_app.domain.model.dailyquest.DailyQuest
+import com.example.geoguessr_app.domain.model.profile.PlayerProfile
+
 /**
  * Repräsentiert die Statistik einer einzelnen, abgeschlossenen Partie
  * (siehe Doku, Kapitel 4.4 „Statistics Screen“ und 5.6 „Profil-,

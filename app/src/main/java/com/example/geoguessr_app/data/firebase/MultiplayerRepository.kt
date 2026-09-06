@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
-import kotlin.collections.copy
 
 /**
  * Verwaltet Multiplayer-Lobbys in Firebase Realtime Database (siehe

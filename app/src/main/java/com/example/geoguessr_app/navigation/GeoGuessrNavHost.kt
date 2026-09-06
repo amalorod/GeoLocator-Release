@@ -16,16 +16,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.geoguessr_app.MainActivity
 import com.example.geoguessr_app.domain.model.custom.CustomGameSettings
 import com.example.geoguessr_app.domain.model.profile.PlayerProfile
+import com.example.geoguessr_app.ui.components.ThemeSelectorMenu
+import com.example.geoguessr_app.ui.dailyquest.DailyQuestScreen
+import com.example.geoguessr_app.ui.game.ChallengeSelectionScreen
 import com.example.geoguessr_app.ui.game.GameMode
 import com.example.geoguessr_app.ui.game.GameRoute
 import com.example.geoguessr_app.ui.game.GameViewModel
 import com.example.geoguessr_app.ui.game.IndividualSettingsScreen
-import com.example.geoguessr_app.ui.game.ChallengeSelectionScreen
 import com.example.geoguessr_app.ui.game.MultiplayerGameRoute
 import com.example.geoguessr_app.ui.home.HomeScreen
-import com.example.geoguessr_app.ui.dailyquest.DailyQuestScreen
 import com.example.geoguessr_app.ui.maptest.MapTestScreen
 import com.example.geoguessr_app.ui.multiplayer.JoinLobbyScreen
 import com.example.geoguessr_app.ui.multiplayer.LobbyViewModel
@@ -37,25 +39,25 @@ import com.example.geoguessr_app.ui.statistics.LifetimeStatisticsScreen
 import com.example.geoguessr_app.ui.statistics.StatisticsViewModel
 import com.example.geoguessr_app.ui.streetviewtest.StreetViewTestScreen
 import com.example.geoguessr_app.ui.theme.AppThemeMode
+import com.example.geoguessr_app.ui.theme.ThemeViewModel
 import com.example.geoguessr_app.ui.tutorial.TutorialScreen
 import com.example.geoguessr_app.ui.welcome.OnboardingViewModel
 import com.example.geoguessr_app.ui.welcome.WelcomeScreen
 
 /**
- * Zentraler Navigationsgraph der Anwendung.
+ * Zentraler Navigationsgraf der Anwendung.
  *
  * Verwaltet neben der reinen Bildschirmnavigation zwei über den gesamten
  * Graphen hinweg gültige, app-weite Zustände: den Theme-/Dynamic-Color-
  * Zustand (siehe [currentTheme]/[currentDynamicColorEnabled], gesetzt in
- * [com.example.geoguessr_app.MainActivity] über das app-weite
- * ThemeViewModel) sowie [isGameInBackground] zur Unterscheidung zwischen
- * einer pausierten und einer endgültig beendeten Einzelspieler-Partie.
+ * [MainActivity] über das app-weite [ThemeViewModel]) sowie [isGameInBackground()]
+ * zur Unterscheidung zwischen einer pausierten und einer endgültig beendeten 
+ * Einzelspieler-Partie.
  *
  * @param currentTheme Aktuell aktives, festes Farbschema.
  * @param currentDynamicColorEnabled Ob stattdessen die Material-You-Systemfarbe verwendet wird.
  * @param onThemeSelected Callback bei Auswahl eines festen Farbschemas; wird unverändert
- * bis zu [ThemeSelectorMenu][com.example.geoguessr_app.ui.components.ThemeSelectorMenu]
- * in HomeScreen und GameScreen durchgereicht.
+ * bis zu [ThemeSelectorMenu] in HomeScreen und GameScreen durchgereicht.
  * @param onDynamicColorToggled Callback beim Umschalten der Material-You-Systemfarbe.
  */
 @Composable
@@ -139,7 +141,7 @@ fun GeoGuessrNavHost(
                 onThemeSelected = onThemeSelected,
                 onDynamicColorToggled = onDynamicColorToggled,
                 // Ein vorhandenes Profil signalisiert, dass der Nutzer
-                // kein Gast ist – steuert z. B. den Profilindikator.
+                // kein Gast ist und steuert den farbigen Profilindikator.
                 isProfileSetup = userProfile != null,
                 onProfileClick = {
                     navController.navigate(AppDestination.Profile.route)
@@ -347,7 +349,7 @@ fun GeoGuessrNavHost(
                 onDynamicColorToggled = onDynamicColorToggled,
                 viewModel = gameViewModel,
                 onHomeClick = {
-                    // Anders als bei Multiplayer wird die Partie hier NICHT
+                    // Anders als bei Multiplayer wird die Partie hier nicht
                     // beendet, sondern nur pausiert (isGameInBackground =
                     // true), damit sie über onResumeGameClick fortgesetzt
                     // werden kann. launchSingleTop verhindert doppelte

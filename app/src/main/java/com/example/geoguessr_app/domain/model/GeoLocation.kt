@@ -5,8 +5,8 @@ import com.example.geoguessr_app.domain.model.custom.Region
 /**
  * Repräsentiert einen spielbaren Standort innerhalb der Anwendung.
  *
- * Wie [GeoCoordinate] ist dieses Modell technologieunabhängig gehalten:
- * Es enthält weder Android- noch Compose- oder Google-Maps-spezifische
+ * Wie [GeoCoordinate] ist dieses Modell unabhängig gehalten:
+ * Es enthält weder Android- noch Compose- oder Google Maps-spezifische
  * Typen. Dadurch bleibt die eigentliche Spiellogik (z. B. Auswahl eines
  * zufälligen Standorts, Punkteberechnung) vollständig von der konkreten
  * UI- oder Kartenimplementierung entkoppelt und ließe sich z. B. auch

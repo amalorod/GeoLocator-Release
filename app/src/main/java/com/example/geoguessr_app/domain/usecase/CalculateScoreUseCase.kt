@@ -1,8 +1,8 @@
 package com.example.geoguessr_app.domain.usecase
 
+import javax.inject.Inject
 import kotlin.math.exp
 import kotlin.math.roundToInt
-import javax.inject.Inject
 
 /**
  * Berechnet die Rundenpunktzahl anhand der Entfernung zwischen
@@ -11,8 +11,9 @@ import javax.inject.Inject
  * Schätzung“).
  *
  * Die Berechnung erfolgt über eine exponentielle Abklingfunktion
- * (Score = MAXIMUM_SCORE * e^(-distanz / DISTANCE_FACTOR)). Diese Wahl
- * gegenüber einer linearen Abnahme hat einen spielerischen Vorteil:
+ * (Score = MAXIMUM_SCORE * e^(-distanz / DISTANCE_FACTOR)).
+ *
+ * Diese Wahl gegenüber einer linearen Abnahme hat einen spielerischen Vorteil:
  * Bereits kleine Verbesserungen bei sehr genauen Tipps (z. B. von 5 km
  * auf 1 km Entfernung) wirken sich stärker auf die Punktzahl aus als
  * dieselbe Verbesserung bei bereits großen Entfernungen (z. B. von
@@ -21,7 +22,7 @@ import javax.inject.Inject
  *
  * Wie [CalculateDistanceUseCase] als eigenständiger, per operator
  * invoke() aufrufbarer UseCase modelliert, um die Punkteberechnung
- * unabhängig testbar und wiederverwendbar zu halten (z. B. sowohl im
+ * unabhängig testbar und wiederverwendbar zu halten (sowohl im
  * Einzelspieler- als auch im Multiplayer-Scoreboard verwendet).
  */
 class CalculateScoreUseCase @Inject constructor() {
