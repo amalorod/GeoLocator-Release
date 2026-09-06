@@ -87,6 +87,12 @@ fun GeoGuessrNavHost(
         mutableStateOf(false)
     }
 
+    // Lädt einmalig beim ersten Aufbau des NavHost das Gast-/Nutzerprofil
+    // aus DataStore oder Firebase, damit userProfile bereits beim
+    // Rendern der ersten Screens (Home, Statistics) zur Verfügung steht.
+    // Fehler werden geloggt statt geworfen, damit ein einzelner
+    // fehlgeschlagener Ladevorgang nicht den gesamten Navigationsaufbau
+    // (und damit die App) abstürzen lässt.
     LaunchedEffect(Unit) {
         try {
             Log.d("NAVHOST", "Starte Initialisierung...")
@@ -163,8 +169,11 @@ fun GeoGuessrNavHost(
                     }
                 },
                 onResumeGameClick = {
-                    // Setzt eine im Hintergrund pausierte Partie fort,
-                    // statt eine neue zu starten.
+                    // Setzt eine im Hintergrund pausierte Partie fort, statt eine neue
+                    // zu starten. popBackStack() (statt navigate) funktioniert hier, weil
+                    // die Game-Route beim Pausieren nicht aus dem Backstack entfernt
+                    // wurde – der Nutzer kehrt also einfach zur bereits bestehenden,
+                    // weiterhin aktiven Game-Instanz zurück, statt eine neue zu erzeugen.
                     gameViewModel.resumeGame()
                     isGameInBackground = false
                     navController.popBackStack()
@@ -275,6 +284,11 @@ fun GeoGuessrNavHost(
             arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
         ) { backStackEntry ->
             val sessionId = backStackEntry.arguments?.getString("sessionId") ?: ""
+            // Fallback auf einen leeren String nur als Absicherung gegen einen
+            // fehlenden Pflichtparameter. Normalerweise garantiert die
+            // Navigation stets einen gesetzten sessionId-Wert, da die Route ohne
+            // diesen Parameter gar nicht erreichbar ist.
+
             MultiplayerGameRoute(
                 sessionId = sessionId,
                 currentTheme = currentTheme,
@@ -295,6 +309,11 @@ fun GeoGuessrNavHost(
                     navController.navigate(AppDestination.Statistics.route)
                 },
                 onExitGame = {
+                    // Gleiches Verhalten wie onHomeClick: Entfernt auch den aktuellen
+                    // Home-Eintrag aus dem Stack (inclusive = true), damit nach dem
+                    // Verlassen der beendeten Partie kein doppelter Home-Eintrag im
+                    // Backstack verbleibt und der Zurück-Button nicht erneut in die
+                    // bereits beendete Partie zurückführt.
                     navController.navigate(AppDestination.Home.route) {
                         popUpTo(AppDestination.Home.route) { inclusive = true }
                     }
@@ -345,6 +364,12 @@ fun GeoGuessrNavHost(
                     // Im Gegensatz zu onHomeClick wird die Partie hier
                     // endgültig beendet (isGameInBackground = false).
                     isGameInBackground = false
+                    // inclusive = false (anders als bei MultiplayerGame.onExitGame, wo
+                    // inclusive = true verwendet wird): Der bestehende Home-Eintrag im
+                    // Stack bleibt hier erhalten und wird nicht entfernt, da Home in
+                    // diesem Fall bereits der unterste Eintrag ist und kein doppelter
+                    // Home-Eintrag entstehen kann. launchSingleTop reicht hier aus, um
+                    // Duplikate zu vermeiden.
                     navController.navigate(AppDestination.Home.route) {
                         popUpTo(AppDestination.Home.route) { inclusive = false }
                         launchSingleTop = true

@@ -4,14 +4,16 @@ package com.example.geoguessr_app.domain.util
  * Erzeugt eindeutige Kennungen für Multiplayer-Spielsitzungen (siehe
  * [MatchSession.sessionId]).
  *
- * ARCHITEKTUR-HINWEIS: Die ID basiert auf dem aktuellen Zeitstempel in
- * Millisekunden. Das ist einfach und in der Praxis für dieses Projekt
- * ausreichend, birgt aber theoretisch ein Kollisionsrisiko, falls zwei
- * Sessions innerhalb derselben Millisekunde erzeugt werden (z. B. bei
- * zwei Hosts, die nahezu gleichzeitig ein Spiel starten). Eine robustere
- * Alternative wäre die Verwendung von Firebase-generierten Push-IDs
- * (push().key) oder einer UUID, die eine praktisch kollisionsfreie
- * Eindeutigkeit garantieren.
+ * HINWEIS: Die ID basiert auf dem aktuellen Zeitstempel in Millisekunden.
+ * Das ist eine simple Umsetzung und für Demozwecke ausreichend, birgt aber
+ * theoretisch ein Kollisionsrisiko, falls zwei Sessions innerhalb derselben
+ * Millisekunde erzeugt werden.
+ *
+ * Für den Rahmen dieses Projekts wird das theoretische Kollisionsrisiko bewusst
+ * in Kauf genommen, da der Implementierungsaufwand einer garantiert kollisionsfreien
+ * Lösung in keinem Verhältnis zum praktischen Nutzen steht. Für die Weiterentwicklung
+ * bzw. für die Veröffentlichung der App würde ich auf UUID oder push().key() von
+ * Firebase Realtime Database zurückgreifen.
  */
 object SessionIdGenerator {
 

@@ -107,9 +107,10 @@ fun GameRoute(
     viewModel: GameViewModel
 ) {
 
-    BackHandler(enabled = true) {
+    // Macht den System-Zurück-Button wirkungslos, damit der Nutzer eine laufende Runde nicht versehentlich
+    // verlässt. Das reguläre Verlassen erfolgt stattdessen explizit über den onExitGame Button innerhalb von GameScreen.
+    BackHandler(enabled = true) {}
 
-    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -286,11 +287,14 @@ private fun GameScreen(
     // mitkomponiert wird (spart zusätzliche native StreetViewPanoramaView-
     // Instanzen und vermeidet Layout-Konflikte).
 
+    // Die Gerätenavigation bleibt im GameScreen ausgeschalter, damit man nicht versehentlich beim umschauen in der StreetView-Ansicht
+    // zurück zum Home-Bildschirm gelangt. Im FullScreen kann jedoch mittels zurück-Button des Geräts auf den GameScreen zurückgeschaltet werden.
+    // Damit wird sichergestellt, dass der Nutzer nicht versehentlich den Spielbereich verlässt.
     BackHandler(enabled = true) {
         if (isStreetViewFullscreen) {
             isStreetViewFullscreen = false
         }
-        // sonst: bewusst weiterhin ignorieren
+
     }
     if (isStreetViewFullscreen && uiState.viewMode == GameViewMode.STREET_VIEW) {
         val currentLocation = uiState.currentLocation
@@ -394,7 +398,11 @@ private fun GameScreen(
         }
 
 
-
+        // Die Reihenfolge der Bedingungen wird mit Jetpack-Compose priorisiert: Lade- und
+        // Fehlerzustände haben Vorrang vor Spielende/Rundenende, und erst danach
+        // wird zwischen den eigentlichen Spielansichten (Street View / Guess Map)
+        // unterschieden. So wird verhindert, dass z. B. während eines Ladevorgangs
+        // gleichzeitig eine veraltete Street-View- oder Guess-Map-Ansicht aufblitzt.
         when {
             uiState.isLoading -> {
                 Text("Standorte werden geladen …")
@@ -565,14 +573,12 @@ private fun RoundResult(
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                    Text(
-                        text = uiState.roundDistanceKilometers?.let {
-                            "%.2f km".format(Locale.US, it)
-                        } ?: "0 km",
+                    Text(text = uiState.roundDistanceKilometers?.let {
+                        "%.2f km".format(Locale.US, it)
+                    } ?: "0 km",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                        color = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
 
                 Row(
@@ -609,6 +615,12 @@ private fun RoundResult(
         }
 
         if (uiState.isMultiplayer) {
+            // Im Multiplayer wählt nicht der einzelne Spieler den Rundenwechsel-
+            // Zeitpunkt, sondern die Runde wird serverseitig gesteuert,
+            // sobald alle Mitspieler ihren Tipp abgegeben haben. Deshalb wird
+            // hier kein interaktiver Button angezeigt, sondern lediglich ein
+            // Warte-Hinweis, bis onNextRound automatisch nach Tippabgabe beider Spieler
+            // ausgelöst wird.
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "⏳ Warte auf Mitspieler...",
@@ -629,8 +641,7 @@ private fun RoundResult(
                         "Gesamtergebnis anzeigen"
                     } else {
                         "Nächste Runde"
-                    },
-                    style = MaterialTheme.typography.titleMedium
+                    }, style = MaterialTheme.typography.titleMedium
                 )
             }
         }
@@ -707,6 +718,11 @@ private fun GameStreetView(
     }
 
     AndroidView(factory = { streetViewPanoramaView }, modifier = modifier.fillMaxSize()) { view ->
+        // update-Block statt factory: wird bei jeder Recomposition erneut
+        // ausgeführt, sodass z. B. eine Änderung von isUserNavigationEnabled
+        // oder ein neuer location-Wert (Rundenwechsel) auf die bereits
+        // bestehende Panorama-Instanz angewendet wird, ohne die View selbst
+        // neu zu erzeugen.
         view.getStreetViewPanoramaAsync { panorama ->
             panorama.isPanningGesturesEnabled = true
             panorama.isZoomGesturesEnabled = true
@@ -747,6 +763,19 @@ private fun GuessMap(
     }
 }
 
+/**
+ * Zeigt nach Abschluss einer Runde eine Karte mit dem tatsächlichen
+ * Standort, dem abgegebenen Tipp und einer verbindenden Linie zwischen
+ * beiden Punkten.
+ *
+ * Die Kamera zoomt und schwenkt automatisch so, dass beide Marker
+ * vollständig sichtbar sind, sobald die Karte fertig geladen ist –
+ * dadurch muss der Nutzer nicht manuell zoomen, um Tipp und
+ * tatsächlichen Ort miteinander zu vergleichen.
+ *
+ * @param actualLocation Der tatsächliche, im Spiel vorgegebene Standort.
+ * @param guessedLocation Die vom Nutzer abgegebene Schätzung.
+ */
 @Composable
 private fun RoundResultMap(
     actualLocation: GeoLocation, guessedLocation: GeoCoordinate, modifier: Modifier = Modifier
@@ -765,20 +794,32 @@ private fun RoundResultMap(
         )
     }
 
+    // Wird erst true, wenn die GoogleMap-Instanz vollständig initialisiert ist
+    // (onMapLoaded-Callback). Erst danach darf die Kamera-Animation gestartet
+    // werden, da CameraUpdateFactory.newLatLngBounds vor dem vollständigen
+    // Laden der Karte fehlschlagen bzw. keine Wirkung zeigen kann.
     var isMapLoaded by remember {
         mutableStateOf(false)
     }
 
+    // Umschließendes Rechteck (Bounds), das beide Punkte (tatsächlicher Ort
+    // und Tipp) enthält – wird neu berechnet, sobald sich einer der beiden
+    // Punkte ändert (z. B. bei einer neuen Runde).
     val bounds = remember(
         actualPosition, guessedPosition
     ) {
         LatLngBounds.Builder().include(actualPosition).include(guessedPosition).build()
     }
 
+    // Abstand in Pixeln zwischen den Bounds und dem Kartenrand, damit die
+    // Marker nicht direkt am Bildschirmrand kleben; dp->px-Umrechnung ist
+    // nötig, da CameraUpdateFactory Pixel statt dp erwartet.
     val boundsPaddingPixels = with(LocalDensity.current) {
         48.dp.roundToPx()
     }
 
+    // Startet die Kamera-Animation erst, wenn die Karte geladen ist, und
+    // erneut, falls sich die Bounds (also einer der beiden Standorte) ändern.
     LaunchedEffect(isMapLoaded, bounds) {
         if (isMapLoaded) {
             cameraPositionState.animate(
@@ -802,6 +843,9 @@ private fun RoundResultMap(
             state = rememberUpdatedMarkerState(guessedPosition), title = "Dein Tipp"
         )
 
+        // Geodätische Linie (folgt der Erdkrümmung statt einer geraden
+        // Bildschirmlinie) verbindet Tipp und tatsächlichen Ort visuell,
+        // um die Entfernung anschaulich darzustellen.
         Polyline(
             points = listOf(
                 actualPosition, guessedPosition
@@ -810,6 +854,17 @@ private fun RoundResultMap(
     }
 }
 
+/**
+ * Zeigt die kompakte Status-Leiste während einer laufenden Runde an:
+ * aktuelle Punktzahl, Rundenzähler, verbleibende Zeit sowie – im
+ * Custom-Modus mit begrenzten Leben.
+ *
+ * @param lives Anzahl der verbleibenden Leben im Custom-Modus. Der
+ * Default [Int.MAX_VALUE] signalisiert "unbegrenzte Leben" für alle
+ * Modi, die kein Leben-System verwenden; der Schwellenwert 100 in
+ * [showLives] dient lediglich dazu, diesen Default sicher von einer kleinen
+ * Lebensanzahl zu unterscheiden.
+ */
 @Composable
 private fun GameStatusHeader(
     score: Int,
