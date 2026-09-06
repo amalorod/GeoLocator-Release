@@ -7,23 +7,21 @@ package com.example.geoguessr_app.domain.model.custom
  *
  * Als data class mit Standardwerten für jeden Parameter modelliert,
  * damit im [IndividualSettingsScreen] eine vollständig gültige Instanz
- * existiert, sobald der Nutzer die Einstellungen öffnet – auch ohne
- * dass zuvor explizit jeder Wert gesetzt wurde. Die Standardwerte
+ * existiert, sobald der Nutzer die Einstellungen öffnet. Die Standardwerte
  * entsprechen dabei bewusst einem ausgewogenen Einstiegs-Setup (60
  * Sekunden Zeitlimit, weltweiter Standortpool, mittlerer
  * Schwierigkeitsgrad).
  *
  * Diese Klasse wird an [GameViewModel.startCustomGame] übergeben und
- * steuert dort, wie die Spielrunde aufgebaut wird (siehe GeoGuessrNavHost,
- * IndividualSettings-Route).
+ * steuert dort, wie die Spielrunde aufgebaut wird (siehe [GeoGuessrNavHost],
+ * [IndividualSettings]-Route).
  *
  * @property timeLimitSeconds Verfügbare Zeit pro Runde in Sekunden.
  * @property region Geografische Region, auf die der Standortpool
  *   eingeschränkt wird (siehe [Region]). WORLD bedeutet keine
  *   Einschränkung.
  * @property difficulty Schwierigkeitsgrad der Partie (siehe
- *   [CustomDifficulty]), beeinflusst z. B. verfügbare Hilfsmittel oder
- *   Street-View-Navigation.
+ *   [CustomDifficulty]), beeinflusst die Option Street-View-Navigation.
  */
 data class CustomGameSettings(
     val timeLimitSeconds: Int = 60,

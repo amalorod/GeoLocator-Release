@@ -19,15 +19,23 @@ import javax.inject.Singleton
 /**
  * Verwaltet die täglichen Herausforderungen (Daily Quests) des Nutzers.
  *
- * ARCHITEKTUR-HINWEIS: Injiziert ProfileRepository, um den aktuellen
+ * HINWEIS: Injiziert ProfileRepository, um den aktuellen
  * Login-Zustand zu bestimmen (siehe isGuest in loadQuests()/
  * saveQuests()). Die Abhängigkeitsrichtung verläuft ausschließlich
  * einseitig hierhin – ProfileRepository selbst besitzt umgekehrt
  * keine Abhängigkeit zu dieser Klasse, wodurch keine zirkuläre
  * Abhängigkeit entsteht.
  *
- * GAST-PERSISTENZ: Gast-Nutzer persistieren ihren Fortschritt lokal
- * über DailyQuestDataStoreRepository inklusive automatischem Tages-Reset.
+ * Datenspeicherung: Gast-Nutzer persistieren ihren Fortschritt lokal
+ * über [DailyQuestDataStoreRepository] inklusive automatischem Tages-Reset.
+ *
+ * HINWEIS: Im Gegensatz zu StatisticsRepository, das für
+ * Gast- und Account-Fall zwei getrennte Methoden (loadLocalStatistics()/
+ * loadStatistics(uid)) anbietet, übernimmt hier die einzige Methode
+ * loadQuests() beide Fälle selbst, da sie profileRepository.profile.value
+ * intern abfragt. Aufrufer müssen daher nach jedem Profilwechsel lediglich
+ * loadQuests() erneut aufrufen, ohne selbst zwischen Gast und Account
+ * unterscheiden zu müssen.
  */
 @Singleton
 class DailyQuestRepository @Inject constructor(
@@ -77,6 +85,7 @@ class DailyQuestRepository @Inject constructor(
         )
     )
 
+    // Bestimmt das heutige Datum
     private fun getTodayDateString(): String {
         return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
     }
@@ -84,7 +93,7 @@ class DailyQuestRepository @Inject constructor(
     /**
      * Lädt die Quests des aktuell angemeldeten Nutzers aus Firebase (oder lokal für Gäste)
      * und prüft dabei automatisch, ob ein neuer Tag (nach 00:00 Uhr) begonnen hat,
-     * um die Quests ggf. tagesaktuell zurückzusetzen.
+     * um die Quests täglich zurückzusetzen.
      */
     suspend fun loadQuests() {
         val currentProfile = profileRepository.profile.value
@@ -181,13 +190,6 @@ class DailyQuestRepository @Inject constructor(
             return if (isCompleted) updatedQuest else null
         }
         return null
-    }
-
-    /**
-     * Setzt den Quest-Zustand auf die Standard-Quests zurück.
-     */
-    fun resetQuests() {
-        _quests.value = DEFAULT_QUESTS.map { it.copy(progress = 0, completed = false) }
     }
 
     /**

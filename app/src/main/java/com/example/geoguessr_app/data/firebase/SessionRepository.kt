@@ -29,8 +29,7 @@ class SessionRepository @Inject constructor(
 ) {
 
     /**
-     * Lädt den aktuellen Zustand einer Spielsitzung einmalig (kein
-     * Live-Abo), z. B. beim erstmaligen Betreten des
+     * Lädt den aktuellen Zustand einer Spielsitzung einmalig, z. B. beim erstmaligen Betreten des
      * Multiplayer-Spielbildschirms.
      */
     suspend fun loadSession(sessionId: String): MatchSession? {
@@ -41,7 +40,7 @@ class SessionRepository @Inject constructor(
     /**
      * Legt eine neue Spielsitzung in Firebase an. Wird vom Host
      * aufgerufen, sobald er die Lobby startet (siehe
-     * MultiplayerRepository.startLobby).
+     * [MultiplayerRepository.startLobby()]).
      */
     suspend fun createSession(session: MatchSession) {
         try {
@@ -50,7 +49,7 @@ class SessionRepository @Inject constructor(
                     if (task.isSuccessful) {
                         Log.d("MULTIPLAYER", "Session-Schreibvorgang erfolgreich")
                     } else {
-                        Log.e(
+                        Log.d(
                             "MULTIPLAYER",
                             "Session-Schreibvorgang fehlgeschlagen: ${task.exception?.message}"
                         )
@@ -59,7 +58,7 @@ class SessionRepository @Inject constructor(
         } catch (e: Exception) {
             // Fängt Fehler ab, falls Firebase das Schreiben blockiert
             // (z. B. wegen Security Rules).
-            Log.e("MULTIPLAYER", "Fehler beim Erstellen der Session", e)
+            Log.d("MULTIPLAYER", "Fehler beim Erstellen der Session", e)
         }
     }
 
@@ -93,14 +92,14 @@ class SessionRepository @Inject constructor(
                     if (task.isSuccessful) {
                         Log.d("MULTIPLAYER", "Session mit Spielern erfolgreich erstellt")
                     } else {
-                        Log.e(
+                        Log.d(
                             "MULTIPLAYER",
                             "Session mit Spielern fehlgeschlagen: ${task.exception?.message}"
                         )
                     }
                 }.await()
         } catch (e: Exception) {
-            Log.e("MULTIPLAYER", "Fehler beim Erstellen der Session mit Spielern", e)
+            Log.d("MULTIPLAYER", "Fehler beim Erstellen der Session mit Spielern", e)
             throw e
         }
     }
@@ -150,15 +149,6 @@ class SessionRepository @Inject constructor(
      * Rundennummer, den neuen Standort sowie den Startzeitpunkt der
      * Runde, damit alle Teilnehmer synchron in dieselbe neue Runde
      * wechseln.
-     *
-     * ANMERKUNG: Die drei setValue()-Aufrufe werden hier nicht
-     * awaited und nicht zu einer einzigen updateChildren()-Transaktion
-     * zusammengefasst (im Gegensatz zu z. B. startLobby in
-     * MultiplayerRepository). Das bedeutet, die drei Werte könnten in
-     * seltenen Fällen kurzfristig inkonsistent zueinander bei anderen
-     * Clients ankommen. Eine Vereinheitlichung zu einer einzigen
-     * updateChildren()-Transaktion (analog zu startLobby) würde das
-     * beheben.
      */
     suspend fun advanceRound(sessionId: String, nextRound: Int, nextLocationId: String) {
         database.reference.child("sessions").child(sessionId).child("currentRound")

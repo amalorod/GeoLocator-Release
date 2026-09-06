@@ -33,16 +33,9 @@ class MultiplayerRepository @Inject constructor(
      * Erstellt eine neue Lobby mit dem übergebenen Code und setzt den
      * erstellenden Spieler als initialen Host ein.
      *
-     * ANMERKUNG ZU LOG-LEVELN: Die Erfolgsmeldungen werden hier über
-     * Log.e() (Error-Level) statt Log.d() protokolliert. Das dürfte aus
-     * intensivem Debugging der Multiplayer-Funktion stammen, sollte
-     * vor Abgabe aber auf Log.d() korrigiert werden, da Log.e() sonst
-     * das Logcat-Fehlerfilter beim späteren Debuggen mit
-     * Erfolgsmeldungen überflutet.
-     *
      * addOnCompleteListener() und das anschließende .await() greifen
-     * auf denselben Task zu; die Erfolgs-/Fehler-Logs im Listener sind
-     * dadurch redundant zum umgebenden try-catch-Block, der Fehler
+     * auf denselben Task zu. Dadurch sind Erfolgs-/Fehler-Logs im Listener
+     * redundant zum umgebenden try-catch-Block, welcher Fehler
      * bereits über die geworfene Exception beim await() abfängt.
      */
     suspend fun createLobby(
@@ -58,7 +51,7 @@ class MultiplayerRepository @Inject constructor(
 
             database.reference.child("lobbies").child(lobbyCode).setValue(lobby).await()
         } catch (e: Exception) {
-            Log.e("MULTIPLAYER", "EXCEPTION", e)
+            Log.d("MULTIPLAYER", "EXCEPTION", e)
         }
     }
 
@@ -110,6 +103,8 @@ class MultiplayerRepository @Inject constructor(
      * in der Datenbank zu verbleiben. Verlässt der Host die Lobby,
      * wird automatisch der erste verbleibende Spieler in der Liste zum
      * neuen Host ernannt, damit die Lobby weiterhin steuerbar bleibt.
+     *
+     * * siehe Doku, Kapitel 3.2 Lobby beitreten
      */
     suspend fun leaveLobby(
         lobbyCode: String, uid: String
@@ -140,7 +135,7 @@ class MultiplayerRepository @Inject constructor(
     /**
      * Kehrt den Bereit-Status (ready) eines Spielers um. Wird
      * verwendet, damit alle Spieler in der Lobby signalisieren können,
-     * dass sie zum Spielstart bereit sind (siehe MultiplayerLobbyScreen).
+     * dass sie zum Spielstart bereit sind siehe [MultiplayerLobbyScreen].
      */
     suspend fun toggleReadyStatus(
         lobbyCode: String, uid: String
@@ -155,9 +150,8 @@ class MultiplayerRepository @Inject constructor(
 
     /**
      * Registriert eine serverseitige Aufräumaktion: Verliert der Client die
-     * Verbindung (App-Crash, Netzwerkverlust, Task-Kill), entfernt Firebase
-     * den Spieler automatisch aus der Lobby, ohne dass der Client selbst
-     * noch aktiv werden muss (siehe Doku 3.2 „Leave-System“).
+     * Verbindung, dann entfernt Firebase den Spieler automatisch aus der Lobby,
+     * ohne dass der Client selbst noch aktiv werden muss (siehe Doku 3.2 „Leave-System“).
      *
      * Muss nach createLobby()/joinLobby() aufgerufen werden, da onDisconnect()
      * pro aktiver Socket-Verbindung neu gesetzt werden muss.
@@ -182,7 +176,7 @@ class MultiplayerRepository @Inject constructor(
      * Prüft, ob ein Lobby-Code tatsächlich einer existierenden Lobby
      * entspricht. Wird beim manuellen Beitreten über einen eingegebenen
      * Code verwendet, um Nutzern eine klare Fehlermeldung bei einem
-     * ungültigen Code anzuzeigen (siehe JoinLobbyScreen).
+     * ungültigen Code anzuzeigen (siehe [JoinLobbyScreen]).
      */
     suspend fun lobbyExists(code: String): Boolean {
         val snapshot = database.reference.child("lobbies").child(code).get().await()
@@ -195,11 +189,17 @@ class MultiplayerRepository @Inject constructor(
      * beitreten, den Bereit-Status ändern oder der Host die Partie
      * startet.
      *
-     * ANMERKUNG: onCancelled() bleibt hier bewusst leer – ein Fehler
-     * bei der Firebase-Verbindung (z. B. Berechtigungsproblem) würde
-     * aktuell stillschweigend ignoriert, statt den Flow mit einem
-     * Fehler zu terminieren. Für die produktive Nutzung wäre ein
-     * close(error.toException()) hier robuster.
+     * ANMERKUNG: onCancelled() bleibt hier bewusst leer. Das führt dazu,
+     * dass ein Fehler bei der Firebase-Verbindung (z. B. Berechtigungsproblem)
+     * aktuell stillschweigend ignoriert werden würde, statt den Flow mit einem
+     * Fehler zu terminieren. Im Erweiterungshorizont könnte man ein
+     * close(error.toException()) nutzen.
+     *
+     * Die Änderung in observeLobby() alleine ist zwar trivial, benötigt aber
+     * an jeder Aufrufstelle (LobbyViewModel, SessionViewModel bei observeSession())
+     * korrektes Error-Handling, was teilweise durch das Heartbeat-System in
+     * [com.example.geoguessr_app.ui.multiplayer.MultiplayerGameViewModel]
+     * bereits abgefangen wird.
      */
     fun observeLobby(lobbyCode: String): Flow<Lobby?> = callbackFlow {
         val reference = database.reference.child("lobbies").child(lobbyCode)
@@ -220,7 +220,7 @@ class MultiplayerRepository @Inject constructor(
      * Markiert die Lobby als gestartet und verknüpft sie mit der
      * zugehörigen Session-ID, wodurch alle Lobby-Teilnehmer über
      * observeLobby() automatisch zum Spielbildschirm wechseln (siehe
-     * GeoGuessrNavHost).
+     * [GeoGuessrNavHost]).
      */
     suspend fun startLobby(lobbyCode: String, sessionId: String) {
         try {
@@ -229,7 +229,7 @@ class MultiplayerRepository @Inject constructor(
             )
             database.reference.child("lobbies").child(lobbyCode).updateChildren(updates).await()
         } catch (e: Exception) {
-            Log.e("MULTIPLAYER", "FIREBASE FEHLER BEIM STARTEN", e)
+            Log.d("MULTIPLAYER", "FIREBASE FEHLER BEIM STARTEN", e)
         }
     }
 
@@ -242,7 +242,7 @@ class MultiplayerRepository @Inject constructor(
             database.reference.child("lobbies").child(lobbyCode).child("mode").setValue(mode)
                 .await()
         } catch (e: Exception) {
-            Log.e("MULTIPLAYER", "Fehler beim Modus-Update", e)
+            Log.d("MULTIPLAYER", "Fehler beim Modus-Update", e)
         }
     }
 }

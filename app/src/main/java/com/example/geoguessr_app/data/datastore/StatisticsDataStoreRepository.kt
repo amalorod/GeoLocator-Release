@@ -18,16 +18,15 @@ import org.json.JSONObject
  *
  * Wird ausschließlich für Gast-Nutzer verwendet, die kein Firebase-
  * Profil besitzen. Für angemeldete Nutzer ist [StatisticsRepository]
- * über Firebase Realtime Database die alleinige Quelle der Wahrheit
- * (Single Source of Truth) – eine Vermischung beider Datenquellen wird
- * bewusst vermieden, um Inkonsistenzen zwischen lokalem und
- * Cloud-Stand zu verhindern.
+ * über Firebase Realtime Database die alleinige (Single Source of Truth).
+ * Eine Vermischung bzw. Addition beider Datenquellen wird vermieden, um
+ * Inkonsistenzen zwischen lokalem und Cloud-Stand zu verhindern.
  *
  * Die Lifetime-Statistiken werden als einzelne Preference-Schlüssel
- * abgelegt (siehe StatisticsPreferences), da DataStore mit dem
+ * abgelegt [StatisticsPreferences], da DataStore mit dem
  * Preferences-DataStore-Ansatz keine verschachtelten Objekte direkt
  * unterstützt. Die Partienliste hingegen wird als einzelner
- * JSON-String gespeichert (siehe saveRecentMatches), da eine Liste
+ * JSON-String gespeichert (siehe saveRecentMatches()), da eine Liste
  * variabler Länge sich nicht sinnvoll in einzelne Preference-Schlüssel
  * abbilden lässt.
  */
@@ -54,15 +53,15 @@ class StatisticsDataStoreRepository(
 
     /**
      * Schreibt sämtliche Felder der übergebenen Statistik in den
-     * DataStore. edit() führt den Schreibvorgang transaktional aus,
+     * DataStore. Die Funktion edit() führt den Schreibvorgang transaktional aus,
      * sodass niemals nur teilweise aktualisierte Werte gelesen werden
      * können.
      *
-     * ANMERKUNG: Wird von saveMatch() im StatisticsRepository stets
+     * ANMERKUNG: Wird von saveMatch() im [StatisticsRepository] stets
      * gemeinsam mit saveRecentMatches() aufgerufen, jedoch als zwei
      * getrennte edit()-Transaktionen statt einer gemeinsamen. Das ist
-     * für den Anwendungsfall unkritisch, da DataStore Schreibzugriffe
-     * ohnehin serialisiert; theoretisch könnten beide Werte bei einem
+     * für die praktische Anwendung unkritisch, da DataStore Schreibzugriffe
+     * ohnehin serialisiert. Theoretisch könnten aber beide Werte bei einem
      * Absturz exakt zwischen den beiden Aufrufen kurzfristig
      * inkonsistent zueinander sein.
      */

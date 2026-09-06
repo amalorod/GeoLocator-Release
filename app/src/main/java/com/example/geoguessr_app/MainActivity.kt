@@ -17,9 +17,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.geoguessr_app.ui.theme.AppThemeMode
 import com.example.geoguessr_app.ui.game.GameMode
+import com.example.geoguessr_app.ui.splash.AppLogoSplashScreen
 import com.example.geoguessr_app.ui.theme.ThemeViewModel
 
 
@@ -41,6 +43,7 @@ import com.example.geoguessr_app.ui.theme.ThemeViewModel
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -56,25 +59,34 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(GameMode.NORMAL)
             }
 
+            // Zeigt nach dem kurzen System-Splash-Screen zusätzlich den
+            // eigenen AppLogoSplashScreen mit Namensnennung, bevor der
+            // eigentliche NavHost geladen wird (siehe AppLogoSplashScreen).
+            var showAppSplash by rememberSaveable { mutableStateOf(true) }
+
             GeoGuessr_AppTheme(
-                themeMode = themeSettings.mode,
-                dynamicColor = themeSettings.dynamicColorEnabled
+                themeMode = themeSettings.mode, dynamicColor = themeSettings.dynamicColorEnabled
             ) {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    GeoGuessrNavHost(
-                        selectedGameMode = selectedGameMode,
-                        onGameModeSelected = { mode -> selectedGameMode = mode },
-                        onExitAppClick = { finishAffinity() },
-                        modifier = Modifier.padding(innerPadding),
-                        currentTheme = themeSettings.mode,
-                        currentDynamicColorEnabled = themeSettings.dynamicColorEnabled,
-                        onThemeSelected = { selectedTheme ->
-                            themeViewModel.setThemeMode(selectedTheme)
-                        },
-                        onDynamicColorToggled = { enabled ->
-                            themeViewModel.setDynamicColorEnabled(enabled)
-                        },
-                    )
+
+                if (showAppSplash) {
+                    AppLogoSplashScreen(onFinished = { showAppSplash = false })
+                } else {
+                    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                        GeoGuessrNavHost(
+                            selectedGameMode = selectedGameMode,
+                            onGameModeSelected = { mode -> selectedGameMode = mode },
+                            onExitAppClick = { finishAffinity() },
+                            modifier = Modifier.padding(innerPadding),
+                            currentTheme = themeSettings.mode,
+                            currentDynamicColorEnabled = themeSettings.dynamicColorEnabled,
+                            onThemeSelected = { selectedTheme ->
+                                themeViewModel.setThemeMode(selectedTheme)
+                            },
+                            onDynamicColorToggled = { enabled ->
+                                themeViewModel.setDynamicColorEnabled(enabled)
+                            },
+                        )
+                    }
                 }
             }
         }

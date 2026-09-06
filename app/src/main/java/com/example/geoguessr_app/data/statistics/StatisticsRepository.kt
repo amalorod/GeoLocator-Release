@@ -194,14 +194,14 @@ class StatisticsRepository @Inject constructor(
         dataStoreRepository.saveStatistics(LifetimeStatistics())
         dataStoreRepository.saveRecentMatches(emptyList())
     }
-    
+
     /**
      * Lädt und berechnet das globale Leaderboard der Top 3 Spieler.
      *
-     * ARCHITEKTUR-HINWEIS: Lädt sämtliche Nutzerdaten unter "users"
+     * HINWEIS: Lädt sämtliche Nutzerdaten unter "users" in Firebase
      * vollständig und filtert/sortiert clientseitig. Bei wachsender
-     * Nutzerzahl wird dieser Ansatz zunehmend ineffizient; für einen
-     * produktiven Einsatz wäre eine serverseitige, indizierte
+     * Nutzerzahl wird dieser Ansatz zunehmend ineffizient; für den
+     * Erweiterungshorizont wäre eine serverseitige, indizierte
      * Sortierung sinnvoller.
      */
     suspend fun loadLeaderboard() {

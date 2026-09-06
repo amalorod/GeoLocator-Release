@@ -9,8 +9,7 @@ package com.example.geoguessr_app.domain.model.custom
  * Objekt-Deklaration enthält reine, unveränderliche Fachdaten
  * ([ChallengeItem]) ohne Abhängigkeit zu Android-Framework-Klassen,
  * UI oder Persistenz. Dadurch bleibt sie unabhängig testbar und
- * wiederverwendbar (z. B. sowohl in Compose-Screens als auch in
- * ViewModels).
+ * wiederverwendbar in Compose-Screens als auch in ViewModels.
  *
  * Jede Challenge kombiniert Anzeige-Informationen (Titel, Beschreibung,
  * Icon) mit den tatsächlichen Spieleinstellungen ([CustomGameSettings]),

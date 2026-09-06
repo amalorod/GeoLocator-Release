@@ -44,7 +44,9 @@ class OnboardingDataStoreRepository(
             preferences[OnboardingPreferences.HAS_SEEN_TUTORIAL] ?: false
         }
 
-    /** Markiert das Tutorial dauerhaft als gesehen; wird nie wieder auf false zurückgesetzt. */
+    /** Markiert das Tutorial dauerhaft als gesehen und wird ab dann nie wieder auf false zurückgesetzt.
+     * damit nur neue Spieler das Tutorial beim Start der App sehen
+     */
     suspend fun markTutorialAsSeen() {
         context.onboardingDataStore.edit { preferences ->
             preferences[OnboardingPreferences.HAS_SEEN_TUTORIAL] = true

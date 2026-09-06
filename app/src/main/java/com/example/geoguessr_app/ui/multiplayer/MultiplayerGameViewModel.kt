@@ -539,7 +539,6 @@ class MultiplayerGameViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         timerJob?.cancel()
         heartbeatJob?.cancel()
     }

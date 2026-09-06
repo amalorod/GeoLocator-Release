@@ -21,16 +21,10 @@ import javax.inject.Singleton
 /**
  * Verwaltet das Nutzerprofil sowie den Login-Zustand der Anwendung.
  *
- * ARCHITEKTUR-HINWEIS ZUR ORCHESTRIERUNG: Diese Klasse ist bewusst NICHT
- * mehr für das Laden von Statistiken oder Daily Quests verantwortlich,
- * um eine zirkuläre Abhängigkeit zu StatisticsRepository/
- * DailyQuestRepository zu vermeiden (beide würden ihrerseits den
- * aktuellen Profilzustand benötigen). Diese Orchestrierung – z. B. nach
- * einem erfolgreichen loadProfile()/logout()/createAndLogin() zusätzlich
- * die zugehörigen Statistiken bzw. Quests nachzuladen – liegt ab jetzt
- * ausschließlich im aufrufenden ViewModel-Layer (siehe ProfileViewModel).
- * WICHTIG: Jeder Aufrufer dieser Methoden muss diese Nachbereitung
- * selbst übernehmen, siehe Methodendokumentation weiter unten.
+ * Diese Klasse ist bewusst nicht für das Laden von Statistiken oder Daily Quests
+ * verantwortlich, um eine zirkuläre Abhängigkeit zu [StatisticsRepository]/
+ * [DailyQuestRepository] zu vermeiden. Die Organisation bzw. das Laden der Statistiken
+ * und DailyQuests liegt ausschließlich im aufrufenden ViewModel [ProfileViewModel].
  */
 @Singleton
 class ProfileRepository @Inject constructor(
@@ -82,27 +76,22 @@ class ProfileRepository @Inject constructor(
     }
 
     /**
-     * Lädt beim App-Start den zuletzt aktiven Zustand rein bezogen auf
-     * das Profil.
+     * Lädt beim App-Start den zuletzt aktiven Profilzustand.
      *
-     * ARCHITEKTUR-ENTSCHEIDUNG: Der Login-Status wird ausschließlich
-     * über den lokal gespeicherten active_uid-Wert bestimmt (siehe
-     * getSavedUid()), NICHT über authRepository.currentUid(). Der Grund:
-     * Firebase Anonymous Authentication persistiert eine Sitzung
-     * geräteweit über App-Neustarts hinweg, bis explizit signOut()
-     * aufgerufen wird. Würde man sich stattdessen auf currentUid()
-     * verlassen, bliebe ein Nutzer nach einem expliziten Logout beim
-     * nächsten App-Start unerwartet wieder angemeldet, analog zu
-     * klassischem Web-Login (siehe Banking-Apps).
+     * Der Login-Status wird ausschließlich über den lokal gespeicherten
+     * active_uid-Wert bestimmt (siehe getSavedUid()), nicht über
+     * authRepository.currentUid(). Grund: Firebase Anonymous Authentication
+     * persistiert eine Sitzung geräteweit über App-Neustarts hinweg, bis
+     * explizit signOut() aufgerufen wird. Würde man sich stattdessen auf
+     * currentUid() verlassen, bliebe ein Nutzer nach einem expliziten Logout
+     * beim nächsten App-Start unerwartet wieder angemeldet.
      *
-     * WICHTIG FÜR AUFRUFER (siehe Klassendokumentation): Nach dieser
-     * Methode MUSS im ViewModel-Layer zusätzlich abhängig vom
-     * resultierenden profile.value entweder
-     * StatisticsRepository.loadLocalStatistics()/DailyQuestRepository.resetQuests()
-     * (Gast-Fall, profile.value == null) oder
-     * StatisticsRepository.loadStatistics(uid)/DailyQuestRepository.loadQuests()
-     * (Login-Fall) aufgerufen werden, da diese Klasse selbst keine
-     * Kenntnis von den anderen Repositories besitzt.
+     * Nach dieser Methode muss das ViewModel zusätzlich abhängig vom
+     * resultierenden profile.value entweder StatisticsRepository.loadLocalStatistics()
+     * (Gast-Fall, profile.value == null) oder StatisticsRepository.loadStatistics(uid)
+     * (Login-Fall) aufrufen. DailyQuestRepository.loadQuests() muss hingegen in
+     * beiden Fällen unverändert aufgerufen werden, da diese Methode den
+     * Login-Zustand intern selbst über profileRepository.profile.value prüft.
      */
     suspend fun loadProfile() {
         try {
@@ -145,8 +134,7 @@ class ProfileRepository @Inject constructor(
      * Sucht ein bestehendes Profil anhand des Spielernamens und meldet
      * den Nutzer bei Erfolg an.
      *
-     * WICHTIG FÜR AUFRUFER: Nach erfolgreichem Login (return true)
-     * MUSS das ViewModel-Layer zusätzlich
+     * Nach erfolgreichem Login (return true) muss das ViewModel zusätzlich
      * StatisticsRepository.clearLocalStatistics(),
      * DailyQuestRepository.clearLocalQuests() sowie danach
      * StatisticsRepository.loadStatistics(uid) und
@@ -202,20 +190,17 @@ class ProfileRepository @Inject constructor(
     }
 
     /**
-     * Beendet die Sitzung des angemeldeten Nutzers vollständig und
-     * echt, analog zu klassischen Login-Systemen wie Online-Banking:
-     * Es wird tatsächlich authRepository.signOut() aufgerufen, wodurch
-     * die Firebase-Sitzung beendet wird und beim nächsten App-Start
-     * nicht automatisch wieder aktiv ist.
+     * Beendet die Sitzung des angemeldeten Nutzers vollständig.
+     * Es wird authRepository.signOut() aufgerufen, wodurch die Firebase-Sitzung
+     * beendet wird und beim nächsten App-Start nicht automatisch wieder aktiv ist.
      *
-     * WICHTIG FÜR AUFRUFER: Diese Methode setzt NUR den Profilzustand
-     * zurück. Das ViewModel-Layer muss danach zusätzlich
-     * StatisticsRepository.loadLocalStatistics() und
-     * DailyQuestRepository.resetQuests() aufrufen, damit die App in
-     * den Gast-Modus mit den zuvor lokal persistierten Gast-Daten
-     * wechselt (siehe Klassendokumentation). Ohne diesen Folgeaufruf
-     * bliebe der Statistik-State fälschlich auf dem Stand des zuvor
-     * angemeldeten Accounts stehen.
+     * Diese Methode setzt nur den Profilzustand zurück. Das ViewModel muss
+     * danach zusätzlich StatisticsRepository.loadLocalStatistics() aufrufen, damit
+     * die App in den Gast-Modus mit den zuvor lokal persistierten Statistik-Daten
+     * wechselt. DailyQuestRepository.loadQuests() muss ebenfalls erneut aufgerufen
+     * werden, damit die zuvor im Gast-Modus gesammelten Quest-Daten aus dem
+     * DataStore geladen werden – ohne diesen Folgeaufruf bliebe der Quest-State
+     * fälschlich auf dem Stand des zuvor angemeldeten Accounts stehen.
      */
     fun logout() {
         saveUidLocally(null)
@@ -226,13 +211,12 @@ class ProfileRepository @Inject constructor(
     /**
      * Erstellt ein neues Profil und meldet den Nutzer damit an.
      *
-     * Da nach einem echten Logout keine anonyme Firebase-Sitzung mehr
+     * Da nach einem Logout keine anonyme Firebase-Sitzung mehr
      * existiert (siehe logout()), wird hier bei Bedarf eine neue
      * anonyme Sitzung erzeugt, bevor ein Profil unter der zugehörigen
      * UID angelegt werden kann.
      *
-     * WICHTIG FÜR AUFRUFER: Nach erfolgreichem Aufruf (return true)
-     * MUSS das ViewModel-Layer zusätzlich
+     * Nach erfolgreichem Aufruf (return true) muss das ViewModel zusätzlich
      * StatisticsRepository.clearLocalStatistics() und
      * DailyQuestRepository.clearLocalQuests() aufrufen, bevor
      * StatisticsRepository.loadStatistics(uid) gerufen wird. Ohne diesen

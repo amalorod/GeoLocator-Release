@@ -40,13 +40,10 @@ class FirebaseAuthRepository @Inject constructor(
     /**
      * Beendet die aktuelle Firebase-Sitzung vollständig.
      *
-     * WICHTIG: Dies ist die zentrale Stelle für unseren zuvor
-     * erarbeiteten "echter Logout"-Fix (siehe ProfileRepository.logout).
      * Firebase Anonymous Authentication persistiert eine Sitzung sonst
-     * geräteweit über App-Neustarts hinweg; erst dieser explizite
+     * geräteweit über App-Neustarts hinweg. Erst dieser explizite
      * Aufruf sorgt dafür, dass ein Nutzer nach einem bewussten Logout
-     * beim nächsten App-Start tatsächlich abgemeldet bleibt, analog zu
-     * klassischen Login-Systemen wie Online-Banking.
+     * beim nächsten App-Start tatsächlich abgemeldet bleibt.
      */
     fun signOut() {
         auth.signOut()

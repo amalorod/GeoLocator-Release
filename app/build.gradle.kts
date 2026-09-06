@@ -86,6 +86,9 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
 
+    // splash screen
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
     // Add the dependencies for any other desired Firebase products
     // https://firebase.google.com/docs/android/setup#available-libraries
 }

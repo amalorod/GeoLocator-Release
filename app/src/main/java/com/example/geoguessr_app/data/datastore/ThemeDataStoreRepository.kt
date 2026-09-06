@@ -66,7 +66,7 @@ class ThemeDataStoreRepository(
 
     /**
      * Persistiert das gewählte statische Farbschema. Wird dieses aktiv
-     * gesetzt, deaktivieren wir zugleich [ThemePreferences.DYNAMIC_COLOR_ENABLED],
+     * gesetzt, dann wird zugleich [ThemePreferences.DYNAMIC_COLOR_ENABLED] deaktiviert,
      * da sich beide Modi gegenseitig ausschließen und sonst ein
      * inkonsistenter Zustand (Mode gesetzt, aber dynamicColor aktiv) entstehen könnte.
      */

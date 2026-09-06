@@ -2,4 +2,17 @@
 <resources>
 
     <style name="Theme.GeoGuessr_App" parent="android:Theme.Material.Light.NoActionBar" />
+
+
+    <!--
+       Kurzes System-Splash-Theme (Android 12 SplashScreen API). Zeigt beim
+       App-Start zunächst nur das App-Icon auf einheitlichem Hintergrund,
+       bevor postSplashScreenTheme zum normalen App-Theme wechselt.
+   -->
+    <style name="Theme.GeoGuessr_App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@android:color/white</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.GeoGuessr_App</item>
+    </style>
+
 </resources>

@@ -16,7 +16,6 @@ import javax.inject.Singleton
  * Stellt sämtliche Firebase-bezogenen Abhängigkeiten zentral für die
  * gesamte Anwendung bereit.
  *
- * ARCHITEKTUR-VERBESSERUNG: Löst zwei zuvor bestehende Redundanzen auf:
  * Die Datenbank-URL war bislang identisch in bis zu fünf verschiedenen
  * Repository-Klassen hinterlegt, und FirebaseAuth.getInstance() wurde
  * unabhängig voneinander an mehreren Stellen aufgerufen, obwohl es

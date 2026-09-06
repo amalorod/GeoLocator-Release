@@ -15,9 +15,8 @@ package com.example.geoguessr_app.domain.model.custom
  * länder-/regionenspezifische Spielmodi.
  *
  * @property displayName Für Nutzer lesbarer, deutscher Anzeigename der
- *   Region (z. B. in Auswahlmenüs des individuellen Modus), getrennt
- *   vom technischen Enum-Namen, um UI-Texte unabhängig vom Code pflegen
- *   zu können.
+ *   Region, getrennt vom technischen Enum-Namen, um UI-Texte unabhängig
+ *   vom Code pflegen zu können.
  */
 enum class Region(val displayName: String) {
     EUROPE("Europa"),
