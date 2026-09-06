@@ -8,10 +8,14 @@ package com.example.geoguessr_app.ui.game
  * im [GameViewModel] oder in der UI abzufragen – das entspricht dem
  * Single-Source-of-Truth-Prinzip für Spielregeln.
  *
- * Noch nicht implementierte Modi (aktuell [BATTLE_ROYALE]) werden bereits im
- * Auswahlmenü ([com.example.geoguessr_app.ui.home.GameModeDialog]) angezeigt,
- * bleiben dort aber deaktiviert und mit "bald verfügbar" gekennzeichnet,
- * statt komplett ausgeblendet zu werden.
+ * [BATTLE_ROYALE] ist ausschließlich im Multiplayer-Kontext spielbar und wird
+ * daher im regulären Einzelspieler-Auswahldialog
+ * ([com.example.geoguessr_app.ui.home.GameModeDialog]) bewusst herausgefiltert
+ * und nicht angezeigt. Die eigene Auswahl erfolgt stattdessen über die
+ * Multiplayer-Lobby (siehe [com.example.geoguessr_app.ui.multiplayer.LobbyViewModel]).
+ * Das Feld [isAvailable] betrifft daher aktuell keinen Modus mehr, bleibt aber
+ * als genereller Mechanismus für künftige, noch nicht fertiggestellte Modi
+ * bestehen.
  *
  * @property displayName Für die UI bestimmter, deutschsprachiger Anzeigename.
  * @property roundDurationSeconds Zeitlimit pro Runde in Sekunden.
@@ -44,15 +48,14 @@ enum class GameMode(
     ),
 
     /**
-     * Mehrspieler-Elimination-Modus. Noch nicht implementiert
-     * ([isAvailable] = false); Parameter sind bereits als Platzhalter für
-     * die spätere Umsetzung hinterlegt.
+    Ausschließlich über die Multiplayer-Lobby wählbar,
+    nicht über den Einzelspieler-Dialog (siehe [GameModeDialog]).
      */
     BATTLE_ROYALE(
         displayName = "Battle Royale",
         roundDurationSeconds = 30,
         streetViewNavigationEnabled = true,
-        isAvailable = false
+        isAvailable = true
     ),
 
     /** Mehrspieler-Standardmodus ohne Elimination (siehe [BATTLE_ROYALE] für die Elimination-Variante). */
