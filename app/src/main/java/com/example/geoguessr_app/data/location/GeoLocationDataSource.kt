@@ -16,301 +16,256 @@ import com.example.geoguessr_app.domain.model.custom.Region
  */
 object GeoLocationDataSource {
     val ALL_LOCATIONS = listOf(
+        // EUROPE
         GeoLocation(
-            id = "berlin",
-            name = "Berlin",
+            id = "munich",
+            name = "München",
             country = "Deutschland",
             region = Region.EUROPE,
-            coordinate = GeoCoordinate(52.5200, 13.4050),
-            hint = "Der Ort befindet sich Nordöstlich Deutschlands"
+            coordinate = GeoCoordinate(48.137154, 11.576124),
+            hint = "Oktoberfest"
         ),
         GeoLocation(
-            id = "paris",
-            name = "Paris",
-            country = "Frankreich",
+            id = "hamburg",
+            name = "Hamburg",
+            country = "Deutschland",
             region = Region.EUROPE,
-            coordinate = GeoCoordinate(48.8566, 2.3522),
-            hint = "Croissants, Kaffee, Eifelturm"
+            coordinate = GeoCoordinate(53.551086, 9.993682),
+            hint = "Elbphilharmonie"
         ),
         GeoLocation(
-            id = "rome",
-            name = "Rom",
-            country = "Italien",
+            id = "lisbon",
+            name = "Lissabon",
+            country = "Portugal",
             region = Region.EUROPE,
-            coordinate = GeoCoordinate(41.9028, 12.4964),
-            hint = "Eine damalige Weltmacht"
+            coordinate = GeoCoordinate(38.722252, -9.139337),
+            hint = "Gelbe Straßenbahnen"
         ),
         GeoLocation(
-            id = "london",
-            name = "London",
-            country = "Vereinigtes Königreich",
+            id = "athens",
+            name = "Athen",
+            country = "Griechenland",
             region = Region.EUROPE,
-            coordinate = GeoCoordinate(51.5074, -0.1278),
-            hint = "Queen __i_____h"
+            coordinate = GeoCoordinate(37.983810, 23.727539),
+            hint = "Akropolis"
         ),
         GeoLocation(
-            id = "madrid",
-            name = "Madrid",
-            country = "Spanien",
+            id = "budapest",
+            name = "Budapest",
+            country = "Ungarn",
             region = Region.EUROPE,
-            coordinate = GeoCoordinate(40.4168, -3.7038),
-            hint = "Urlaub, Fußball, Real ______"
+            coordinate = GeoCoordinate(47.497913, 19.040236),
+            hint = "Donau"
         ),
+
+// NORTH_AMERICA
         GeoLocation(
-            id = "vienna",
-            name = "Wien",
-            country = "Österreich",
-            region = Region.EUROPE,
-            coordinate = GeoCoordinate(48.2082, 16.3738),
-            hint = "Dieses Schnitzel kennt jeder"
-        ),
-        GeoLocation(
-            id = "prague",
-            name = "Prag",
-            country = "Tschechien",
-            region = Region.EUROPE,
-            coordinate = GeoCoordinate(50.0755, 14.4378),
-            hint = "Vepřo-knedlo-zelo"
-        ),
-        GeoLocation(
-            id = "amsterdam",
-            name = "Amsterdam",
-            country = "Niederlande",
-            region = Region.EUROPE,
-            coordinate = GeoCoordinate(52.3676, 4.9041),
-            hint = "Fahrräder, Fahrräder, Fahrräder"
-        ),
-        GeoLocation(
-            id = "new_york",
-            name = "New York",
+            id = "san_francisco",
+            name = "San Francisco",
             country = "USA",
             region = Region.NORTH_AMERICA,
-            coordinate = GeoCoordinate(40.7128, -74.0060),
-            hint = "City Hall Park"
+            coordinate = GeoCoordinate(37.774929, -122.419418),
+            hint = "Golden Gate Bridge"
         ),
         GeoLocation(
-            id = "new_york2",
-            name = "New York",
+            id = "las_vegas",
+            name = "Las Vegas",
             country = "USA",
             region = Region.NORTH_AMERICA,
-            coordinate = GeoCoordinate(40.68875236646943, -74.04378912021065),
-            hint = "American Cookies"
+            coordinate = GeoCoordinate(36.169941, -115.139832),
+            hint = "Kasinos"
         ),
         GeoLocation(
-            id = "los_angeles",
-            name = "Los Angeles",
+            id = "miami",
+            name = "Miami",
             country = "USA",
             region = Region.NORTH_AMERICA,
-            coordinate = GeoCoordinate(34.13096949056064, -118.32409766915146),
-            hint = "Hollywood"
+            coordinate = GeoCoordinate(25.761681, -80.191788),
+            hint = "Ocean Drive"
         ),
         GeoLocation(
-            id = "los_angeles2",
-            name = "Los Angeles",
-            country = "USA",
-            region = Region.NORTH_AMERICA,
-            coordinate = GeoCoordinate(34.00652426934249, -118.49497301929661),
-            hint = "WestCoaster"
-        ),
-        GeoLocation(
-            id = "navajo_nation_reservation",
-            name = "Arizona",
-            country = "USA",
-            region = Region.NORTH_AMERICA,
-            coordinate = GeoCoordinate(36.729610972306446, -110.10733801194735),
-            hint = "Unendliche Straßen"
-        ),
-        GeoLocation(
-            id = "chicago",
-            name = "Chicago",
-            country = "USA",
-            region = Region.NORTH_AMERICA,
-            coordinate = GeoCoordinate(41.8781, -87.6298),
-            hint = "Windy City"
-        ),
-        GeoLocation(
-            id = "toronto",
-            name = "Toronto",
+            id = "montreal",
+            name = "Montreal",
             country = "Kanada",
             region = Region.NORTH_AMERICA,
-            coordinate = GeoCoordinate(43.642567, -79.387054),
-            hint = "CN Tower"
+            coordinate = GeoCoordinate(45.501689, -73.567256),
+            hint = "Französischsprachige Metropole"
         ),
         GeoLocation(
-            id = "philadelphia",
-            name = "Philadelphia",
-            country = "America",
-            region = Region.NORTH_AMERICA,
-            coordinate = GeoCoordinate(39.93395503549924, -75.17742661972696),
-            hint = "CN Tower"
-        ),
-        GeoLocation(
-            id = "vancouver",
-            name = "Vancouver",
-            country = "Kanada",
-            region = Region.NORTH_AMERICA,
-            coordinate = GeoCoordinate(49.2827, -123.1207),
-            hint = "Pazifikküste Kanadas"
-        ),
-        GeoLocation(
-            id = "mexico_city",
-            name = "Mexiko-Stadt",
+            id = "guadalajara",
+            name = "Guadalajara",
             country = "Mexiko",
             region = Region.NORTH_AMERICA,
-            coordinate = GeoCoordinate(19.4326, -99.1332),
-            hint = "Azteken und Tacos"
+            coordinate = GeoCoordinate(20.659699, -103.349609),
+            hint = "Mariachi"
         ),
+
+// SOUTH_AMERICA
         GeoLocation(
-            id = "rio",
-            name = "Rio de Janeiro",
-            country = "Brasilien",
-            region = Region.SOUTH_AMERICA,
-            coordinate = GeoCoordinate(-22.9068, -43.1729),
-            hint = "Christusstatue"
-        ),
-        GeoLocation(
-            id = "sao_paulo",
-            name = "São Paulo",
-            country = "Brasilien",
-            region = Region.SOUTH_AMERICA,
-            coordinate = GeoCoordinate(-23.5505, -46.6333),
-            hint = "Größte Stadt Südamerikas"
-        ),
-        GeoLocation(
-            id = "buenos_aires",
-            name = "Buenos Aires",
-            country = "Argentinien",
-            region = Region.SOUTH_AMERICA,
-            coordinate = GeoCoordinate(-34.6037, -58.3816),
-            hint = "Tango"
-        ),
-        GeoLocation(
-            id = "santiago",
-            name = "Santiago",
-            country = "Chile",
-            region = Region.SOUTH_AMERICA,
-            coordinate = GeoCoordinate(-26.736308888215632, -70.73559911686097),
-            hint = "Anden"
-        ),
-        GeoLocation(
-            id = "cusco",
-            name = "Cusco",
+            id = "lima",
+            name = "Lima",
             country = "Peru",
             region = Region.SOUTH_AMERICA,
-            coordinate = GeoCoordinate(-13.5320, -71.9675),
-            hint = "Schwarz-weiß gestreifte Pfosten"
+            coordinate = GeoCoordinate(-12.046374, -77.042793),
+            hint = "Pazifikküste"
         ),
         GeoLocation(
-            id = "cairo",
-            name = "Kairo",
-            country = "Ägypten",
-            region = Region.AFRICA,
-            coordinate = GeoCoordinate(30.0444, 31.2357),
-            hint = "Pyramiden"
+            id = "medellin",
+            name = "Medellín",
+            country = "Kolumbien",
+            region = Region.SOUTH_AMERICA,
+            coordinate = GeoCoordinate(6.244203, -75.581215),
+            hint = "Stadt des ewigen Frühlings"
         ),
         GeoLocation(
-            id = "cape_town",
-            name = "Kapstadt",
+            id = "bogota",
+            name = "Bogotá",
+            country = "Kolumbien",
+            region = Region.SOUTH_AMERICA,
+            coordinate = GeoCoordinate(4.711000, -74.072090),
+            hint = "Hochgelegene Hauptstadt"
+        ),
+        GeoLocation(
+            id = "montevideo",
+            name = "Montevideo",
+            country = "Uruguay",
+            region = Region.SOUTH_AMERICA,
+            coordinate = GeoCoordinate(-34.901112, -56.164532),
+            hint = "Río de la Plata"
+        ),
+        GeoLocation(
+            id = "valparaiso",
+            name = "Valparaíso",
+            country = "Chile",
+            region = Region.SOUTH_AMERICA,
+            coordinate = GeoCoordinate(-33.047238, -71.612688),
+            hint = "Bunte Hügel"
+        ),
+
+// AFRICA
+        GeoLocation(
+            id = "johannesburg",
+            name = "Johannesburg",
             country = "Südafrika",
             region = Region.AFRICA,
-            coordinate = GeoCoordinate(-34.354000, 18.489716),
-            hint = "Cape Point"
+            coordinate = GeoCoordinate(-26.204103, 28.047304),
+            hint = "Größte Stadt Südafrikas"
         ),
         GeoLocation(
-            id = "cape_town2",
-            name = "Kapstadt",
+            id = "durban",
+            name = "Durban",
             country = "Südafrika",
             region = Region.AFRICA,
-            coordinate = GeoCoordinate(-33.949371744086605, 18.40541916314918),
-            hint = "Tafelberg"
+            coordinate = GeoCoordinate(-29.858681, 31.021841),
+            hint = "Indischer Ozean"
         ),
         GeoLocation(
-            id = "nairobi",
-            name = "Nairobi",
+            id = "pretoria",
+            name = "Pretoria",
+            country = "Südafrika",
+            region = Region.AFRICA,
+            coordinate = GeoCoordinate(-25.747868, 28.229271),
+            hint = "Jacaranda-Bäume"
+        ),
+        GeoLocation(
+            id = "mombasa",
+            name = "Mombasa",
             country = "Kenia",
             region = Region.AFRICA,
-            coordinate = GeoCoordinate(-1.2921, 36.8219),
-            hint = "Safari"
+            coordinate = GeoCoordinate(-4.043477, 39.668206),
+            hint = "Hafenstadt"
         ),
         GeoLocation(
-            id = "tokyo",
-            name = "Tokio",
+            id = "george",
+            name = "George",
+            country = "Südafrika",
+            region = Region.AFRICA,
+            coordinate = GeoCoordinate(-33.964806, 22.461842),
+            hint = "Garden Route"
+        ),
+
+// ASIA
+        GeoLocation(
+            id = "kyoto",
+            name = "Kyoto",
             country = "Japan",
             region = Region.ASIA,
-            coordinate = GeoCoordinate(35.65947417051811, 139.7005350666233),
-            hint = "Shibuya Crossing"
+            coordinate = GeoCoordinate(35.011636, 135.768029),
+            hint = "Tempelstadt"
         ),
         GeoLocation(
-            id = "osaka",
-            name = "Osaka",
+            id = "yokohama",
+            name = "Yokohama",
             country = "Japan",
             region = Region.ASIA,
-            coordinate = GeoCoordinate(34.6930597, 135.4957532),
-            hint = "Takoyaki"
+            coordinate = GeoCoordinate(35.443707, 139.638031),
+            hint = "Hafenstadt Japans"
         ),
         GeoLocation(
-            id = "seoul",
-            name = "Seoul",
+            id = "busan",
+            name = "Busan",
             country = "Südkorea",
             region = Region.ASIA,
-            coordinate = GeoCoordinate(37.5665, 126.9780),
-            hint = "K-Pop"
+            coordinate = GeoCoordinate(35.179554, 129.075642),
+            hint = "Küstenstadt"
         ),
         GeoLocation(
-            id = "beijing",
-            name = "Peking",
+            id = "taipei",
+            name = "Taipei",
+            country = "Taiwan",
+            region = Region.ASIA,
+            coordinate = GeoCoordinate(25.033964, 121.564468),
+            hint = "Taipei 101"
+        ),
+        GeoLocation(
+            id = "hong_kong",
+            name = "Hongkong",
             country = "China",
             region = Region.ASIA,
-            coordinate = GeoCoordinate(39.916389, 116.396393),
-            hint = "Verbotene Stadt"
+            coordinate = GeoCoordinate(22.319303, 114.169361),
+            hint = "Victoria Harbour"
         ),
+
+// OCEANIA
         GeoLocation(
-            id = "shanghai",
-            name = "Shanghai",
-            country = "China",
-            region = Region.ASIA,
-            coordinate = GeoCoordinate(31.22887768691524, 121.48729952118009),
-            hint = "New-Town"
-        ),
-        GeoLocation(
-            id = "bangkok",
-            name = "Bangkok",
-            country = "Thailand",
-            region = Region.ASIA,
-            coordinate = GeoCoordinate(13.7563, 100.5018),
-            hint = "Street Food"
-        ),
-        GeoLocation(
-            id = "singapore",
-            name = "Singapur",
-            country = "Malaysia",
-            region = Region.ASIA,
-            coordinate = GeoCoordinate(1.2787931049130339, 103.85883089218818),
-            hint = "Marina Bay Sands"
-        ),
-        GeoLocation(
-            id = "sydney",
-            name = "Sydney",
+            id = "brisbane",
+            name = "Brisbane",
             country = "Australien",
             region = Region.OCEANIA,
-            coordinate = GeoCoordinate(-33.8688, 151.2093),
-            hint = "Opernhaus"
+            coordinate = GeoCoordinate(-27.469770, 153.025131),
+            hint = "Queensland"
         ),
         GeoLocation(
-            id = "melbourne",
-            name = "Melbourne",
+            id = "perth",
+            name = "Perth",
             country = "Australien",
             region = Region.OCEANIA,
-            coordinate = GeoCoordinate(-37.815021608645516, 144.96638280288556),
-            hint = "Australisches Kulturzentrum"
+            coordinate = GeoCoordinate(-31.950527, 115.860457),
+            hint = "Westaustralien"
         ),
         GeoLocation(
-            id = "auckland",
-            name = "Auckland",
+            id = "adelaide",
+            name = "Adelaide",
+            country = "Australien",
+            region = Region.OCEANIA,
+            coordinate = GeoCoordinate(-34.928497, 138.600739),
+            hint = "Südaustralien"
+        ),
+        GeoLocation(
+            id = "wellington",
+            name = "Wellington",
             country = "Neuseeland",
             region = Region.OCEANIA,
-            coordinate = GeoCoordinate(-36.8509, 174.7645),
-            hint = "City of Sails"
-        )
+            coordinate = GeoCoordinate(-41.286461, 174.776230),
+            hint = "Windige Hauptstadt"
+        ),
+        GeoLocation(
+            id = "christchurch",
+            name = "Christchurch",
+            country = "Neuseeland",
+            region = Region.OCEANIA,
+            coordinate = GeoCoordinate(-43.532055, 172.636225),
+            hint = "South Island"
+        ),
     )
 }

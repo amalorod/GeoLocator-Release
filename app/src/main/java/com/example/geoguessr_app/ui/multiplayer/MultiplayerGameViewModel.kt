@@ -58,11 +58,14 @@ class MultiplayerGameViewModel @Inject constructor(
     private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
+    /** Interner veränderbarer StateFlow für den UI-Zustand des Multiplayer-Spiels. */
     private val _uiState = MutableStateFlow(GameUiState(isMultiplayer = true))
+    /** Öffentlich beobachtbarer UI-Zustand für die Compose UI. */
     val uiState = _uiState.asStateFlow()
 
     /** Für alle Spieler identische Standorte der Session (siehe MatchSession.locationIds). */
     private var gameLocations: List<GeoLocation> = emptyList()
+    /** Die eindeutige ID der aktuellen Multiplayer-Session. */
     private var sessionId: String = ""
 
     /** Lokal zwischengespeicherter Anzeigename, u. a. für Heartbeat-Updates ohne erneuten Profil-Zugriff. */
@@ -70,15 +73,23 @@ class MultiplayerGameViewModel @Inject constructor(
 
     /** Ob der lokale Nutzer aktuell der Host der Session ist (siehe MatchSession.hostUid). */
     private var isHost: Boolean = false
-    private var hasSeenMultiplePlayers: Boolean = false
+    /** Coroutine-Job für das periodische Senden des Presence-Heartbeats. */
     private var heartbeatJob: Job? = null
+    /** Coroutine-Job für den rundenbasierten Sekundencountdown. */
     private var timerJob: Job? = null
 
     companion object {
+        /** Intervall in Millisekunden, in dem das Lebenszeichen (Heartbeat) gesendet wird (10 Sek.). */
         private const val HEARTBEAT_INTERVAL_MS = 10_000L
-        private const val HEARTBEAT_TIMEOUT_MS = 40_000L // 4x Intervall, toleriert Jitter/Doze
+        /** Timeout in Millisekunden, nach dem ein Mitspieler als offline/inaktiv gilt (40 Sek., toleriert Jitter/Doze). */
+        private const val HEARTBEAT_TIMEOUT_MS = 40_000L
     }
 
+    /**
+     * Startet den Sekundentimer für die aktuelle Runde.
+     * Zählt jede Sekunde herunter, sofern das Spiel nicht pausiert ist.
+     * Nach Ablauf der Zeit wird die Runde automatisch ohne Tipp beendet ([finishRoundWithoutGuess]).
+     */
     private fun startTimer() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
@@ -90,12 +101,17 @@ class MultiplayerGameViewModel @Inject constructor(
                 }
             }
 
+            // Automatischer Rundenabschluss bei abgelaufener Zeit
             if (_uiState.value.remainingSeconds == 0 && !_uiState.value.isRoundFinished && !_uiState.value.isGameFinished) {
                 finishRoundWithoutGuess()
             }
         }
     }
 
+    /**
+     * Beendet die aktuelle Runde, falls der Spieler vor Ablauf der Zeit keinen Tipp abgegeben hat.
+     * Vergibt 0 Punkte und 10.000 km Distanz als Strafe und zieht im Battle-Royale-Modus ein Leben ab.
+     */
     private fun finishRoundWithoutGuess() {
         timerJob?.cancel()
         val state = _uiState.value
@@ -121,6 +137,7 @@ class MultiplayerGameViewModel @Inject constructor(
                 currentLives = (currentLives - 1).coerceAtLeast(0)
             }
 
+            // Aktualisiert den Spielerzustand in Firebase
             sessionRepository.updatePlayerState(
                 sessionId = sessionId,
                 playerState = MultiplayerPlayerState(
@@ -144,7 +161,6 @@ class MultiplayerGameViewModel @Inject constructor(
      */
     fun loadSessionLocations(sessionId: String) {
         this.sessionId = sessionId
-        hasSeenMultiplePlayers = false
         val currentUid = firebaseAuthRepository.currentUid() ?: return
 
         sessionRepository.registerSessionPresence(sessionId, currentUid)
@@ -188,6 +204,8 @@ class MultiplayerGameViewModel @Inject constructor(
 
                 val nextLocation = gameLocations.find { it.id == session.currentLocationId }
 
+                val isUnlimitedRounds = currentMode == GameMode.BATTLE_ROYALE
+
                 // Rundenwechsel wird erkannt, sobald sich Rundennummer oder
                 // Standort-ID gegenüber dem aktuellen UI-State unterscheiden.
                 if (session.currentRound != _uiState.value.currentRound || _uiState.value.currentLocation?.id != session.currentLocationId || (_uiState.value.isLoading && nextLocation != null)) {
@@ -203,7 +221,9 @@ class MultiplayerGameViewModel @Inject constructor(
                             roundDistanceKilometers = null,
                             viewMode = GameViewMode.STREET_VIEW,
                             isLoading = false,
-                            gameMode = currentMode
+                            gameMode = currentMode,
+                            hasUnlimitedRounds = isUnlimitedRounds,
+                            lives = myState?.lives ?: it.lives
                         )
                     }
                     startTimer()
@@ -241,8 +261,14 @@ class MultiplayerGameViewModel @Inject constructor(
         viewModelScope.launch {
             sessionRepository.observePlayerStates(sessionId).collect { players ->
                 playerName = players.find { it.uid == currentUid }?.playerName ?: "Spieler"
+                val myPlayer = players.find { it.uid == currentUid }
 
-                _uiState.update { it.copy(multiplayerPlayers = players) }
+                _uiState.update {
+                    it.copy(
+                        multiplayerPlayers = players,
+                        lives = myPlayer?.lives ?: it.lives
+                    )
+                }
 
                 // Auto-Win: Greift erst ab Runde 2 (currentRound > 1), um jegliche
                 // Race Conditions oder Fluktuationen beim Spielstart in Runde 1 auszuschließen.
@@ -284,15 +310,22 @@ class MultiplayerGameViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Wählt die Koordinaten für den aktuellen Tipp des Spielers auf der Karte aus.
+     *
+     * @param guessedLocation Die vom Nutzer gewählte [GeoCoordinate].
+     */
     fun selectGuess(guessedLocation: GeoCoordinate) {
         if (_uiState.value.isRoundFinished) return
         _uiState.update { it.copy(guessedLocation = guessedLocation) }
     }
 
+    /** Schaltet die Ansicht auf die interaktive Ratekarte ([GameViewMode.GUESS_MAP]) um. */
     fun showGuessMap() {
         _uiState.update { it.copy(viewMode = GameViewMode.GUESS_MAP) }
     }
 
+    /** Schaltet die Ansicht zurück auf das Street-View-Panorama ([GameViewMode.STREET_VIEW]). */
     fun showStreetView() {
         _uiState.update { it.copy(viewMode = GameViewMode.STREET_VIEW) }
     }
@@ -375,6 +408,7 @@ class MultiplayerGameViewModel @Inject constructor(
         }
     }
 
+    /** Blendet den Hinweisdialog für eine neu abgeschlossene Tagesquest aus. */
     fun dismissCompletedQuest() {
         _uiState.update { it.copy(newlyCompletedQuest = null) }
     }
@@ -393,7 +427,8 @@ class MultiplayerGameViewModel @Inject constructor(
 
         viewModelScope.launch {
             val survivors = state.multiplayerPlayers.filter { it.lives > 0 }
-            val isLastRound = state.currentRound >= state.totalRounds
+            val isLastRound =
+                state.gameMode != GameMode.BATTLE_ROYALE && state.currentRound >= state.totalRounds
             val isBattleRoyaleDecided =
                 state.gameMode == GameMode.BATTLE_ROYALE && survivors.size <= 1
 
@@ -409,13 +444,15 @@ class MultiplayerGameViewModel @Inject constructor(
                         }"
             )
 
-            if (isLastRound || isBattleRoyaleDecided) {
+
+            val nextRound = state.currentRound + 1
+            val nextLocation = gameLocations.getOrNull(nextRound - 1)
+            val locationsExhausted = nextLocation == null
+
+            if (isLastRound || isBattleRoyaleDecided || locationsExhausted) {
                 sessionRepository.finishSession(sessionId)
                 return@launch
             }
-
-            val nextRound = state.currentRound + 1
-            val nextLocation = gameLocations.getOrNull(nextRound - 1) ?: return@launch
 
             val updatedPlayers = state.multiplayerPlayers.map { p ->
                 if (p.lives > 0) {
@@ -424,6 +461,10 @@ class MultiplayerGameViewModel @Inject constructor(
                     p
                 }
             }
+
+
+
+
 
             sessionRepository.advanceRoundAtomic(
                 sessionId = sessionId,
@@ -488,10 +529,11 @@ class MultiplayerGameViewModel @Inject constructor(
     private fun determineWinner(state: GameUiState, myUid: String): Pair<Boolean, String?> {
         return when (state.gameMode) {
             GameMode.BATTLE_ROYALE -> {
-                val myState = state.multiplayerPlayers.find { it.uid == myUid }
                 val survivors = state.multiplayerPlayers.filter { it.lives > 0 }
-                val won = myState != null && myState.lives > 0 && survivors.size <= 1
-                won to survivors.singleOrNull()?.playerName
+                val topSurvivor = survivors.maxByOrNull { it.score }
+                    ?: state.multiplayerPlayers.maxByOrNull { it.score }
+                val won = topSurvivor?.uid == myUid
+                won to topSurvivor?.playerName
             }
 
             else -> {
@@ -539,6 +581,10 @@ class MultiplayerGameViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Räumt laufende Coroutine-Jobs (Timer, Heartbeat) auf,
+     * wenn das ViewModel zerstört wird.
+     */
     override fun onCleared() {
         timerJob?.cancel()
         heartbeatJob?.cancel()

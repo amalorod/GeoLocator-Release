@@ -52,6 +52,8 @@ import com.example.geoguessr_app.domain.statistics.RoundStatistics
  * (abgeleitet aus [GameMode.streetViewNavigationEnabled] des aktiven Modus).
  * @property matchWinnerName Name des Gewinners einer Multiplayer-Partie; null im Einzelspielermodus.
  * @property isLocalPlayerWinner Ob der lokale Spielende die Multiplayer-Partie gewonnen hat.
+ * @property hasUnlimitedRounds Ob für den aktuellen Spielmodus kein festes Rundenlimit gilt
+ * (z. B. Battle Royale oder Custom Mittel/Schwer).
  */
 data class GameUiState(
     val currentRound: Int = 1,
@@ -79,5 +81,6 @@ data class GameUiState(
     val lives: Int = Int.MAX_VALUE,
     val isStreetViewNavigationEnabled: Boolean = true,
     val matchWinnerName: String? = null,
-    val isLocalPlayerWinner: Boolean? = null
+    val isLocalPlayerWinner: Boolean? = null,
+    val hasUnlimitedRounds: Boolean = false
 )

@@ -236,11 +236,14 @@ class LobbyViewModel @Inject constructor(
             val sessionId = SessionIdGenerator.generate()
 
             try {
-                val locations = getRandomLocations(count = 5)
+                val isBattleRoyale = _uiState.value.selectedMode == MultiplayerMode.BATTLE_ROYALE
+                // Spieldesign-Entscheidung: Battle Royale verwendet initial bis zu 20 vorabonnierten Standorte.
+                // Dank GetRandomLocationsUseCase können Standorte bei Bedarf auch beliebig zyklisch verlängert werden.
+                val locationCount = if (isBattleRoyale) 20 else 5
+                val locations = getRandomLocations(count = locationCount)
                 val locationIds = locations.map { it.id }
 
-                val initialLives =
-                    if (_uiState.value.selectedMode == MultiplayerMode.BATTLE_ROYALE) 3 else 5
+                val initialLives = if (isBattleRoyale) 3 else 5
 
                 val initialPlayers = _uiState.value.players.map { player ->
                     MultiplayerPlayerState(
@@ -258,7 +261,7 @@ class LobbyViewModel @Inject constructor(
                     lobbyCode = code,
                     mode = _uiState.value.selectedMode.name,
                     locationIds = locationIds,
-                    totalRounds = 5,
+                    totalRounds = locations.size,
                     currentLocationId = locationIds.firstOrNull() ?: ""
                 )
 

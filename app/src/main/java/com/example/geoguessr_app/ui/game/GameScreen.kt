@@ -369,24 +369,15 @@ private fun GameScreen(
             onPauseClick = onPauseGame,
             isPauseEnabled = !uiState.isLoading && !uiState.isRoundFinished && !uiState.isGameFinished && !uiState.isPaused,
         )
-        if (!uiState.isMultiplayer) {
-            GameStatusHeader(
-                score = uiState.totalScore,
-                currentRound = uiState.currentRound,
-                totalRounds = uiState.totalRounds,
-                remainingSeconds = uiState.remainingSeconds,
-                gameMode = uiState.gameMode,
-                lives = uiState.lives
-            )
-        } else {
-            GameStatusHeader(
-                score = uiState.totalScore,
-                currentRound = uiState.currentRound,
-                totalRounds = uiState.totalRounds,
-                remainingSeconds = uiState.remainingSeconds,
-                gameMode = uiState.gameMode
-            )
-        }
+        GameStatusHeader(
+            score = uiState.totalScore,
+            currentRound = uiState.currentRound,
+            totalRounds = uiState.totalRounds,
+            remainingSeconds = uiState.remainingSeconds,
+            gameMode = uiState.gameMode,
+            lives = uiState.lives,
+            hasUnlimitedRounds = uiState.hasUnlimitedRounds
+        )
         if (uiState.isMultiplayer) {
             MultiplayerScoreboard(
                 players = sessionUiState.players,
@@ -635,7 +626,7 @@ private fun RoundResult(
                     .height(50.dp)
             ) {
                 Text(
-                    text = if (uiState.currentRound == uiState.totalRounds) {
+                    text = if (!uiState.hasUnlimitedRounds && uiState.currentRound == uiState.totalRounds) {
                         "Gesamtergebnis anzeigen"
                     } else {
                         "Nächste Runde"
@@ -870,7 +861,8 @@ private fun GameStatusHeader(
     totalRounds: Int,
     remainingSeconds: Int,
     gameMode: GameMode,
-    lives: Int = Int.MAX_VALUE
+    lives: Int = Int.MAX_VALUE,
+    hasUnlimitedRounds: Boolean = false
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -890,14 +882,17 @@ private fun GameStatusHeader(
             ) {
                 Text("Score: $score")
 
-                // Nur Einzelspieler-Custom-Modus: Battle Royale existiert
-                // ausschließlich im Multiplayer und wird daher hier nie geprüft.
-                val showLives = gameMode == GameMode.CUSTOM && lives < 100
+                val showLives = (gameMode == GameMode.CUSTOM || gameMode == GameMode.BATTLE_ROYALE) && lives < Int.MAX_VALUE
                 if (showLives) {
                     Text("❤️ $lives")
                 }
 
-                Text("Runde: $currentRound/$totalRounds")
+                if (hasUnlimitedRounds) {
+                    Text("Runde: $currentRound")
+                } else {
+                    Text("Runde: $currentRound/$totalRounds")
+                }
+
                 Text("$remainingSeconds Sek.")
             }
         }

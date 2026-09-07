@@ -82,6 +82,9 @@ class GameViewModel @Inject constructor(
             }
         }
 
+        val hasUnlimitedRounds = gameMode == GameMode.BATTLE_ROYALE || (customSettings?.difficulty?.hasLimitedLives == true)
+        val requestedLocationCount = if (hasUnlimitedRounds) 20 else 5
+
         val navEnabled = when (customSettings?.difficulty) {
             CustomDifficulty.HARD -> false
             else -> gameMode.streetViewNavigationEnabled
@@ -91,13 +94,15 @@ class GameViewModel @Inject constructor(
             gameMode = gameMode,
             remainingSeconds = duration,
             lives = initialLives,
+            hasUnlimitedRounds = hasUnlimitedRounds,
+            totalRounds = requestedLocationCount,
             isStreetViewNavigationEnabled = navEnabled
         )
 
         viewModelScope.launch {
             runCatching {
                 getRandomLocations(
-                    count = _uiState.value.totalRounds,
+                    count = requestedLocationCount,
                     region = customSettings?.region ?: Region.WORLD
                 )
             }.onSuccess { locations ->
@@ -113,7 +118,9 @@ class GameViewModel @Inject constructor(
                 }
 
                 _uiState.value = _uiState.value.copy(
-                    currentLocation = firstLocation, isLoading = false
+                    currentLocation = firstLocation,
+                    totalRounds = locations.size,
+                    isLoading = false
                 )
 
                 startTimer()
@@ -267,7 +274,7 @@ class GameViewModel @Inject constructor(
         )
 
         var newLives = state.lives
-        if (state.gameMode == GameMode.CUSTOM && distance > 500.0 && state.lives < 100) {
+        if (state.hasUnlimitedRounds && distance > 500.0) {
             newLives = (state.lives - 1).coerceAtLeast(0)
         }
 
@@ -284,7 +291,7 @@ class GameViewModel @Inject constructor(
             roundStatistics = state.roundStatistics + roundStatisticsEntry,
         )
 
-        if (newLives <= 0 && state.gameMode == GameMode.CUSTOM) {
+        if (newLives <= 0 && state.hasUnlimitedRounds) {
             _uiState.value = _uiState.value.copy(isGameFinished = true)
         }
 
@@ -332,11 +339,18 @@ class GameViewModel @Inject constructor(
             roundNumber = state.currentRound, score = 0, distanceKm = 0.0
         )
 
-        _uiState.value = _uiState.value.copy(
+        var newLives = state.lives
+        if (state.hasUnlimitedRounds) {
+            newLives = (state.lives - 1).coerceAtLeast(0)
+        }
+
+        _uiState.value = state.copy(
             guessedLocation = null,
             roundDistanceKilometers = null,
             roundScore = 0,
+            lives = newLives,
             isRoundFinished = true,
+            isGameFinished = (newLives <= 0 && state.hasUnlimitedRounds),
             roundStatistics = state.roundStatistics + roundStatisticsEntry,
         )
     }
@@ -351,7 +365,13 @@ class GameViewModel @Inject constructor(
             return
         }
 
-        if (state.currentRound >= state.totalRounds) {
+        val isGameOver = if (state.hasUnlimitedRounds) {
+            state.lives <= 0 || state.currentRound >= gameLocations.size
+        } else {
+            state.currentRound >= state.totalRounds
+        }
+
+        if (isGameOver) {
 
             viewModelScope.launch {
 
