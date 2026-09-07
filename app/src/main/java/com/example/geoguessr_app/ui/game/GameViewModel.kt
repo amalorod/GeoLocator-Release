@@ -83,7 +83,7 @@ class GameViewModel @Inject constructor(
         }
 
         val hasUnlimitedRounds = gameMode == GameMode.BATTLE_ROYALE || (customSettings?.difficulty?.hasLimitedLives == true)
-        val requestedLocationCount = if (hasUnlimitedRounds) 20 else 5
+        val requestedLocationCount = if (hasUnlimitedRounds) 20 else (customSettings?.rounds ?: 5)
 
         val navEnabled = when (customSettings?.difficulty) {
             CustomDifficulty.HARD -> false

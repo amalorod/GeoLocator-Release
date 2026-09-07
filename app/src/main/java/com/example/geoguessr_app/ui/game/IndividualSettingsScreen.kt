@@ -55,6 +55,7 @@ fun IndividualSettingsScreen(
     var selectedTime by remember { mutableIntStateOf(60) }
     var selectedRegion by remember { mutableStateOf(Region.WORLD) }
     var selectedDifficulty by remember { mutableStateOf(CustomDifficulty.MEDIUM) }
+    var selectedRounds by remember { mutableIntStateOf(5) }
 
     val scrollState = rememberScrollState()
 
@@ -91,6 +92,20 @@ fun IndividualSettingsScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
+
+            SettingsSection(title = "Rundenanzahl") {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(3, 5, 10).forEach { count ->
+                        FilterChip(
+                            selected = selectedRounds == count,
+                            onClick = { selectedRounds = count },
+                            label = { Text("$count Runden") },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+            
             SettingsSection(title = "Zeitlimit pro Runde") {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(30, 60, 120).forEach { time ->
@@ -142,6 +157,8 @@ fun IndividualSettingsScreen(
                 }
             }
 
+
+
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
@@ -150,7 +167,8 @@ fun IndividualSettingsScreen(
                         CustomGameSettings(
                             timeLimitSeconds = selectedTime,
                             region = selectedRegion,
-                            difficulty = selectedDifficulty
+                            difficulty = selectedDifficulty,
+                            rounds = selectedRounds
                         )
                     )
                 },

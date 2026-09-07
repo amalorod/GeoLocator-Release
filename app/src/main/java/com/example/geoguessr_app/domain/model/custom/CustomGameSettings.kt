@@ -27,9 +27,11 @@ import com.example.geoguessr_app.ui.game.IndividualSettingsScreen
  *   Einschränkung.
  * @property difficulty Schwierigkeitsgrad der Partie (siehe
  *   [CustomDifficulty]), beeinflusst die Option Street-View-Navigation.
+ * @property rounds Anzahl der zu spielenden Runden in der Partie.
  */
 data class CustomGameSettings(
     val timeLimitSeconds: Int = 60,
     val region: Region = Region.WORLD,
-    val difficulty: CustomDifficulty = CustomDifficulty.MEDIUM
+    val difficulty: CustomDifficulty = CustomDifficulty.MEDIUM,
+    val rounds: Int = 5
 )
