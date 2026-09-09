@@ -1,6 +1,6 @@
-package com.example.geoguessr_app.domain.usecase
+package alic.malorodow.geoguessr_app.domain.usecase
 
-import com.example.geoguessr_app.domain.model.GeoCoordinate
+import alic.malorodow.geoguessr_app.domain.model.GeoCoordinate
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

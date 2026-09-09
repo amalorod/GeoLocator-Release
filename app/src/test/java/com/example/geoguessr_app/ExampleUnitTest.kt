@@ -1,4 +1,4 @@
-package com.example.geoguessr_app
+package alic.malorodow.geoguessr_app
 
 import org.junit.Test
 

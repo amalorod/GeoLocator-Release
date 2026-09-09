@@ -1,4 +1,4 @@
-package com.example.geoguessr_app.domain.usecase
+package alic.malorodow.geoguessr_app.domain.usecase
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
