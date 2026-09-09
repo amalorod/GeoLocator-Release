@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "371332536231",
+    "firebase_url": "https://geoguessr-playstore-rel1f57b-default-rtdb.firebaseio.com",
     "project_id": "geoguessr-playstore-rel1f57b",
     "storage_bucket": "geoguessr-playstore-rel1f57b.firebasestorage.app"
   },

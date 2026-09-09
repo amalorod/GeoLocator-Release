@@ -28,7 +28,7 @@ import javax.inject.Singleton
 object FirebaseModule {
 
     private const val DB_URL =
-        "https://bsi-geoguessr-app-63b7f-default-rtdb.europe-west1.firebasedatabase.app/"
+        "https://geoguessr-playstore-rel1f57b-default-rtdb.firebaseio.com"
 
     @Provides
     @Singleton
