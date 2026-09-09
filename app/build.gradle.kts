@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.geoguessr_app"
+    namespace = "alic.malorodow.geoguessr_app"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.example.geoguessr_app"
+        applicationId = "alic.malorodow.geoguessr_app"
         minSdk = 23
         targetSdk = 37
         versionCode = 1
