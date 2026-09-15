@@ -45,7 +45,7 @@ fun AppLogoSplashScreen(onFinished: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Image(
-            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+            painter = painterResource(id = R.drawable.appiconplaystore),
             contentDescription = null,
             modifier = Modifier.height(120.dp)
         )

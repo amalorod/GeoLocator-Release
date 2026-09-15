@@ -10,8 +10,8 @@
        bevor postSplashScreenTheme zum normalen App-Theme wechselt.
    -->
     <style name="Theme.GeoGuessr_App.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@android:color/white</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenBackground">@drawable/splash_icon_scaled</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_scaled</item>
         <item name="postSplashScreenTheme">@style/Theme.GeoGuessr_App</item>
     </style>
 
