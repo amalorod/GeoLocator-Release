@@ -5,7 +5,7 @@ Stand: September 2026
 ## 1. Verantwortlicher
 Verantwortlich für die Datenverarbeitung in dieser App ist:  
 Alic Malorodow  
-E-Mail: alic.dev.support@gmail.com
+E-Mail: amalorodow@gmail.com
 
 ## 2. Erhobene Daten
 Die Nutzung der App erfolgt weitestgehend ohne Offenlegung persönlicher Daten:
