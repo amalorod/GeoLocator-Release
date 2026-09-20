@@ -5,19 +5,32 @@ import alic.malorodow.geoguessr_app.domain.model.custom.CustomGameSettings
 import alic.malorodow.geoguessr_app.domain.model.custom.Region
 import alic.malorodow.geoguessr_app.domain.repository.LocationRepository
 import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Wählt eine gewünschte Anzahl unterschiedlicher Zufallsstandorte aus,
  * optional eingeschränkt auf eine bestimmte [Region].
  *
+ * Speichert pro App-Session den Verlauf der bereits genutzten Standorte per Region,
+ * um eine gleichmäßige Verteilung ("Bag System" / "Deck Shuffling") zu gewährleisten:
+ * Jeder Standort einer Region kommt genau einmal an die Reihe, bevor sich ein Standort
+ * wiederholen kann.
+ *
  * Dient als zentrale Anlaufstelle für die Standortauswahl im klassischen
- * Einzelspieler-Modus (ohne Regionsfilter,da region einen Standardwert von Region.WORLD besitzt)
+ * Einzelspieler-Modus (ohne Regionsfilter, da region einen Standardwert von Region.WORLD besitzt)
  * sowie dem individuellen Modus, in dem der Nutzer über [CustomGameSettings.region]
- * gezielt eine Region vorgeben kann (siehe Doku, Kapitel 5.3 „Individueller Modus“).
+ * gezielt eine Region vorgeben kann.
  */
+@Singleton
 class GetRandomLocationsUseCase @Inject constructor(
     private val locationRepository: LocationRepository
 ) {
+
+    /**
+     * Speichert bereits verwendete Standort-IDs pro Region für die laufende App-Session,
+     * um vorzeitige Wiederholungen zu vermeiden.
+     */
+    private val usedLocationIdsByRegion = mutableMapOf<Region, MutableSet<String>>()
 
     /**
      * Führt die zufällige Standortauswahl durch.
@@ -30,53 +43,66 @@ class GetRandomLocationsUseCase @Inject constructor(
     suspend operator fun invoke(
         count: Int, region: Region = Region.WORLD
     ): List<GeoLocation> {
-        // Fail-Fast-Prüfung: Eine Anfrage nach null oder weniger
-        // Standorten wäre fachlich unsinnig und deutet auf einen
-        // Fehler in der aufrufenden Stelle hin (z. B. GameViewModel).
         require(count > 0) {
             "Die Anzahl der Standorte muss größer als null sein."
         }
 
-        // Lädt den gesamten Standortpool aus dem Repository.
         val allLocations = locationRepository.getLocations()
 
-        // Region.WORLD bedeutet laut Definition in [Region] "keine
-        // Einschränkung" – in diesem Fall wird der komplette
-        // Standortpool verwendet, andernfalls wird auf die exakt
-        // passende Region gefiltert.
         val filteredLocations = if (region == Region.WORLD) {
             allLocations
         } else {
             allLocations.filter { loc -> loc.region == region }
         }
 
-        // Überprüft, ob überhaupt Standorte für die gewählte Region vorhanden sind.
         require(filteredLocations.isNotEmpty()) {
             "Für die Region ${region.displayName} sind keine Standorte vorhanden."
         }
 
-        // Falls mehr Standorte angefordert wurden als in der Region existieren
-        // (z. B. 20 angefordert für Modi ohne Rundenlimit), füllen wir die Liste
-        // zyklisch mit erneut durchmischten Blöcken auf, sodass beliebig viele
-        // Runden ohne Spielabbruch möglich sind.
+        val usedIds = usedLocationIdsByRegion.getOrPut(region) { mutableSetOf() }
         val result = mutableListOf<GeoLocation>()
-        while (result.size < count) {
-            var block = filteredLocations.shuffled()
 
-            // Verhindert direkte Wiederholungen desselben Orts beim Blockübergang,
+        while (result.size < count) {
+            // Unbenutzte Standorte in der aktuellen Region ermitteln
+            var unusedLocations = filteredLocations.filter { it.id !in usedIds }
+
+            // Falls alle Standorte der Region bereits einmal vorkamen,
+            // wird die Historie für diese Region zurückgesetzt (neuer Zyklus).
+            if (unusedLocations.isEmpty()) {
+                usedIds.clear()
+                unusedLocations = filteredLocations.toList()
+            }
+
+            var shuffledBlock = unusedLocations.shuffled()
+
+            // Verhindert direkte Wiederholungen desselben Orts beim Zyklusübergang,
             // sofern mehr als ein Standort in der Region verfügbar ist.
-            if (result.isNotEmpty() && filteredLocations.size > 1 && block.first() == result.last()) {
-                val mutableBlock = block.toMutableList()
+            if (result.isNotEmpty() && filteredLocations.size > 1 && shuffledBlock.first() == result.last()) {
+                val mutableBlock = shuffledBlock.toMutableList()
                 while (mutableBlock.first() == result.last()) {
                     mutableBlock.shuffle()
                 }
-                block = mutableBlock
+                shuffledBlock = mutableBlock
             }
 
-            result.addAll(block)
+            val needed = count - result.size
+            val toTake = shuffledBlock.take(needed)
+
+            result.addAll(toTake)
+            toTake.forEach { usedIds.add(it.id) }
         }
 
-        // Schneidet genau die geforderte Anzahl an Standorten zu.
-        return result.take(count)
+        return result
+    }
+
+    /**
+     * Setzt die Historie der gezogenen Standorte zurück (z. B. für Tests oder manuelle Resets).
+     */
+    fun resetHistory(region: Region? = null) {
+        if (region != null) {
+            usedLocationIdsByRegion[region]?.clear()
+        } else {
+            usedLocationIdsByRegion.clear()
+        }
     }
 }

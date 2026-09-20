@@ -1,3 +1,7 @@
+import java.io.FileInputStream
+import java.util.Properties
+
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -7,16 +11,25 @@ plugins {
     id("com.google.gms.google-services") version "4.5.0"
 }
 
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+// Ändere "DEIN_KEY_NAME_IN_PROPERTIES" zu dem exakten Namen, der in deiner local.properties steht!
+val myMapsKey = localProperties.getProperty("MAPS_API_KEY") ?: ""
+
 android {
     namespace = "alic.malorodow.geoguessr_app"
     compileSdk = 37
 
     defaultConfig {
         applicationId = "alic.malorodow.geoguessr_app"
+        manifestPlaceholders["MAPS_API_KEY"] = myMapsKey
         minSdk = 23
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
