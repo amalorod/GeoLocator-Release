@@ -1,5 +1,7 @@
 package alic.malorodow.geoguessr_app.domain.model
 
+import androidx.compose.runtime.Immutable
+
 /**
  * Repräsentiert eine geografische Position in Dezimalgraden (WGS84).
  *
@@ -17,6 +19,7 @@ package alic.malorodow.geoguessr_app.domain.model
  * @property latitude Breitengrad in Dezimalgrad.
  * @property longitude Längengrad in Dezimalgrad.
  */
+@Immutable
 data class GeoCoordinate(
     val latitude: Double,
     val longitude: Double

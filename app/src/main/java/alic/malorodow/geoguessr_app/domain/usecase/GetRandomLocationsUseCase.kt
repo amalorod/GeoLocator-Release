@@ -1,9 +1,12 @@
 package alic.malorodow.geoguessr_app.domain.usecase
 
+import alic.malorodow.geoguessr_app.di.DefaultDispatcher
 import alic.malorodow.geoguessr_app.domain.model.GeoLocation
 import alic.malorodow.geoguessr_app.domain.model.custom.CustomGameSettings
 import alic.malorodow.geoguessr_app.domain.model.custom.Region
 import alic.malorodow.geoguessr_app.domain.repository.LocationRepository
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,7 +26,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class GetRandomLocationsUseCase @Inject constructor(
-    private val locationRepository: LocationRepository
+    private val locationRepository: LocationRepository,
+    @param:DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher
 ) {
 
     /**
@@ -42,7 +46,7 @@ class GetRandomLocationsUseCase @Inject constructor(
      */
     suspend operator fun invoke(
         count: Int, region: Region = Region.WORLD
-    ): List<GeoLocation> {
+    ): List<GeoLocation> = withContext(defaultDispatcher) {
         require(count > 0) {
             "Die Anzahl der Standorte muss größer als null sein."
         }
@@ -92,7 +96,7 @@ class GetRandomLocationsUseCase @Inject constructor(
             toTake.forEach { usedIds.add(it.id) }
         }
 
-        return result
+        result
     }
 
     /**

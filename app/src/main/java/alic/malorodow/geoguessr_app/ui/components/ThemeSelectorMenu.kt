@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import alic.malorodow.geoguessr_app.ui.theme.AppThemeMode
 import alic.malorodow.geoguessr_app.ui.home.HomeEuropeMap
+import androidx.compose.foundation.layout.fillMaxSize
 
 
 /** Mindestbreite/-höhe der Dropdown-Einträge für ausreichend große Touch-Targets. */
@@ -240,7 +241,7 @@ private fun DefaultThemeSelectorButton(
         containerColor = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary
     )
-    Button(onClick = onClick, modifier = Modifier.fillMaxWidth(), colors = colors) {
+    Button(onClick = onClick, modifier = Modifier.fillMaxSize(), colors = colors) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)

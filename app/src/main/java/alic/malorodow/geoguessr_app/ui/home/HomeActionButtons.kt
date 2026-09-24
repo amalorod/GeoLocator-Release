@@ -7,11 +7,12 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import alic.malorodow.geoguessr_app.ui.game.GameMode
+import alic.malorodow.geoguessr_app.ui.theme.AppTheme
 
 /**
  * Modus-Auswahl-Button öffnet [GameModeDialog]. Als
@@ -48,9 +50,10 @@ fun BoxScope.HomeGameModeButton(
         onClick = onClick,
         modifier = Modifier
             .align(Alignment.BottomCenter)
-            .padding(bottom = 52.dp)
-            .width(350.dp)
-            .height(58.dp),
+            .padding(bottom = AppTheme.dimens.homeBottomPaddingGameMode)
+            .fillMaxWidth(0.85f)
+            .widthIn(max = AppTheme.dimens.buttonWidthMax)
+            .height(AppTheme.dimens.buttonHeight),
         shape = CompassBannerShape(),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
@@ -79,8 +82,8 @@ fun BoxScope.HomeShortcutButtonsRow(
     Row(
         modifier = Modifier
             .align(Alignment.BottomCenter)
-            .padding(bottom = 130.dp),
-        horizontalArrangement = Arrangement.spacedBy(24.dp)
+            .padding(bottom = AppTheme.dimens.homeBottomPaddingShortcuts),
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.dimens.paddingLarge)
     ) {
         HomeShortcutButton(
             icon = "👤",
@@ -98,10 +101,12 @@ private fun HomeShortcutButton(
     onClick: () -> Unit,
     statusColor: Color? = null
 ) {
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(72.dp)) {
+    val dimens = AppTheme.dimens
+
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(dimens.shortcutContainerSize)) {
         Button(
             onClick = onClick,
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(dimens.shortcutButtonSize),
             shape = CircleShape,
             contentPadding = PaddingValues(0.dp),
             colors = ButtonDefaults.buttonColors(
@@ -110,7 +115,7 @@ private fun HomeShortcutButton(
             )
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = icon, fontSize = 28.sp, textAlign = TextAlign.Center)
+                Text(text = icon, fontSize = (dimens.shortcutButtonSize.value * 0.42f).sp, textAlign = TextAlign.Center)
             }
         }
         if (statusColor != null) {

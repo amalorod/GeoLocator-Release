@@ -5,9 +5,11 @@ import android.util.Log
 import androidx.datastore.preferences.core.edit
 import alic.malorodow.geoguessr_app.domain.model.statistics.MatchStatistic
 import alic.malorodow.geoguessr_app.domain.statistics.LifetimeStatistics
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -85,7 +87,7 @@ class StatisticsDataStoreRepository(
      * stattdessen manuell mit org.json gearbeitet, um für dieses
      * einzelne Feld keine zusätzliche Abhängigkeit einzuführen.
      */
-    suspend fun saveRecentMatches(matches: List<MatchStatistic>) {
+    suspend fun saveRecentMatches(matches: List<MatchStatistic>) = withContext(Dispatchers.IO) {
         try {
             val jsonArray = JSONArray()
             matches.forEach { match ->
@@ -114,12 +116,12 @@ class StatisticsDataStoreRepository(
      * Wert existiert (z. B. beim allerersten Start) oder das Parsen
      * fehlschlägt, statt eine Exception nach außen dringen zu lassen.
      */
-    suspend fun loadRecentMatches(): List<MatchStatistic> {
+    suspend fun loadRecentMatches(): List<MatchStatistic> = withContext(Dispatchers.IO) {
         val jsonString = context.dataStore.data
             .map { it[StatisticsPreferences.RECENT_MATCHES] }
-            .first() ?: return emptyList()
+            .first() ?: return@withContext emptyList()
 
-        return try {
+        try {
             val jsonArray = JSONArray(jsonString)
             val matches = mutableListOf<MatchStatistic>()
             for (i in 0 until jsonArray.length()) {

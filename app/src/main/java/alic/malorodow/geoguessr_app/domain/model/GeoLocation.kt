@@ -1,5 +1,6 @@
 package alic.malorodow.geoguessr_app.domain.model
 
+import androidx.compose.runtime.Immutable
 import alic.malorodow.geoguessr_app.domain.model.custom.Region
 
 /**
@@ -32,6 +33,7 @@ import alic.malorodow.geoguessr_app.domain.model.custom.Region
  *   Hint-System zur Unterstützung angezeigt wird (z. B. bekannte
  *   Sehenswürdigkeiten oder kulturelle Merkmale).
  */
+@Immutable
 data class GeoLocation(
     val id: String,
     val name: String,

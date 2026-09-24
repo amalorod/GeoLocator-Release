@@ -2,9 +2,11 @@ package alic.malorodow.geoguessr_app.ui.home
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -27,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import alic.malorodow.geoguessr_app.ui.game.GameMode
+import alic.malorodow.geoguessr_app.ui.theme.AppTheme
 import alic.malorodow.geoguessr_app.ui.theme.AppThemeMode
 import kotlinx.coroutines.delay
 
@@ -96,7 +99,7 @@ fun HomeScreen(
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                     HomeTornHeader(
                         imageId = HEADER_IMAGES[currentImageIndex],
-                        height = 230.dp,
+                        height = AppTheme.dimens.headerHeight,
                         modifier = Modifier.align(Alignment.TopCenter)
                     )
 
@@ -127,8 +130,8 @@ fun HomeScreen(
                             .offset(y = if (isTablet) 40.dp else 0.dp)
                             .widthIn(max = if (isTablet) 800.dp else 600.dp)
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .height(430.dp)
+                            .padding(horizontal = AppTheme.dimens.paddingLarge)
+                            .heightIn(max = AppTheme.dimens.mapHeightMax)
                     ) {
                         HomeEuropeMap(
                             backgroundImageId = HEADER_IMAGES[currentImageIndex],

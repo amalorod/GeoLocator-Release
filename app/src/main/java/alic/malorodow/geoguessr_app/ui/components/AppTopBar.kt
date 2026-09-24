@@ -14,6 +14,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.height
+import alic.malorodow.geoguessr_app.ui.theme.AppTheme
 import alic.malorodow.geoguessr_app.ui.theme.AppThemeMode
 import alic.malorodow.geoguessr_app.ui.home.HomeEuropeMap
 
@@ -47,9 +49,15 @@ fun AppTopBar(
 
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.dimens.paddingSmall)
     ) {
-        Button(onClick = onHomeClick, modifier = Modifier.weight(1f), colors = actionButtonColors) {
+        Button(
+            onClick = onHomeClick,
+            modifier = Modifier
+                .weight(1f)
+                .height(AppTheme.dimens.buttonHeight),
+            colors = actionButtonColors
+        ) {
             Icon(
                 imageVector = Icons.Default.Home,
                 contentDescription = "Home"
@@ -60,7 +68,9 @@ fun AppTopBar(
             Button(
                 onClick = onPauseClick,
                 enabled = isPauseEnabled,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(AppTheme.dimens.buttonHeight),
                 colors = actionButtonColors
             ) {
                 Icon(
@@ -75,7 +85,9 @@ fun AppTopBar(
             currentDynamicColorEnabled = currentDynamicColorEnabled,
             onThemeSelected = onThemeSelected,
             onDynamicColorToggled = onDynamicColorToggled,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .height(AppTheme.dimens.buttonHeight)
         )
     }
 }

@@ -61,6 +61,7 @@ import alic.malorodow.geoguessr_app.ui.multiplayer.MultiplayerScoreboard
 import alic.malorodow.geoguessr_app.ui.multiplayer.SessionUiState
 import alic.malorodow.geoguessr_app.ui.multiplayer.SessionViewModel
 import alic.malorodow.geoguessr_app.ui.multiplayer.WaitingForPlayersOverlay
+import alic.malorodow.geoguessr_app.ui.theme.AppTheme
 import alic.malorodow.geoguessr_app.ui.theme.AppThemeMode
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.StreetViewPanoramaView
@@ -623,7 +624,7 @@ private fun RoundResult(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp, vertical = 8.dp)
-                    .height(50.dp)
+                    .height(AppTheme.dimens.buttonHeight)
             ) {
                 Text(
                     text = if (!uiState.hasUnlimitedRounds && uiState.currentRound == uiState.totalRounds) {

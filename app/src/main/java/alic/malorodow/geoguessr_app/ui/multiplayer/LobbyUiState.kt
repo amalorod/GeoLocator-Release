@@ -1,5 +1,6 @@
 package alic.malorodow.geoguessr_app.ui.multiplayer
 
+import androidx.compose.runtime.Immutable
 import alic.malorodow.geoguessr_app.domain.model.multiplayer.LobbyPlayer
 import alic.malorodow.geoguessr_app.domain.model.multiplayer.MultiplayerMode
 import alic.malorodow.geoguessr_app.navigation.GeoGuessrNavHost
@@ -23,6 +24,7 @@ import alic.malorodow.geoguessr_app.navigation.GeoGuessrNavHost
  * @property sessionId ID der erzeugten Spiel-Session; erst gültig, wenn [started] true ist.
  * @property errorMessage Fehlermeldung bei fehlgeschlagenem Beitritt/Erstellen; null im Normalfall.
  */
+@Immutable
 data class LobbyUiState(
     val lobbyCode: String = "",
     val isLoading: Boolean = false,

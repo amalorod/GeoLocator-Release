@@ -4,8 +4,10 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.preferences.core.edit
 import alic.malorodow.geoguessr_app.domain.model.dailyquest.DailyQuest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -49,7 +51,7 @@ class DailyQuestDataStoreRepository(
      * @param quests Die vollständige, aktuelle Liste der Daily Quests,
      * die den bisherigen Zustand in den Preferences vollständig überschreibt.
      */
-    suspend fun saveQuests(quests: List<DailyQuest>) {
+    suspend fun saveQuests(quests: List<DailyQuest>) = withContext(Dispatchers.IO) {
         try {
             val jsonArray = JSONArray()
             quests.forEach { quest ->
@@ -87,12 +89,12 @@ class DailyQuestDataStoreRepository(
      * Liste, falls noch keine Daten vorhanden sind oder das Parsen
      * fehlschlägt (z. B. bei korrupten oder veralteten JSON-Daten).
      */
-    suspend fun loadQuests(): List<DailyQuest> {
+    suspend fun loadQuests(): List<DailyQuest> = withContext(Dispatchers.IO) {
         val jsonString = context.dataStore.data
             .map { it[DailyQuestPreferences.QUESTS_JSON] }
-            .first() ?: return emptyList()
+            .first() ?: return@withContext emptyList()
 
-        return try {
+        try {
             val jsonArray = JSONArray(jsonString)
             val quests = mutableListOf<DailyQuest>()
             for (i in 0 until jsonArray.length()) {

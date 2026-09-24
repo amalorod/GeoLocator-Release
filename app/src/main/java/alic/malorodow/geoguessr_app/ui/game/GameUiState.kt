@@ -1,5 +1,6 @@
 package alic.malorodow.geoguessr_app.ui.game
 
+import androidx.compose.runtime.Immutable
 import alic.malorodow.geoguessr_app.domain.model.GeoCoordinate
 import alic.malorodow.geoguessr_app.domain.model.GeoLocation
 import alic.malorodow.geoguessr_app.domain.model.dailyquest.DailyQuest
@@ -55,6 +56,7 @@ import alic.malorodow.geoguessr_app.domain.statistics.RoundStatistics
  * @property hasUnlimitedRounds Ob für den aktuellen Spielmodus kein festes Rundenlimit gilt
  * (z. B. Battle Royale oder Custom Mittel/Schwer).
  */
+@Immutable
 data class GameUiState(
     val currentRound: Int = 1,
     val totalRounds: Int = 5,

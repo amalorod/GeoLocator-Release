@@ -1,5 +1,6 @@
 package alic.malorodow.geoguessr_app.ui.multiplayer
 
+import androidx.compose.runtime.Immutable
 import alic.malorodow.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerState
 
 /**
@@ -18,6 +19,7 @@ import alic.malorodow.geoguessr_app.domain.model.multiplayer.MultiplayerPlayerSt
  * abgeschlossen haben; steuert vermutlich den Übergang zur nächsten Runde
  * oder zum Endergebnis-Dialog.
  */
+@Immutable
 data class SessionUiState(
     val sessionId: String = "",
     val players: List<MultiplayerPlayerState> = emptyList(),
